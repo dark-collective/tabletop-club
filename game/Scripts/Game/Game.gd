@@ -1982,6 +1982,7 @@ func _on_peer_connected(id: int):
 func _on_peer_disconnected(id: int):
 	if WebRuntime.is_widget() and id == 1 and not multiplayer.is_server():
 		_master_server.matrix_host_disconnected()
+		return
 	# Do this as soon as possible, so a piece state update doesn't get through.
 	if multiplayer.is_server():
 		Global.srv_state_update_blacklist.erase(id)

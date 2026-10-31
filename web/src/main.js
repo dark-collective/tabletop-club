@@ -41,6 +41,10 @@ const bridge = window.tabletopWidget = {
     if (data.action === "scene") {
       scene = data.name;
       document.body.dataset.scene = scene;
+      if (scene === "MainMenu") {
+        document.querySelector("#session").textContent = "";
+        document.querySelector("#players").textContent = "";
+      }
       if (scene === "MainMenu" || scene === "Game") document.querySelector("#loading").hidden = true;
       updateControls();
     } else if (data.action === "participants") {
@@ -108,7 +112,7 @@ if (isWidget) {
       event.preventDefault();
       api.transport.reply(event.detail, {});
       const {uris, username, password} = event.detail.data;
-      if (Array.isArray(uris) && uris.every(uri => typeof uri === "string" && /^(stun|turn|turns):/.test(uri))) {
+      if (Array.isArray(uris) && uris.length && uris.every(uri => typeof uri === "string" && /^(stun|turn|turns):/.test(uri))) {
         bridge.iceServersJSON = JSON.stringify([{urls: uris, username, credential: password}]);
       }
     });

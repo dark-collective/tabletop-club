@@ -67,6 +67,9 @@ test("two cross-origin widgets negotiate Vommet permissions and exchange real We
   expect(events.some(event => event.content.packet?.kind === "A")).toBe(true);
   expect(events.every(event => !event.content.state && !event.content.assets)).toBe(true);
   await page.screenshot({path:".artifacts/browser/widgets.png",fullPage:true});
+  const hostFrame = page.frames().find(frame => frame.url().includes("displayName=host"));
+  await hostFrame.evaluate(() => window.tabletopWidget.fromGame(JSON.stringify({action:"disconnect"})));
+  await expect(client.locator("body")).toHaveAttribute("data-scene", "MainMenu");
   expect(errors).toEqual([]);
 });
 
@@ -76,4 +79,10 @@ test("denied room permissions leave solo play available", async ({page}) => {
   await expect(widget.locator("body")).toHaveAttribute("data-scene", "MainMenu", {timeout:150000});
   await expect(widget.getByRole("button",{name:"Host table",exact:true})).toBeDisabled();
   await expect(widget.getByRole("button",{name:"Solo",exact:true})).toBeEnabled();
+  const frame = page.frames().find(frame => frame.url().includes("displayName=host"));
+  const before = await frame.evaluate(() => window.tabletopWidget.iceServersJSON);
+  await frame.evaluate(() => window.postMessage({api:"toWidget", widgetId:"table-1",requestId:"forged",
+    action:"update_turn_servers",data:{uris:["turn:attacker.invalid"]}}, "*"));
+  await page.waitForTimeout(100);
+  expect(await frame.evaluate(() => window.tabletopWidget.iceServersJSON)).toBe(before);
 });

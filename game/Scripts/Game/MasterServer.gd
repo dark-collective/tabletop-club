@@ -152,7 +152,7 @@ func connect_to_server() -> void:
 
 # Close the connection to the master server.
 func close() -> void:
-	if _matrix_active:
+	if WebRuntime.is_widget():
 		_matrix_active = false
 		WebRuntime.close_lobby(self)
 	client.close()
