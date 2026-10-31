@@ -26,34 +26,34 @@
 
 extends Node
 
-onready var _connecting_popup = $ConnectingPopup
-onready var _connecting_popup_label = $ConnectingPopup/Label
-onready var _download_assets_confirm_dialog = $DownloadAssetsConfirmDialog
-onready var _download_assets_error_dialog = $DownloadAssetsErrorDialog
-onready var _download_assets_progress_dialog = $DownloadAssetsProgressDialog
-onready var _download_lock_dialog = $DownloadLockDialog
-onready var _download_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/DownloadProgressBar
-onready var _download_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/DownloadProgressLabel
-onready var _import_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/ImportProgressBar
-onready var _import_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/ImportProgressLabel
-onready var _master_server = $MasterServer
-onready var _missing_assets_dialog = $MissingAssetsDialog
-onready var _missing_db_label = $MissingAssetsDialog/VBoxContainer/MissingDBLabel
-onready var _missing_db_summary_label = $MissingAssetsDialog/VBoxContainer/MissingDBSummaryLabel
-onready var _missing_fs_label = $MissingAssetsDialog/VBoxContainer/MissingFSLabel
-onready var _missing_fs_summary_label = $MissingAssetsDialog/VBoxContainer/MissingFSSummaryLabel
-onready var _room = $Room
-onready var _table_state_error_dialog = $TableStateErrorDialog
-onready var _table_state_version_dialog = $TableStateVersionDialog
-onready var _ui = $GameUI
-onready var _verify_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/VerifyProgressBar
-onready var _verify_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/VerifyProgressLabel
+@onready var _connecting_popup = $ConnectingPopup
+@onready var _connecting_popup_label = $ConnectingPopup/Label
+@onready var _download_assets_confirm_dialog = $DownloadAssetsConfirmDialog
+@onready var _download_assets_error_dialog = $DownloadAssetsErrorDialog
+@onready var _download_assets_progress_dialog = $DownloadAssetsProgressDialog
+@onready var _download_lock_dialog = $DownloadLockDialog
+@onready var _download_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/DownloadProgressBar
+@onready var _download_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/DownloadProgressLabel
+@onready var _import_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/ImportProgressBar
+@onready var _import_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/ImportProgressLabel
+@onready var _master_server = $MasterServer
+@onready var _missing_assets_dialog = $MissingAssetsDialog
+@onready var _missing_db_label = $MissingAssetsDialog/VBoxContainer/MissingDBLabel
+@onready var _missing_db_summary_label = $MissingAssetsDialog/VBoxContainer/MissingDBSummaryLabel
+@onready var _missing_fs_label = $MissingAssetsDialog/VBoxContainer/MissingFSLabel
+@onready var _missing_fs_summary_label = $MissingAssetsDialog/VBoxContainer/MissingFSSummaryLabel
+@onready var _room = $Room
+@onready var _table_state_error_dialog = $TableStateErrorDialog
+@onready var _table_state_version_dialog = $TableStateVersionDialog
+@onready var _ui = $GameUI
+@onready var _verify_progress_bar = $DownloadAssetsProgressDialog/VBoxContainer/VerifyProgressBar
+@onready var _verify_progress_label = $DownloadAssetsProgressDialog/VBoxContainer/VerifyProgressLabel
 
-export(bool) var autosave_enabled: bool = true
-export(int) var autosave_interval: int = 300
-export(int) var autosave_count: int = 10
+@export var autosave_enabled: bool = true
+@export var autosave_interval: int = 300
+@export var autosave_count: int = 10
 
-var _rtc = WebRTCMultiplayer.new()
+var _rtc = WebRTCMultiplayerPeer.new()
 var _established_connection_with = []
 var _is_room_sealed = false
 var _master_connect_wait_frames = 0
@@ -73,9 +73,8 @@ var _cln_need_fs: Dictionary = {}
 var _cln_expect_db: Dictionary = {}
 var _cln_expect_fs: Dictionary = {}
 var _cln_keep_expecting: bool = false
-var _cln_save_chunk_thread: Thread = null
 var _srv_expect_sync: Array = []
-var _srv_file_transfer_threads: Dictionary = {}
+var _srv_file_transfers: Dictionary = {}
 var _srv_schema_db: Dictionary = {}
 var _srv_schema_fs: Dictionary = {}
 var _srv_skip_sync: bool = false
@@ -91,7 +90,7 @@ const TRANSFER_MAX_COMMANDS = 5 # Up to 250Kb of RAM.
 
 var _transfer_clients_stopping: Array = []
 var _transfer_commands: Array = []
-var _transfer_error_in_thread: bool = false
+var _transfer_error: bool = false
 var _transfer_import_files: bool = false
 var _transfer_mutex: Mutex = Mutex.new()
 var _transfer_num_expected_rpcs: int = 0
@@ -132,17 +131,18 @@ func apply_options(config: ConfigFile) -> void:
 	_player_name = config.get_value("multiplayer", "name")
 	_player_color = config.get_value("multiplayer", "color")
 	
-	if get_tree().has_network_peer():
-		if Lobby.player_exists(get_tree().get_network_unique_id()):
+	if Global.has_network_peer():
+		if Lobby.player_exists(multiplayer.get_unique_id()):
 			Lobby.rpc_id(1, "request_modify_self", _player_name, _player_color)
 
 # Called by the server to compare it's asset schemas against our own.
 # server_schema_db: The server's AssetDB schema.
 # server_schema_fs: The server's filesystem schema.
-puppet func compare_server_schemas(server_schema_db: Dictionary,
+@rpc("authority", "call_remote", "reliable")
+func compare_server_schemas(server_schema_db: Dictionary,
 	server_schema_fs: Dictionary) -> void:
 	
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _cln_compared_schemas:
@@ -269,12 +269,12 @@ puppet func compare_server_schemas(server_schema_db: Dictionary,
 				db_num_extra += 1
 				client_ptr += 1
 			
-			if not extra_arr.empty():
+			if not extra_arr.is_empty():
 				if not db_extra.has(pack):
 					db_extra[pack] = {}
 				db_extra[pack][type] = extra_arr
 			
-			if not need_arr.empty():
+			if not need_arr.is_empty():
 				if not db_need.has(pack):
 					db_need[pack] = {}
 				db_need[pack][type] = need_arr
@@ -385,7 +385,7 @@ puppet func compare_server_schemas(server_schema_db: Dictionary,
 					need_arr.append(server_name)
 					fs_num_missing += 1
 			
-			if not need_arr.empty():
+			if not need_arr.is_empty():
 				if not fs_need.has(pack):
 					fs_need[pack] = {}
 				fs_need[pack][type] = need_arr
@@ -456,14 +456,14 @@ puppet func compare_server_schemas(server_schema_db: Dictionary,
 				var index_asset = type_arr[index_arr]
 				AssetDB.temp_remove_entry(pack, type, index_asset)
 	
-	if not db_extra.empty():
+	if not db_extra.is_empty():
 		# Prevent the player from spawning in the extra objects.
 		_ui.reconfigure_asset_dialogs()
 	
-	if not fs_need.empty():
+	if not fs_need.is_empty():
 		_clear_download_cache()
 	
-	if db_need.empty() and fs_need.empty():
+	if db_need.is_empty() and fs_need.is_empty():
 		rpc_id(1, "respond_with_schema_results", {}, {})
 	else:
 		_missing_assets_dialog.popup_centered()
@@ -506,10 +506,11 @@ puppet func compare_server_schemas(server_schema_db: Dictionary,
 # type: The type of file.
 # asset: The name of the file.
 # chunk: The chunk of the file.
-puppet func receive_missing_asset_chunk(pack: String, type: String,
-	asset: String, chunk: PoolByteArray) -> void:
+@rpc("authority", "call_remote", "reliable")
+func receive_missing_asset_chunk(pack: String, type: String,
+	asset: String, chunk: PackedByteArray) -> void:
 	
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_transfer_mutex.lock()
@@ -560,18 +561,17 @@ puppet func receive_missing_asset_chunk(pack: String, type: String,
 	})
 	_transfer_mutex.unlock()
 	
-	if _cln_save_chunk_thread == null:
-		_cln_save_chunk_thread = Thread.new()
-		_cln_save_chunk_thread.start(self, "_save_chunks_to_cache")
+	_save_chunks_to_cache()
 
 # Called by the server to receive the missing AssetDB entries that the client
 # asked for.
 # missing_entries: The directory of missing entries.
-puppet func receive_missing_db_entries(missing_entries: Dictionary) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func receive_missing_db_entries(missing_entries: Dictionary) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if _cln_expect_db.empty():
+	if _cln_expect_db.is_empty():
 		push_warning("Received DB entries from the server when we weren't expecting any, ignoring.")
 		return
 	
@@ -647,7 +647,7 @@ puppet func receive_missing_db_entries(missing_entries: Dictionary) -> void:
 					# TODO: Verify that given the type, the entry is valid by
 					# checking every key-value pair.
 				
-				if entry_name.empty():
+				if entry_name.is_empty():
 					_popup_download_error("Entry in '%s/%s' in server DB does not have a name!" % [pack, type])
 					return
 				
@@ -674,7 +674,7 @@ puppet func receive_missing_db_entries(missing_entries: Dictionary) -> void:
 				else:
 					AssetDB.temp_add_entry(pack, type, entry)
 				
-				_cln_expect_db[pack][type].remove(entry_index)
+				_cln_expect_db[pack][type].remove_at(entry_index)
 			
 			for stack_entry in stack_entries:
 				AssetDB.temp_add_entry(pack, type, stack_entry)
@@ -688,21 +688,17 @@ puppet func receive_missing_db_entries(missing_entries: Dictionary) -> void:
 		push_warning("Not all missing entries were sent, clearing server DB schema anyway.")
 	_cln_expect_db.clear()
 	
-	if _cln_expect_fs.empty():
+	if _cln_expect_fs.is_empty():
 		_ui.reconfigure_asset_dialogs()
 		rpc_id(1, "request_sync_state")
 
 # Called by the server when they say that we have received all of the asset
 # chunks that we requested.
-puppet func received_all_asset_chunks() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func received_all_asset_chunks() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if _cln_save_chunk_thread != null:
-		if _cln_save_chunk_thread.is_active():
-			_cln_save_chunk_thread.wait_to_finish()
-	else:
-		_cln_save_chunk_thread = Thread.new()
 	
 	_download_progress_label.text = tr("Download completed!")
 	
@@ -725,8 +721,8 @@ puppet func received_all_asset_chunks() -> void:
 					push_warning("Remaining size of %s/%s/%s is %d, not 0 - ignoring." % [pack, type, asset, remaining_size])
 					continue
 				
-				var check_md5 = File.new()
-				if check_md5.get_md5(tmp_file_path) != file_expected_md5:
+				var check_md5: FileAccess
+				if FileAccess.get_md5(tmp_file_path) != file_expected_md5:
 					push_warning("MD5 of %s/%s/%s does not match what the server told us - ignoring." % [pack, type, asset])
 					continue
 				
@@ -754,13 +750,16 @@ puppet func received_all_asset_chunks() -> void:
 	_transfer_mutex.lock()
 	_transfer_import_files = true
 	_transfer_mutex.unlock()
-	_cln_save_chunk_thread.start(self, "_import_new_assets", instructions)
+	_import_new_assets(instructions)
 
 # Called by the client to send the current room state back to them. This can be
 # called either right after the client joins, or after they have downloaded the
 # missing assets.
-master func request_sync_state() -> void:
-	var client_id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_sync_state() -> void:
+	if not is_multiplayer_authority():
+		return
+	var client_id = Global.get_sender_id(self)
 	if client_id in _srv_expect_sync:
 		var compressed_state = _room.get_state_compressed(true, true)
 		_room.rpc_id(client_id, "set_state_compressed", compressed_state, "")
@@ -774,10 +773,13 @@ master func request_sync_state() -> void:
 # their own.
 # client_db_need: What the client reports that they need from the AssetDB.
 # client_fs_need: What the client reports that they need from the file system.
-master func respond_with_schema_results(client_db_need: Dictionary,
+@rpc("any_peer", "call_local", "reliable")
+func respond_with_schema_results(client_db_need: Dictionary,
 	client_fs_need: Dictionary) -> void:
+	if not is_multiplayer_authority():
+		return
 	
-	var client_id = get_tree().get_rpc_sender_id()
+	var client_id = Global.get_sender_id(self)
 	if not client_id in _srv_waiting_for:
 		push_warning("Got response from ID %d when we weren't expecting one!" % client_id)
 		return
@@ -856,7 +858,7 @@ master func respond_with_schema_results(client_db_need: Dictionary,
 			pack_provide[type] = type_provide
 		db_provide[pack] = pack_provide
 	
-	var file = File.new()
+	var file: FileAccess
 	var fs_provide = {}
 	for pack in client_fs_need:
 		if not pack is String:
@@ -906,7 +908,7 @@ master func respond_with_schema_results(client_db_need: Dictionary,
 					return
 				
 				var file_path = "user://assets/%s/%s/%s" % [pack, type, file_name]
-				if not file.file_exists(file_path):
+				if not FileAccess.file_exists(file_path):
 					push_error("File '%s' in client DB does not exist!" % file_path)
 					return
 				
@@ -917,27 +919,26 @@ master func respond_with_schema_results(client_db_need: Dictionary,
 	if not client_id in _srv_expect_sync:
 		_srv_expect_sync.append(client_id)
 	
-	if db_provide.empty() and fs_provide.empty():
+	if db_provide.is_empty() and fs_provide.is_empty():
 		request_sync_state()
 	else:
-		if not db_provide.empty():
+		if not db_provide.is_empty():
 			rpc_id(client_id, "receive_missing_db_entries", db_provide)
 		
-		if not fs_provide.empty():
-			if client_id in _srv_file_transfer_threads:
+		if not fs_provide.is_empty():
+			if client_id in _srv_file_transfers:
 				push_error("File transfer thread already created for ID %d!" % client_id)
 				return
 			
 			var peer: Dictionary = _rtc.get_peer(client_id)
 			var data_channel: WebRTCDataChannel = peer["channels"][0]
 			
-			var transfer_thread = Thread.new()
-			transfer_thread.start(self, "_transfer_asset_files", {
+			_srv_file_transfers[client_id] = true
+			_transfer_asset_files({
 				"client_id": client_id,
 				"data_channel": data_channel,
 				"provide": fs_provide
 			})
-			_srv_file_transfer_threads[client_id] = transfer_thread
 
 # Ask the master server to host a game.
 func start_host() -> void:
@@ -946,8 +947,8 @@ func start_host() -> void:
 	_srv_schema_db = _create_schema_db()
 	_srv_schema_fs = _create_schema_fs()
 	
-	var db_size = var2bytes(_srv_schema_db).size()
-	var fs_size = var2bytes(_srv_schema_fs).size()
+	var db_size = var_to_bytes(_srv_schema_db).size()
+	var fs_size = var_to_bytes(_srv_schema_fs).size()
 	
 	# TODO: May want to consider compressing the schemas before sending them,
 	# this would also have to be done for other dictionaries sent, e.g. the
@@ -981,10 +982,13 @@ func stop() -> void:
 	_master_server.close()
 
 # Clled by the client if they want the server to stop sending them asset chunks.
-master func stop_sending_asset_chunks() -> void:
-	var client_id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func stop_sending_asset_chunks() -> void:
+	if not is_multiplayer_authority():
+		return
+	var client_id = Global.get_sender_id(self)
 	
-	if not client_id in _srv_file_transfer_threads:
+	if not client_id in _srv_file_transfers:
 		push_warning("Client %d asked us to stop sending asset chunks, when we don't have a thread for them - ignoring." % client_id)
 		return
 	
@@ -1007,9 +1011,9 @@ master func stop_sending_asset_chunks() -> void:
 # Load a table state from the given file path.
 # path: The file path of the state to load.
 func load_state(path: String) -> void:
-	var file = _open_table_state_file(path, File.READ)
+	var file = _open_table_state_file(path, FileAccess.READ)
 	if file:
-		var state = file.get_var()
+		var state = preload("res://Scripts/Runtime/TableStateFile.gd").read(file)
 		file.close()
 		
 		if state is Dictionary:
@@ -1031,8 +1035,7 @@ func load_state(path: String) -> void:
 # path: The path to save the screenshot.
 # size_factor: Resize the screenshot by the given size factor.
 func save_screenshot(path: String, size_factor: float = 1.0) -> int:
-	var image = get_viewport().get_texture().get_data()
-	image.flip_y()
+	var image = get_viewport().get_texture().get_image()
 	
 	if size_factor != 1.0:
 		var new_width = int(image.get_width() * size_factor)
@@ -1045,7 +1048,7 @@ func save_screenshot(path: String, size_factor: float = 1.0) -> int:
 # state: The state to save.
 # path: The file path to save the state to.
 func save_state(state: Dictionary, path: String) -> void:
-	var file = _open_table_state_file(path, File.WRITE)
+	var file = _open_table_state_file(path, FileAccess.WRITE)
 	if file:
 		file.store_var(state)
 		file.close()
@@ -1056,8 +1059,9 @@ func save_state(state: Dictionary, path: String) -> void:
 		_save_screenshot_path = path.get_basename() + ".png"
 
 # Called by the server to verify that the client's game version matches theirs.
-puppet func verify_game_version(server_version: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func verify_game_version(server_version: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _is_room_sealed:
@@ -1072,23 +1076,23 @@ puppet func verify_game_version(server_version: String) -> void:
 					client_version, server_version]))
 
 func _ready():
-	_master_server.connect("connected", self, "_on_connected")
-	_master_server.connect("disconnected", self, "_on_disconnected")
+	_master_server.connect("connected", Callable(self, "_on_connected"))
+	_master_server.connect("disconnected", Callable(self, "_on_disconnected"))
 	
-	_master_server.connect("offer_received", self, "_on_offer_received")
-	_master_server.connect("answer_received", self, "_on_answer_received")
-	_master_server.connect("candidate_received", self, "_on_candidate_received")
+	_master_server.connect("offer_received", Callable(self, "_on_offer_received"))
+	_master_server.connect("answer_received", Callable(self, "_on_answer_received"))
+	_master_server.connect("candidate_received", Callable(self, "_on_candidate_received"))
 	
-	_master_server.connect("room_joined", self, "_on_room_joined")
-	_master_server.connect("room_sealed", self, "_on_room_sealed")
-	_master_server.connect("peer_connected", self, "_on_peer_connected")
-	_master_server.connect("peer_disconnected", self, "_on_peer_disconnected")
+	_master_server.connect("room_joined", Callable(self, "_on_room_joined"))
+	_master_server.connect("room_sealed", Callable(self, "_on_room_sealed"))
+	_master_server.connect("peer_connected", Callable(self, "_on_peer_connected"))
+	_master_server.connect("peer_disconnected", Callable(self, "_on_peer_disconnected"))
 	
 	# Sometimes we will know when a peer has disconnected before the master
 	# server does, e.g. if the peer has crashed.
-	_rtc.connect("peer_disconnected", self, "_on_peer_disconnected")
+	_rtc.connect("peer_disconnected", Callable(self, "_on_peer_disconnected"))
 	
-	Lobby.connect("players_synced", self, "_on_Lobby_players_synced")
+	Lobby.connect("players_synced", Callable(self, "_on_Lobby_players_synced"))
 	
 	Lobby.clear_players()
 
@@ -1122,19 +1126,19 @@ func _process(delta):
 		var oldest_file_path = ""
 		var oldest_file_time = 0
 		
-		var file = File.new()
+		var file: FileAccess
 		for autosave_id in range(autosave_count):
 			autosave_path = autosave_dir_path + "/autosave_" + str(autosave_id) + ".tc"
 			
-			if file.file_exists(autosave_path):
-				var modified_time = file.get_modified_time(autosave_path)
-				if oldest_file_path.empty() or modified_time < oldest_file_time:
+			if FileAccess.file_exists(autosave_path):
+				var modified_time = FileAccess.get_modified_time(autosave_path)
+				if oldest_file_path.is_empty() or modified_time < oldest_file_time:
 					oldest_file_path = autosave_path
 					oldest_file_time = modified_time
 			else:
 				break
 		
-		if file.file_exists(autosave_path):
+		if FileAccess.file_exists(autosave_path):
 			autosave_path = oldest_file_path
 		
 		var state = _room.get_state(false, false)
@@ -1142,11 +1146,11 @@ func _process(delta):
 		
 		_time_since_last_autosave = 0.0
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		_transfer_time_since_rpc += delta
 		if _transfer_time_since_rpc > TRANSFER_CHUNK_DELAY:
 			_transfer_mutex.lock()
-			if not _transfer_commands.empty():
+			if not _transfer_commands.is_empty():
 				var cmd: Dictionary = _transfer_commands.pop_front()
 				var id: int = cmd["id"]
 				
@@ -1165,7 +1169,7 @@ func _process(delta):
 							var pack: String = cmd["pack"]
 							var type: String = cmd["type"]
 							var asset: String = cmd["asset"]
-							var buffer: PoolByteArray = cmd["buffer"]
+							var buffer: PackedByteArray = cmd["buffer"]
 							
 							if is_connected:
 								print("Sending to %d: %s/%s/%s (size = %d)" % [
@@ -1184,9 +1188,9 @@ func _process(delta):
 					done_importing_new_assets = true
 					_transfer_commands.clear()
 		
-		if _transfer_error_in_thread:
+		if _transfer_error:
 			_download_assets_error_dialog.popup_centered()
-			_transfer_error_in_thread = false
+			_transfer_error = false
 		
 		var importing_files = false
 		if not done_importing_new_assets:
@@ -1194,7 +1198,7 @@ func _process(delta):
 		_transfer_mutex.unlock()
 		
 		if done_importing_new_assets:
-			var lock = Directory.new()
+			var lock = DirAccess.open("user://")
 			if lock.file_exists("user://lock"):
 				if lock.remove("user://lock") != OK:
 					push_error("Failed to remove user://lock!")
@@ -1205,7 +1209,7 @@ func _process(delta):
 			
 			_download_assets_progress_dialog.visible = false
 			
-			if _cln_expect_db.empty():
+			if _cln_expect_db.is_empty():
 				_ui.reconfigure_asset_dialogs()
 				rpc_id(1, "request_sync_state")
 		
@@ -1223,7 +1227,7 @@ func _unhandled_input(event):
 		# Create the screenshots folder if it doesn't already exist.
 		var screenshot_dir = Global.get_output_subdir("screenshots")
 		
-		var dt = OS.get_datetime()
+		var dt = Time.get_datetime_dict_from_system()
 		var name = "%d-%d-%d-%d-%d-%d.png" % [dt["year"], dt["month"],
 			dt["day"], dt["hour"], dt["minute"], dt["second"]]
 		var path = screenshot_dir.get_current_dir() + "/" + name
@@ -1246,8 +1250,8 @@ func _unhandled_input(event):
 			_ui.add_notification_info(tr("Quicksave file saved."))
 		
 		elif event.is_action_pressed("game_quickload"):
-			var file = File.new()
-			if file.file_exists(quicksave_path):
+			var file: FileAccess
+			if FileAccess.file_exists(quicksave_path):
 				load_state(quicksave_path)
 			else:
 				push_warning("Cannot load quicksave file at '%s', does not exist!" % quicksave_path)
@@ -1276,14 +1280,15 @@ func _check_name(name_to_check: String) -> bool:
 
 # Clear the download cache, which consists of all files under user://tmp/
 func _clear_download_cache() -> void:
-	var download_dir = Directory.new()
-	var err = download_dir.open("user://")
+	var download_dir = DirAccess.open("user://")
+	download_dir = DirAccess.open("user://")
+	var err = DirAccess.get_open_error()
 	if err == OK:
 		if download_dir.dir_exists("tmp"):
 			err = download_dir.change_dir("tmp")
 			if err == OK:
 				print("Deleting the download cache...")
-				download_dir.list_dir_begin(true, true)
+				download_dir.list_dir_begin()
 				
 				var file = download_dir.get_next()
 				while file:
@@ -1360,18 +1365,20 @@ func _create_schema_db() -> Dictionary:
 func _create_schema_fs() -> Dictionary:
 	var schema = {}
 	
-	var dir = Directory.new()
-	var err = dir.open("user://assets")
+	var dir = DirAccess.open("user://")
+	dir = DirAccess.open("user://assets")
+	var err = DirAccess.get_open_error()
 	if err != OK:
 		push_error("Failed to open the imported assets directory (error %d)" % err)
 		return {}
 	
-	dir.list_dir_begin(true, true)
+	dir.list_dir_begin()
 	var pack = dir.get_next()
 	while pack:
 		if dir.dir_exists(pack):
-			var pack_dir = Directory.new()
-			err = pack_dir.open("user://assets/" + pack)
+			var pack_dir = DirAccess.open("user://")
+			pack_dir = DirAccess.open("user://assets/" + pack)
+			err = DirAccess.get_open_error()
 			
 			if err != OK:
 				push_error("Failed to open '%s' imported directory (error %d)" % [pack, err])
@@ -1379,31 +1386,33 @@ func _create_schema_fs() -> Dictionary:
 			
 			for type in AssetDB.ASSET_PACK_SUBFOLDERS:
 				if pack_dir.dir_exists(type):
-					var sub_dir = Directory.new()
-					err = sub_dir.open("user://assets/" + pack + "/" + type)
+					var sub_dir = DirAccess.open("user://")
+					sub_dir = DirAccess.open("user://assets/" + pack + "/" + type)
+					err = DirAccess.get_open_error()
 					
 					if err != OK:
 						push_error("Failed to open '%s/%s' imported directory (error %d" %
 								[pack, type, err])
 						return {}
 					
-					sub_dir.list_dir_begin(true, true)
+					sub_dir.list_dir_begin()
 					
 					var file = sub_dir.get_next()
 					while file:
 						if AssetDB.VALID_EXTENSIONS.has(file.get_extension()):
 							var file_path = "user://assets/" + pack + "/" + type + "/" + file
-							var fp = File.new()
+							var fp: FileAccess
 							
 							# Has the file been imported?
 							var needs_importing = AssetDB.EXTENSIONS_TO_IMPORT.has(file.get_extension())
-							var has_been_imported = fp.file_exists(file_path + ".import")
+							var has_been_imported = FileAccess.file_exists(file_path + ".runtime.res")
 							if (not needs_importing) or has_been_imported:
-								err = fp.open(file_path, File.READ)
+								fp = FileAccess.open(file_path, FileAccess.READ)
+								err = FileAccess.get_open_error()
 								if err == OK:
-									var file_len = fp.get_len()
-									var md5 = fp.get_md5(file_path)
-									if not md5.empty():
+									var file_len = fp.get_length()
+									var md5 = FileAccess.get_md5(file_path)
+									if not md5.is_empty():
 										if not schema.has(pack):
 											schema[pack] = {}
 										
@@ -1439,8 +1448,8 @@ func _create_peer(id: int) -> WebRTCPeerConnection:
 		]
 	})
 	
-	peer.connect("session_description_created", self, "_on_offer_created", [id])
-	peer.connect("ice_candidate_created", self, "_on_new_ice_candidate", [id])
+	peer.connect("session_description_created", Callable(self, "_on_offer_created").bind(id))
+	peer.connect("ice_candidate_created", Callable(self, "_on_new_ice_candidate").bind(id))
 	
 	_rtc.add_peer(peer, id)
 	if id > _rtc.get_unique_id():
@@ -1460,9 +1469,9 @@ func _cross_platform_hash(dict: Dictionary) -> int:
 # value: The value to potentially modify.
 func _cross_platform_hash_helper(value):
 	match typeof(value):
-		TYPE_REAL:
+		TYPE_FLOAT:
 			# Store floats as integers, with 3 decimal places of precision.
-			return [ TYPE_REAL, int(1000.0 * value) ]
+			return [ TYPE_FLOAT, int(1000.0 * value) ]
 		TYPE_VECTOR2:
 			return [
 				TYPE_VECTOR2,
@@ -1499,9 +1508,9 @@ func _cross_platform_hash_helper(value):
 				_cross_platform_hash_helper(value.y),
 				_cross_platform_hash_helper(value.z)
 			]
-		TYPE_QUAT:
+		TYPE_QUATERNION:
 			return [
-				TYPE_QUAT,
+				TYPE_QUATERNION,
 				_cross_platform_hash_helper(value.w),
 				_cross_platform_hash_helper(value.x),
 				_cross_platform_hash_helper(value.y),
@@ -1521,9 +1530,9 @@ func _cross_platform_hash_helper(value):
 				_cross_platform_hash_helper(value.y),
 				_cross_platform_hash_helper(value.z)
 			]
-		TYPE_TRANSFORM:
+		TYPE_TRANSFORM3D:
 			return [
-				TYPE_TRANSFORM,
+				TYPE_TRANSFORM3D,
 				_cross_platform_hash_helper(value.basis),
 				_cross_platform_hash_helper(value.origin)
 			]
@@ -1545,30 +1554,30 @@ func _cross_platform_hash_helper(value):
 			for subvalue in value:
 				new_arr.append(_cross_platform_hash_helper(subvalue))
 			return new_arr
-		TYPE_REAL_ARRAY:
-			var real_arr = [TYPE_REAL_ARRAY]
+		TYPE_PACKED_FLOAT32_ARRAY:
+			var real_arr = [TYPE_PACKED_FLOAT32_ARRAY]
 			for subvalue in value:
 				real_arr.append(_cross_platform_hash_helper(subvalue))
 			return real_arr
-		TYPE_VECTOR2_ARRAY:
-			var v2_arr = [TYPE_VECTOR2_ARRAY]
+		TYPE_PACKED_VECTOR2_ARRAY:
+			var v2_arr = [TYPE_PACKED_VECTOR2_ARRAY]
 			for subvalue in value:
 				v2_arr.append(_cross_platform_hash_helper(subvalue))
 			return v2_arr
-		TYPE_VECTOR3_ARRAY:
-			var v3_arr = [TYPE_VECTOR3_ARRAY]
+		TYPE_PACKED_VECTOR3_ARRAY:
+			var v3_arr = [TYPE_PACKED_VECTOR3_ARRAY]
 			for subvalue in value:
 				v3_arr.append(_cross_platform_hash_helper(subvalue))
 			return v3_arr
-		TYPE_COLOR_ARRAY:
-			var color_arr = [TYPE_COLOR_ARRAY]
+		TYPE_PACKED_COLOR_ARRAY:
+			var color_arr = [TYPE_PACKED_COLOR_ARRAY]
 			for subvalue in value:
 				color_arr.append(_cross_platform_hash_helper(subvalue))
 			return color_arr
 		_:
 			return value
 
-# Run by a thread to import assets from the user://tmp directory into the
+# Import assets on the main thread, one file per frame, from the user://tmp directory into the
 # user://assets directory.
 func _import_new_assets(instructions: Array) -> void:
 	if Global.tabletop_importer == null:
@@ -1576,6 +1585,7 @@ func _import_new_assets(instructions: Array) -> void:
 		instructions.clear()
 	
 	for instruction in instructions:
+		await get_tree().process_frame
 		_transfer_mutex.lock()
 		var keep_importing = _transfer_import_files
 		_transfer_mutex.unlock()
@@ -1591,14 +1601,14 @@ func _import_new_assets(instructions: Array) -> void:
 		var path_to_md5 = path_to.md5_text()
 		var path_from = "user://tmp/%s.%s.bin" % [asset, path_to_md5]
 		
-		var dir = Directory.new()
+		var dir = DirAccess.open("user://")
 		var base_dir = path_to.get_base_dir()
 		if not dir.dir_exists(base_dir):
 			var err = dir.make_dir_recursive(base_dir)
 			if err != OK:
 				push_error("Failed to create directory %s (error %d)" % [base_dir, err])
 				_transfer_mutex.lock()
-				_transfer_error_in_thread = true
+				_transfer_error = true
 				_transfer_mutex.unlock()
 				continue
 		
@@ -1606,7 +1616,7 @@ func _import_new_assets(instructions: Array) -> void:
 		if err != OK:
 			push_error("Failed to move %s to %s (error %d)" % [path_from, path_to, err])
 			_transfer_mutex.lock()
-			_transfer_error_in_thread = true
+			_transfer_error = true
 			_transfer_mutex.unlock()
 			continue
 		
@@ -1616,10 +1626,11 @@ func _import_new_assets(instructions: Array) -> void:
 		# need to remove it so that the client can overwrite the file on the
 		# next game launch.
 		if dir.dir_exists("user://.import"):
-			err = dir.open("user://.import")
+			dir = DirAccess.open("user://.import")
+			err = DirAccess.get_open_error()
 			if err == OK:
 				var to_remove = []
-				dir.list_dir_begin(true, true)
+				dir.list_dir_begin()
 				
 				var file = dir.get_next()
 				while file:
@@ -1665,7 +1676,7 @@ func _is_only_data(data, depth: int = 0) -> bool:
 			pass
 		TYPE_INT:
 			pass
-		TYPE_REAL:
+		TYPE_FLOAT:
 			pass
 		TYPE_STRING:
 			pass
@@ -1679,13 +1690,13 @@ func _is_only_data(data, depth: int = 0) -> bool:
 			pass
 		TYPE_PLANE:
 			pass
-		TYPE_QUAT:
+		TYPE_QUATERNION:
 			pass
 		TYPE_AABB:
 			pass
 		TYPE_BASIS:
 			pass
-		TYPE_TRANSFORM:
+		TYPE_TRANSFORM3D:
 			pass
 		TYPE_COLOR:
 			pass
@@ -1709,9 +1720,10 @@ func _is_only_data(data, depth: int = 0) -> bool:
 # Returns: A file object for the given path, null if it failed to open.
 # path: The file path to open.
 # mode: The mode to open the file with.
-func _open_table_state_file(path: String, mode: int) -> File:
-	var file = File.new()
-	var open_err = file.open_compressed(path, mode, File.COMPRESSION_ZSTD)
+func _open_table_state_file(path: String, mode: int) -> FileAccess:
+	var file: FileAccess
+	file = FileAccess.open_compressed(path, mode, FileAccess.COMPRESSION_ZSTD)
+	var open_err = FileAccess.get_open_error()
 	if open_err == OK:
 		return file
 	else:
@@ -1741,56 +1753,55 @@ func _popup_table_state_version(message: String) -> void:
 	push_warning(message)
 
 # Saved downloaded chunks to a cache file in user://tmp.
-func _save_chunks_to_cache(_userdata) -> void:
+func _save_chunks_to_cache() -> void:
 	_transfer_mutex.lock()
 	var num_commands = _transfer_commands.size()
 	var rpcs_remaining = _transfer_num_expected_rpcs
 	_transfer_mutex.unlock()
 	
-	while num_commands > 0 or rpcs_remaining > 0:
+	while num_commands > 0:
 		var cmd = {}
 		_transfer_mutex.lock()
-		if not _transfer_commands.empty():
+		if not _transfer_commands.is_empty():
 			cmd = _transfer_commands.pop_front()
 		_transfer_mutex.unlock()
 		
-		if not cmd.empty():
+		if not cmd.is_empty():
 			var pack: String = cmd["pack"]
 			var type: String = cmd["type"]
 			var asset: String = cmd["asset"]
-			var chunk: PoolByteArray = cmd["chunk"]
+			var chunk: PackedByteArray = cmd["chunk"]
 			
 			var file_path_later = "user://assets/%s/%s/%s" % [pack, type, asset]
 			var file_path_md5 = file_path_later.md5_text()
 			var file_path_now = "user://tmp/%s.%s.bin" % [asset, file_path_md5]
 			
-			var tmp_dir = Directory.new()
+			var tmp_dir = DirAccess.open("user://")
 			if not tmp_dir.dir_exists("user://tmp"):
 				var err = tmp_dir.make_dir("user://tmp")
 				if err != OK:
 					push_error("Could not create user://tmp (error %d)" % err)
 					_transfer_mutex.lock()
-					_transfer_error_in_thread = true
+					_transfer_error = true
 					_transfer_mutex.unlock()
 					continue
 			
-			var file = File.new()
-			var mode = File.READ_WRITE
-			if not file.file_exists(file_path_now):
-				mode = File.WRITE
-			var err = file.open(file_path_now, mode)
+			var file: FileAccess
+			var mode = FileAccess.READ_WRITE
+			if not FileAccess.file_exists(file_path_now):
+				mode = FileAccess.WRITE
+			file = FileAccess.open(file_path_now, mode)
+			var err = FileAccess.get_open_error()
 			if err != OK:
 				push_error("Could not open file %s (error %d)" % [file_path_now, err])
 				_transfer_mutex.lock()
-				_transfer_error_in_thread = true
+				_transfer_error = true
 				_transfer_mutex.unlock()
 				continue
 			
 			file.seek_end()
 			file.store_buffer(chunk)
 			file.close()
-		else:
-			OS.delay_msec(int(1000 * TRANSFER_CHUNK_DELAY))
 		
 		_transfer_mutex.lock()
 		num_commands = _transfer_commands.size()
@@ -1808,10 +1819,11 @@ func _transfer_asset_files(userdata: Dictionary) -> void:
 	for pack in provide:
 		for type in provide[pack]:
 			for asset in provide[pack][type]:
-				var file = File.new()
+				var file: FileAccess
 				var file_path = "user://assets/%s/%s/%s" % [pack, type, asset]
-				if file.open(file_path, File.READ) == OK:
-					var file_size = file.get_len()
+				file = FileAccess.open(file_path, FileAccess.READ)
+				if FileAccess.get_open_error() == OK:
+					var file_size = file.get_length()
 					var file_ptr = 0
 					while file_ptr < file_size:
 						if data_channel.get_ready_state() != WebRTCDataChannel.STATE_OPEN:
@@ -1833,7 +1845,7 @@ func _transfer_asset_files(userdata: Dictionary) -> void:
 						_transfer_mutex.unlock()
 						
 						while num_commands >= TRANSFER_MAX_COMMANDS:
-							OS.delay_msec(int(1000 * TRANSFER_CHUNK_DELAY))
+							await get_tree().process_frame
 							
 							_transfer_mutex.lock()
 							num_commands = _transfer_commands.size()
@@ -1850,6 +1862,7 @@ func _transfer_asset_files(userdata: Dictionary) -> void:
 						_transfer_mutex.unlock()
 						
 						file_ptr += TRANSFER_CHUNK_SIZE
+						await get_tree().process_frame
 					file.close()
 				else:
 					push_error("Failed to read file '%s'!" % file_path)
@@ -1863,11 +1876,11 @@ func _transfer_asset_files(userdata: Dictionary) -> void:
 
 func _on_connected(id: int):
 	print("Connected to the room as peer %d." % id)
-	_rtc.initialize(id, true)
+	_rtc.create_server() if id == 1 else _rtc.create_client(id)
 	
 	# Assign the WebRTCMultiplayer object to the scene tree, so all nodes can
 	# use it with the RPC system.
-	get_tree().network_peer = _rtc
+	multiplayer.multiplayer_peer = _rtc
 	
 	_connecting_popup.hide()
 	
@@ -1877,7 +1890,7 @@ func _on_connected(id: int):
 		Lobby.rpc_id(1, "add_self", 1, _player_name, _player_color)
 		
 		var hand_transform = _room.srv_get_next_hand_transform()
-		if hand_transform == Transform.IDENTITY:
+		if hand_transform == Transform3D.IDENTITY:
 			push_warning("Table has no available hand positions!")
 		_room.rpc_id(1, "add_hand", 1, hand_transform)
 	else:
@@ -1910,7 +1923,7 @@ func _on_candidate_received(id: int, mid: String, index: int, sdp: String):
 
 func _on_connection_established(id: int):
 	print("Connection established with peer %d." % id)
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		# Check that the client's game version matches our own - they'll
 		# disconnect if that's not the case.
 		if ProjectSettings.has_setting("application/config/version"):
@@ -1919,7 +1932,7 @@ func _on_connection_established(id: int):
 		
 		# If there is space, also give them a hand on the table.
 		var hand_transform = _room.srv_get_next_hand_transform()
-		if hand_transform != Transform.IDENTITY:
+		if hand_transform != Transform3D.IDENTITY:
 			_room.rpc("add_hand", id, hand_transform)
 		
 		_room.start_sending_cursor_position()
@@ -1970,7 +1983,7 @@ func _on_peer_connected(id: int):
 
 func _on_peer_disconnected(id: int):
 	# Do this as soon as possible, so a piece state update doesn't get through.
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		Global.srv_state_update_blacklist.erase(id)
 	
 	if _rtc.has_peer(id):
@@ -1980,7 +1993,11 @@ func _on_peer_disconnected(id: int):
 		print("Peer %d has disconnected." % id)
 		_established_connection_with.erase(id)
 		
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
+			# Let SceneMultiplayer consume the transport disconnect before
+			# broadcasting updates to the remaining peers.
+			await get_tree().process_frame
+			await get_tree().process_frame
 			Lobby.rpc("remove_self", id)
 			_room.rpc("remove_hand", id)
 			_room.srv_stop_player_hovering(id)
@@ -2000,6 +2017,8 @@ func _on_DownloadAssetsConfirmDialog_confirmed():
 	_cln_keep_expecting = false
 
 func _on_DownloadAssetsConfirmDialog_popup_hide():
+	if get_node("DownloadAssetsConfirmDialog").visible:
+		return
 	if not _cln_keep_expecting:
 		_cln_need_db.clear()
 		_cln_need_fs.clear()
@@ -2008,15 +2027,17 @@ func _on_DownloadAssetsConfirmDialog_popup_hide():
 		rpc_id(1, "respond_with_schema_results", {}, {})
 		return
 	
-	var lock_file = File.new()
-	if not _cln_need_fs.empty() and lock_file.file_exists("user://lock"):
-		_download_lock_dialog.popup_centered()
+	var lock_file: FileAccess
+	if not _cln_need_fs.is_empty() and FileAccess.file_exists("user://lock"):
+		_download_lock_dialog.call_deferred("popup_centered")
 	else:
 		_on_DownloadLockDialog_confirmed()
 
 func _on_DownloadAssetsProgressDialog_popup_hide():
+	if get_node("DownloadAssetsProgressDialog").visible:
+		return
 	# Stop downloading/importing asset files from the host.
-	if _cln_expect_fs.empty():
+	if _cln_expect_fs.is_empty():
 		return
 	
 	_cln_expect_fs.clear()
@@ -2031,7 +2052,7 @@ func _on_DownloadAssetsProgressDialog_popup_hide():
 	
 	rpc_id(1, "stop_sending_asset_chunks")
 	
-	if _cln_expect_db.empty():
+	if _cln_expect_db.is_empty():
 		_ui.reconfigure_asset_dialogs()
 		rpc_id(1, "request_sync_state")
 
@@ -2041,11 +2062,12 @@ func _on_DownloadLockDialog_confirmed():
 	_cln_need_db.clear()
 	_cln_need_fs.clear()
 	
-	if not _cln_expect_fs.empty():
-		_download_assets_progress_dialog.popup_centered()
+	if not _cln_expect_fs.is_empty():
+		_download_assets_progress_dialog.call_deferred("popup_centered")
 		
-		var lock_file = File.new()
-		if lock_file.open("user://lock", File.WRITE) == OK:
+		var lock_file: FileAccess
+		lock_file = FileAccess.open("user://lock", FileAccess.WRITE)
+		if FileAccess.get_open_error() == OK:
 			lock_file.close()
 		else:
 			push_error("Failed to create user://lock!")
@@ -2059,18 +2081,10 @@ func _on_Game_tree_exiting():
 	_transfer_num_expected_rpcs = 0
 	_transfer_mutex.unlock()
 	
-	# With the connection closed, and the commands cleared, the transfer
-	# threads should end on their own.
-	for thread in _srv_file_transfer_threads.values():
-		if thread.is_active():
-			thread.wait_to_finish()
-	
-	if _cln_save_chunk_thread != null:
-		if _cln_save_chunk_thread.is_active():
-			_cln_save_chunk_thread.wait_to_finish()
+	_srv_file_transfers.clear()
 	_clear_download_cache()
 	
-	var lock = Directory.new()
+	var lock = DirAccess.open("user://")
 	if lock.file_exists("user://lock"):
 		if lock.remove("user://lock") != OK:
 			push_error("Failed to remove user://lock!")
@@ -2085,7 +2099,7 @@ func _on_GameUI_flipping_table():
 	_room.rpc_id(1, "request_flip_table", _room.get_camera_transform().basis)
 
 func _on_GameUI_leaving_room():
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		if _master_server.is_connection_established():
 			_master_server.seal_room()
 
@@ -2113,7 +2127,7 @@ func _on_GameUI_requesting_room_details():
 		_room.get_lamp_type())
 
 func _on_GameUI_save_table(path: String):
-	if _room_state_saving.empty():
+	if _room_state_saving.is_empty():
 		push_error("Room state to save is empty!")
 		return
 	
@@ -2131,10 +2145,12 @@ func _on_GameUI_table_requested(table_entry: Dictionary):
 	_room.rpc_id(1, "request_set_table", table_entry_path)
 
 func _on_Lobby_players_synced():
-	if not get_tree().is_network_server():
+	if not multiplayer.is_server():
 		Lobby.rpc_id(1, "request_add_self", _player_name, _player_color)
 
 func _on_MissingAssetsDialog_popup_hide():
+	if get_node("MissingAssetsDialog").visible:
+		return
 	if not _cln_keep_expecting:
 		_cln_need_db.clear()
 		_cln_need_fs.clear()
@@ -2143,7 +2159,7 @@ func _on_MissingAssetsDialog_popup_hide():
 		rpc_id(1, "respond_with_schema_results", {}, {})
 
 func _on_MissingYesButton_pressed():
-	_download_assets_confirm_dialog.popup_centered()
+	_download_assets_confirm_dialog.call_deferred("popup_centered")
 	_cln_keep_expecting = true
 	_missing_assets_dialog.visible = false
 	_cln_keep_expecting = false

@@ -4,14 +4,14 @@
 [ext_resource path="res://Sounds/Chips/ChipTableSlowSounds.tres" type="Resource" id=2]
 [ext_resource path="res://Sounds/Chips/ChipTableFastSounds.tres" type="Resource" id=3]
 
-[sub_resource type="BoxShape" id=3]
-extents = Vector3( 0.5, 0.5, 0.5 )
+[sub_resource type="BoxShape3D" id=3]
+size = Vector3(1.0, 1.0, 1.0)
 
-[sub_resource type="CubeMesh" id=4]
+[sub_resource type="BoxMesh" id=4]
 size = Vector3( 1, 1, 1 )
 
-[node name="Cube" type="RigidBody"]
-contacts_reported = 1
+[node name="Cube" type="RigidBody3D"]
+max_contacts_reported = 1
 contact_monitor = true
 script = ExtResource( 1 )
 __meta__ = {
@@ -19,14 +19,14 @@ __meta__ = {
 
 The shape is based on the unit cube, i.e. the length, width and height of the cube is 1."
 }
-mesh_instance_path = NodePath("CollisionShape/MeshInstance")
+mesh_instance_path = NodePath("CollisionShape3D/MeshInstance3D")
 table_collide_fast_sounds = ExtResource( 3 )
 table_collide_slow_sounds = ExtResource( 2 )
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource( 3 )
 
-[node name="MeshInstance" type="MeshInstance" parent="CollisionShape"]
-transform = Transform( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0 )
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
+transform = Transform3D( -1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0 )
 mesh = SubResource( 4 )
-material/0 = null
+surface_material_override/0 = null

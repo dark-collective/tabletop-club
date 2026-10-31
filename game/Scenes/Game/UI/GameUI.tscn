@@ -5,9 +5,9 @@
 [ext_resource path="res://Scenes/OptionsMenu.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Scenes/Game/UI/ChatBox.tscn" type="PackedScene" id=4]
 [ext_resource path="res://Scripts/Game/UI/Dialogs/SaveDialog.gd" type="Script" id=5]
-[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Bold-Outline-Large.tres" type="DynamicFont" id=6]
+[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Bold-Outline-Large.tres" type="Font" id=6]
 [ext_resource path="res://Scenes/Game/UI/Dialogs/RoomDialog.tscn" type="PackedScene" id=7]
-[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Regular-Outline.tres" type="DynamicFont" id=8]
+[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Regular-Outline.tres" type="Font" id=8]
 [ext_resource path="res://Scenes/Game/UI/Dialogs/NotebookDialog.tscn" type="PackedScene" id=9]
 
 [node name="GameUI" type="Control"]
@@ -26,115 +26,129 @@ mouse_filter = 2
 
 [node name="TopPanel" type="HBoxContainer" parent="HideableUI"]
 anchor_right = 1.0
-margin_bottom = 26.0
+offset_bottom = 26.0
 mouse_filter = 2
 alignment = 1
 
 [node name="ObjectsButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 206.0
-margin_right = 270.0
-margin_bottom = 26.0
+offset_left = 206.0
+offset_right = 270.0
+offset_bottom = 26.0
 text = "Objects"
 
 [node name="GamesButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 274.0
-margin_right = 334.0
-margin_bottom = 26.0
+offset_left = 274.0
+offset_right = 334.0
+offset_bottom = 26.0
 text = "Games"
 
 [node name="RoomButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 338.0
-margin_right = 392.0
-margin_bottom = 26.0
+offset_left = 338.0
+offset_right = 392.0
+offset_bottom = 26.0
 text = "Room"
 
 [node name="NotebookButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 396.0
-margin_right = 475.0
-margin_bottom = 26.0
+offset_left = 396.0
+offset_right = 475.0
+offset_bottom = 26.0
 text = "Notebook"
 
 [node name="FlipTableButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 479.0
-margin_right = 558.0
-margin_bottom = 26.0
+offset_left = 479.0
+offset_right = 558.0
+offset_bottom = 26.0
 text = "Flip Table"
 
 [node name="ClearTableButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 562.0
-margin_right = 651.0
-margin_bottom = 26.0
+offset_left = 562.0
+offset_right = 651.0
+offset_bottom = 26.0
 text = "Clear Table"
 
 [node name="UndoButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 655.0
-margin_right = 706.0
-margin_bottom = 26.0
+offset_left = 655.0
+offset_right = 706.0
+offset_bottom = 26.0
 disabled = true
 text = "Undo"
 
 [node name="RotationOption" type="OptionButton" parent="HideableUI/TopPanel"]
-margin_left = 710.0
-margin_right = 763.0
-margin_bottom = 26.0
-hint_tooltip = "The angle that objects are rotated by around the vertical axis.
+offset_left = 710.0
+offset_right = 763.0
+offset_bottom = 26.0
+tooltip_text = "The angle that objects are rotated by around the vertical axis.
 
 To rotate an object while grabbing it, use Alt + Scroll Wheel."
 text = "45°"
-items = [ "15°", null, false, 0, null, "30°", null, false, 1, null, "45°", null, false, 2, null, "60°", null, false, 3, null, "90°", null, false, 4, null, "180°", null, false, 5, null ]
+item_count = 6
+popup/item_0/text = "15°"
+popup/item_0/id = 0
+popup/item_1/text = "30°"
+popup/item_1/id = 1
+popup/item_2/text = "45°"
+popup/item_2/id = 2
+popup/item_3/text = "60°"
+popup/item_3/id = 3
+popup/item_4/text = "90°"
+popup/item_4/id = 4
+popup/item_5/text = "180°"
+popup/item_5/id = 5
 selected = 2
 
 [node name="GameMenuButton" type="Button" parent="HideableUI/TopPanel"]
-margin_left = 767.0
-margin_right = 818.0
-margin_bottom = 26.0
+offset_left = 767.0
+offset_right = 818.0
+offset_bottom = 26.0
 text = "Menu"
 
 [node name="ChatBox" parent="HideableUI" instance=ExtResource( 4 )]
 anchor_top = 1.0
 anchor_bottom = 1.0
-margin_top = -180.0
-margin_bottom = -20.0
+offset_top = -180.0
+offset_bottom = -20.0
 
 [node name="MultiplayerContainer" type="VBoxContainer" parent="HideableUI"]
 anchor_left = 1.0
 anchor_right = 1.0
-margin_left = -200.0
-margin_bottom = 76.0
+offset_left = -200.0
+offset_bottom = 76.0
 grow_horizontal = 0
 mouse_filter = 2
 
 [node name="RoomCodeLabel" type="RichTextLabel" parent="HideableUI/MultiplayerContainer"]
-margin_right = 200.0
-margin_bottom = 16.0
+offset_right = 200.0
+offset_bottom = 16.0
 mouse_filter = 2
-custom_fonts/bold_font = ExtResource( 6 )
-custom_fonts/normal_font = ExtResource( 8 )
+theme_override_fonts/bold_font = ExtResource( 6 )
+theme_override_font_sizes/bold_font_size = 18
+theme_override_fonts/normal_font = ExtResource( 8 )
+theme_override_font_sizes/normal_font_size = 12
 bbcode_enabled = true
 fit_content_height = true
 scroll_active = false
 
 [node name="RoomCodeVisibleContainer" type="HBoxContainer" parent="HideableUI/MultiplayerContainer"]
-margin_top = 20.0
-margin_right = 200.0
-margin_bottom = 46.0
+offset_top = 20.0
+offset_right = 200.0
+offset_bottom = 46.0
 mouse_filter = 2
 alignment = 2
 
 [node name="RoomCodeToggleButton" type="Button" parent="HideableUI/MultiplayerContainer/RoomCodeVisibleContainer"]
-margin_left = 188.0
-margin_right = 200.0
-margin_bottom = 26.0
+offset_left = 188.0
+offset_right = 200.0
+offset_bottom = 26.0
 
 [node name="PlayerListContainer" type="VBoxContainer" parent="HideableUI/MultiplayerContainer"]
-margin_top = 50.0
-margin_right = 200.0
-margin_bottom = 50.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 50.0
 mouse_filter = 2
 
 [node name="PlayerContextMenu" type="PopupMenu" parent="HideableUI"]
-margin_right = 20.0
-margin_bottom = 20.0
+offset_right = 20.0
+offset_bottom = 20.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 2
@@ -143,6 +157,7 @@ __meta__ = {
 }
 
 [node name="ObjectsDialog" parent="CanvasLayer" instance=ExtResource( 2 )]
+visible = false
 window_title = "Objects"
 db_types = {
 "BOARDS": "boards",
@@ -159,6 +174,7 @@ status_text_one = "Added %s."
 status_text_multiple = "Added %d objects."
 
 [node name="GamesDialog" parent="CanvasLayer" instance=ExtResource( 2 )]
+visible = false
 window_title = "Games"
 db_types = {
 "GAMES": "games"
@@ -166,13 +182,15 @@ db_types = {
 status_text_multiple = "Loaded %d games."
 
 [node name="RoomDialog" parent="CanvasLayer" instance=ExtResource( 7 )]
+visible = false
 
 [node name="NotebookDialog" parent="CanvasLayer" instance=ExtResource( 9 )]
+visible = false
 
 [node name="ClearTableConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer"]
-margin_right = 300.0
-margin_bottom = 100.0
-rect_min_size = Vector2( 300, 100 )
+offset_right = 300.0
+offset_bottom = 100.0
+custom_minimum_size = Vector2( 300, 100 )
 dialog_text = "Are you sure you want to clear all objects from the table?"
 dialog_autowrap = true
 
@@ -193,49 +211,50 @@ __meta__ = {
 }
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/GameMenuBackground/CenterContainer"]
-margin_left = 440.0
-margin_top = 212.0
-margin_right = 583.0
-margin_bottom = 388.0
+offset_left = 440.0
+offset_top = 212.0
+offset_right = 583.0
+offset_bottom = 388.0
 
 [node name="BackToGameButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_right = 143.0
-margin_bottom = 26.0
+offset_right = 143.0
+offset_bottom = 26.0
 text = "Back to game"
 
 [node name="SaveGameButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_top = 30.0
-margin_right = 143.0
-margin_bottom = 56.0
+offset_top = 30.0
+offset_right = 143.0
+offset_bottom = 56.0
 text = "Save game"
 
 [node name="LoadGameButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_top = 60.0
-margin_right = 143.0
-margin_bottom = 86.0
+offset_top = 60.0
+offset_right = 143.0
+offset_bottom = 86.0
 text = "Load game"
 
 [node name="OptionsButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_top = 90.0
-margin_right = 143.0
-margin_bottom = 116.0
+offset_top = 90.0
+offset_right = 143.0
+offset_bottom = 116.0
 text = "Options"
 
 [node name="MainMenuButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_top = 120.0
-margin_right = 143.0
-margin_bottom = 146.0
+offset_top = 120.0
+offset_right = 143.0
+offset_bottom = 146.0
 text = "Quit to main menu"
 
 [node name="DesktopButton" type="Button" parent="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer"]
-margin_top = 150.0
-margin_right = 143.0
-margin_bottom = 176.0
+offset_top = 150.0
+offset_right = 143.0
+offset_bottom = 176.0
 text = "Quit to desktop"
 
-[node name="SaveDialog" type="WindowDialog" parent="CanvasLayer/GameMenuBackground"]
-margin_right = 400.0
-margin_bottom = 450.0
+[node name="SaveDialog" type="Window" parent="CanvasLayer/GameMenuBackground"]
+visible = false
+offset_right = 400.0
+offset_bottom = 450.0
 window_title = "Load a file"
 script = ExtResource( 5 )
 
@@ -269,6 +288,8 @@ visible = false
 [connection signal="pressed" from="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer/MainMenuButton" to="." method="_on_MainMenuButton_pressed"]
 [connection signal="pressed" from="CanvasLayer/GameMenuBackground/CenterContainer/VBoxContainer/DesktopButton" to="." method="_on_DesktopButton_pressed"]
 [connection signal="load_file" from="CanvasLayer/GameMenuBackground/SaveDialog" to="." method="_on_SaveDialog_load_file"]
-[connection signal="popup_hide" from="CanvasLayer/GameMenuBackground/SaveDialog" to="." method="_on_SaveDialog_popup_hide"]
+[connection signal="visibility_changed" from="CanvasLayer/GameMenuBackground/SaveDialog" to="." method="_on_SaveDialog_popup_hide"]
 [connection signal="save_file" from="CanvasLayer/GameMenuBackground/SaveDialog" to="." method="_on_SaveDialog_save_file"]
 [connection signal="applying_options" from="CanvasLayer/OptionsMenu" to="." method="_on_OptionsMenu_applying_options"]
+
+[connection signal="close_requested" from="CanvasLayer/GameMenuBackground/SaveDialog" to="CanvasLayer/GameMenuBackground/SaveDialog" method="hide"]

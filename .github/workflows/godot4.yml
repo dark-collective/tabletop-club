@@ -1,0 +1,26 @@
+name: Godot 4
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  migration:
+    name: Godot 4.7.2 integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2 and native WebRTC
+        run: |
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          echo 'cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4  /tmp/godot.zip' | sha256sum -c -
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          python3 tools/setup_webrtc.py
+      - name: Compile, import assets, test gameplay and local WebRTC
+        run: xvfb-run -a python3 tools/test.py --godot /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --render
+      - name: Test two game sessions through the upstream TLS lobby
+        run: xvfb-run -a python3 tools/test_session.py --godot /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: godot4-validation
+          path: .artifacts/tests

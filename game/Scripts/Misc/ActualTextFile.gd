@@ -23,4 +23,4 @@
 extends Resource
 class_name ActualTextFile
 
-export(String, MULTILINE) var text: String
+@export var text: String # (String, MULTILINE)

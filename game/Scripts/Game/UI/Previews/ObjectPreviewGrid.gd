@@ -1,3 +1,4 @@
+@tool
 # tabletop-club
 # Copyright (c) 2020-2026 Benjamin 'drwhut' Beddows.
 # Copyright (c) 2021-2026 Tabletop Club contributors (see game/CREDITS.tres).
@@ -23,7 +24,6 @@
 # The reason this is an editor script is so that we can adjust the number of
 # rows and columns in the container and be able to immediately see the result
 # in the editor.
-tool
 extends VBoxContainer
 
 class_name ObjectPreviewGrid
@@ -31,9 +31,9 @@ class_name ObjectPreviewGrid
 signal preview_clicked(preview, event)
 signal requesting_objects(start, length)
 
-export(int, 1, 10) var columns: int = 1 setget set_columns, get_columns
-export(int, 1, 10) var rows: int = 1 setget set_rows, get_rows
-export(String) var empty_text: String = "" setget set_empty_text, get_empty_text
+@export var columns: int = 1: get = get_columns, set = set_columns # (int, 1, 10)
+@export var rows: int = 1: get = get_rows, set = set_rows # (int, 1, 10)
+@export var empty_text: String = "": get = get_empty_text, set = set_empty_text
 
 var _page_index: int = 0
 var _page_last: int = 0
@@ -76,11 +76,11 @@ func get_rows() -> int:
 # after: The number of pieces that should come after this array. This is used
 # to calculate the total number of pages.
 func provide_objects(objects: Array, after: int) -> void:
-	if Engine.editor_hint:
+	if Engine.is_editor_hint():
 		return
 	
-	_empty_label.visible = objects.empty()
-	_preview_container.visible = not objects.empty()
+	_empty_label.visible = objects.is_empty()
+	_preview_container.visible = not objects.is_empty()
 	
 	# Make sure none of the previews are selected.
 	if is_inside_tree():
@@ -122,7 +122,7 @@ func provide_objects(objects: Array, after: int) -> void:
 # Reset the preview grid. This should be called when it is about to be
 # displayed.
 func reset() -> void:
-	if Engine.editor_hint:
+	if Engine.is_editor_hint():
 		return
 	
 	_request_objects(0)
@@ -156,8 +156,8 @@ func _init():
 	
 	_empty_label = Label.new()
 	_empty_label.visible = false
-	_empty_label.align = Label.ALIGN_CENTER
-	_empty_label.valign = Label.VALIGN_CENTER
+	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_empty_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	_empty_label.size_flags_vertical = SIZE_EXPAND_FILL
 	add_child(_empty_label)
@@ -173,27 +173,27 @@ func _init():
 	
 	_first_button = Button.new()
 	_first_button.text = "<<"
-	_first_button.connect("pressed", self, "_on_first_button_pressed")
+	_first_button.connect("pressed", Callable(self, "_on_first_button_pressed"))
 	hbox.add_child(_first_button)
 	
 	_previous_button = Button.new()
 	_previous_button.text = "<"
-	_previous_button.connect("pressed", self, "_on_previous_button_pressed")
+	_previous_button.connect("pressed", Callable(self, "_on_previous_button_pressed"))
 	hbox.add_child(_previous_button)
 	
 	_page_label = Label.new()
-	_page_label.align = Label.ALIGN_CENTER
+	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_page_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	hbox.add_child(_page_label)
 	
 	_next_button = Button.new()
 	_next_button.text = ">"
-	_next_button.connect("pressed", self, "_on_next_button_pressed")
+	_next_button.connect("pressed", Callable(self, "_on_next_button_pressed"))
 	hbox.add_child(_next_button)
 	
 	_last_button = Button.new()
 	_last_button.text = ">>"
-	_last_button.connect("pressed", self, "_on_last_button_pressed")
+	_last_button.connect("pressed", Callable(self, "_on_last_button_pressed"))
 	hbox.add_child(_last_button)
 
 # Request objects from a given start index.
@@ -210,10 +210,10 @@ func _setup_previews() -> void:
 	var target_children = get_preview_count()
 	
 	while current_children < target_children:
-		var preview = _object_preview.instance()
-		if not Engine.editor_hint:
+		var preview = _object_preview.instantiate()
+		if not Engine.is_editor_hint():
 			preview.allow_multiple_select = true
-		preview.connect("clicked", self, "_on_preview_clicked")
+		preview.connect("clicked", Callable(self, "_on_preview_clicked"))
 		_preview_container.add_child(preview)
 
 		current_children += 1

@@ -1,13 +1,14 @@
 [remap]
 
 importer="wav"
-type="AudioStreamSample"
-path="res://.import/chipsHandle6.wav-7863e88dc03be7e1df6645396caa9084.sample"
+type="AudioStreamWAV"
+uid="uid://tw03e528atty"
+path="res://.godot/imported/chipsHandle6.wav-7863e88dc03be7e1df6645396caa9084.sample"
 
 [deps]
 
 source_file="res://Sounds/Chips/chipsHandle6.wav"
-dest_files=[ "res://.import/chipsHandle6.wav-7863e88dc03be7e1df6645396caa9084.sample" ]
+dest_files=["res://.godot/imported/chipsHandle6.wav-7863e88dc03be7e1df6645396caa9084.sample"]
 
 [params]
 
@@ -17,5 +18,7 @@ force/max_rate=false
 force/max_rate_hz=44100
 edit/trim=false
 edit/normalize=false
-edit/loop=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
 compress/mode=0

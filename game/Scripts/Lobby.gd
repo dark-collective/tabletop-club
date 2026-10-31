@@ -33,8 +33,9 @@ var _players = {}
 # id: The ID of the player.
 # name: The name of the player.
 # color: The color of the player.
-remotesync func add_self(id: int, name: String, color: Color) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func add_self(id: int, name: String, color: Color) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_players[id] = {}
@@ -66,7 +67,7 @@ func get_name_bb_code_custom(player: Dictionary) -> String:
 		player_name = player["name"]
 	# Security!
 	player_name = player_name.strip_edges().strip_escapes().replace("[", "[ ")
-	if player_name.empty():
+	if player_name.is_empty():
 		player_name = tr("<No Name>")
 	elif Global.censoring_profanity:
 		player_name = Global.censor_profanity(player_name)
@@ -97,8 +98,9 @@ func get_player_list() -> Array:
 # id: The ID of the player.
 # name: The new name of the player.
 # color: The new color of the player.
-remotesync func modify_self(id: int, name: String, color: Color) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func modify_self(id: int, name: String, color: Color) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _players.has(id):
@@ -117,8 +119,9 @@ func player_exists(id: int) -> bool:
 
 # Called by the server when a player has removed themselves from the lobby.
 # id: The ID of the player.
-remotesync func remove_self(id: int) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func remove_self(id: int) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _players.has(id):
@@ -128,31 +131,44 @@ remotesync func remove_self(id: int) -> void:
 # Request the server to add you to the network lobby.
 # name: Your name.
 # color: Your color.
-master func request_add_self(name: String, color: Color) -> void:
-	var id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_add_self(name: String, color: Color) -> void:
+	if not is_multiplayer_authority():
+		return
+	var id = Global.get_sender_id(self)
 	rpc("add_self", id, name, color)
 
 # Request the server to modify your network properties.
 # name: Your new name.
 # color: Your new color.
-master func request_modify_self(name: String, color: Color) -> void:
-	var id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_modify_self(name: String, color: Color) -> void:
+	if not is_multiplayer_authority():
+		return
+	var id = Global.get_sender_id(self)
 	rpc("modify_self", id, name, color)
 
 # Request the server to remove you from the network lobby.
-master func request_remove_self() -> void:
-	var id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_remove_self() -> void:
+	if not is_multiplayer_authority():
+		return
+	var id = Global.get_sender_id(self)
 	rpc("remove_self", id)
 
 # Request the server to send you it's list of players.
-master func request_sync_players() -> void:
-	var id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_sync_players() -> void:
+	if not is_multiplayer_authority():
+		return
+	var id = Global.get_sender_id(self)
 	rpc_id(id, "request_sync_players_accepted", _players)
 
 # Called by the server to let you know of it's list of players.
 # players: The list of players.
-remotesync func request_sync_players_accepted(players: Dictionary) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func request_sync_players_accepted(players: Dictionary) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_players = {}

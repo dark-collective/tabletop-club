@@ -32,7 +32,7 @@ signal track_paused()
 signal track_resumed()
 signal unit_size_changed(unit_size)
 
-onready var _audio_player = $AudioStreamPlayer
+@onready var _audio_player = $AudioStreamPlayer
 
 var _last_unit_size: float = 50.0
 var _track_entry: Dictionary = {}
@@ -72,7 +72,7 @@ func is_positional() -> bool:
 # Check if there is a track loaded in the player.
 # Returns: If there is a track loaded.
 func is_track_loaded() -> bool:
-	return not _track_entry.empty()
+	return not _track_entry.is_empty()
 
 # Check if the track is paused.
 # Returns: If the track is paused.
@@ -81,8 +81,9 @@ func is_track_paused() -> bool:
 
 # Pause the track at a given position.
 # at: The number of seconds into the track to pause at.
-remotesync func pause_track(at: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func pause_track(at: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_audio_player.stream_paused = true
@@ -92,8 +93,9 @@ remotesync func pause_track(at: float) -> void:
 
 # Play the currently loaded track from a given position.
 # from: The number of seconds from the start to start playing from.
-remotesync func play_track(from: float = 0.0) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func play_track(from: float = 0.0) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_check_if_wide()
@@ -103,41 +105,63 @@ remotesync func play_track(from: float = 0.0) -> void:
 	emit_signal("started_playing")
 
 # Request the server to pause the track.
-master func request_pause_track() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_pause_track() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("pause_track", get_playback_position())
 
 # Request the server to start playing the loaded track.
 # from: The number of seconds from the start to start playing from.
-master func request_play_track(from: float = 0.0) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_play_track(from: float = 0.0) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("play_track", from)
 
 # Request the server to resume the track.
-master func request_resume_track() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_resume_track() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("resume_track")
 
 # Request the server to change whether the speaker is positional or not.
 # is_positional: If the speaker is positional.
-master func request_set_positional(is_positional: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_positional(is_positional: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_positional", is_positional)
 
 # Request the server to set the player's track.
 # track_entry: The next track's entry.
 # music: True if it is a music track, false if it is a sound track.
-master func request_set_track(track_entry: Dictionary, music: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_track(track_entry: Dictionary, music: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_track", track_entry, music)
 
 # Request the server to set the unit size of the speaker.
 # unit_size: The new unit size.
-master func request_set_unit_size(unit_size: float) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_unit_size(unit_size: float) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_unit_size", unit_size)
 
 # Request the server to stop playing the loaded track.
-master func request_stop_track() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_stop_track() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("stop_track")
 
 # Called by the server to resume playback of the track.
-remotesync func resume_track() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func resume_track() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_audio_player.stream_paused = false
@@ -146,8 +170,9 @@ remotesync func resume_track() -> void:
 
 # Called by the server to set whether the speaker is positional or not.
 # is_positional: If the speaker should be positional.
-remotesync func set_positional(is_positional: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_positional(is_positional: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var new_player = null
@@ -164,8 +189,8 @@ remotesync func set_positional(is_positional: bool) -> void:
 		_last_unit_size = _audio_player.unit_size
 	
 	# Same connections as in _ready().
-	_audio_player.disconnect("finished", self, "_on_audio_player_finished")
-	new_player.connect("finished", self, "_on_audio_player_finished")
+	_audio_player.disconnect("finished", Callable(self, "_on_audio_player_finished"))
+	new_player.connect("finished", Callable(self, "_on_audio_player_finished"))
 	
 	new_player.bus = _audio_player.bus
 	new_player.stream = _audio_player.stream
@@ -175,7 +200,7 @@ remotesync func set_positional(is_positional: bool) -> void:
 	# Keep track of how much time passes between stopping the old audio player,
 	# and starting the new one.
 	var playback_position = get_playback_position()
-	var begin_transfer_time = OS.get_ticks_usec()
+	var begin_transfer_time = Time.get_ticks_usec()
 	stop_track()
 	remove_child(_audio_player)
 	_audio_player.queue_free()
@@ -184,7 +209,7 @@ remotesync func set_positional(is_positional: bool) -> void:
 	add_child(new_player)
 	_audio_player = new_player
 	
-	var end_transfer_time = OS.get_ticks_usec()
+	var end_transfer_time = Time.get_ticks_usec()
 	if is_paused or is_playing:
 		var playback_offset = float(end_transfer_time - begin_transfer_time) / 1000000.0
 		
@@ -197,11 +222,12 @@ remotesync func set_positional(is_positional: bool) -> void:
 # Set the track the player will play using it's entry in the AssetDB.
 # track_entry: The new track's entry.
 # music: True if it is a music track, false if it is a sound track.
-remotesync func set_track(track_entry: Dictionary, music: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_track(track_entry: Dictionary, music: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if track_entry.empty():
+	if track_entry.is_empty():
 		_track_entry = {}
 	
 	elif track_entry.has("audio_path"):
@@ -224,8 +250,9 @@ remotesync func set_track(track_entry: Dictionary, music: bool) -> void:
 
 # Set the unit size of the speaker.
 # unit_size: The new unit size.
-remotesync func set_unit_size(unit_size: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_unit_size(unit_size: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _audio_player is AudioStreamPlayer3D:
@@ -236,8 +263,9 @@ remotesync func set_unit_size(unit_size: float) -> void:
 	emit_signal("unit_size_changed", unit_size)
 
 # Stop playing the currently loaded track.
-remotesync func stop_track() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func stop_track() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_audio_player.stop()
@@ -245,12 +273,13 @@ remotesync func stop_track() -> void:
 	emit_signal("stopped_playing")
 
 func _ready():
-	connect("scale_changed", self, "_on_scale_changed")
-	_audio_player.connect("finished", self, "_on_audio_player_finished")
+	super._ready()
+	connect("scale_changed", Callable(self, "_on_scale_changed"))
+	_audio_player.connect("finished", Callable(self, "_on_audio_player_finished"))
 
 # Check if the speaker is... wide. No context needed ;)
 func _check_if_wide() -> void:
-	if _audio_player.bus.empty():
+	if _audio_player.bus.is_empty():
 		return
 	
 	if not piece_entry.has("entry_path"):

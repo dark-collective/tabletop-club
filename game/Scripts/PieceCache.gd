@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Reference
+extends RefCounted
 
 class_name PieceCache
 
@@ -29,12 +29,12 @@ var _is_thumbnail: bool = false
 
 # Cache the piece to a scene file, so it can be loaded in quicker.
 func cache() -> void:
-	if _entry_path.empty():
+	if _entry_path.is_empty():
 		push_error("Internal entry path is empty!")
 		return
 	
 	var piece_entry = AssetDB.search_path(_entry_path)
-	if piece_entry.empty():
+	if piece_entry.is_empty():
 		push_error("Entry path '%s' does not exist in the AssetDB!" % _entry_path)
 		return
 	
@@ -47,7 +47,7 @@ func cache() -> void:
 	# TODO: We save thumbnails of tables as pieces so they can be displayed
 	# in previews, similar to the point above, maybe previews should just be
 	# able to display mesh instances?
-	var piece: RigidBody = null
+	var piece: RigidBody3D = null
 	if piece_entry.has("hands") and not _is_thumbnail:
 		piece = PieceBuilder.build_table(piece_entry)
 	else:
@@ -58,15 +58,16 @@ func cache() -> void:
 	
 	var packed_scene = PackedScene.new()
 	packed_scene.pack(piece)
-	ResourceSaver.save(_cache_path() + "." + _scene_ext(), packed_scene)
+	ResourceSaver.save(packed_scene, _cache_path() + "." + _scene_ext())
 	
 	ResourceManager.free_object(piece)
 	
 	if ProjectSettings.has_setting("application/config/version"):
-		var version_file = File.new()
+		var version_file: FileAccess
 		var version_path = _cache_path() + ".version"
 		
-		var err = version_file.open(version_path, File.WRITE)
+		version_file = FileAccess.open(version_path, FileAccess.WRITE)
+		var err = FileAccess.get_open_error()
 		if err == OK:
 			version_file.store_line(ProjectSettings.get_setting("application/config/version"))
 			version_file.close()
@@ -76,22 +77,23 @@ func cache() -> void:
 # Checks if the cache for this piece exists.
 # Returns: If the cache exists for the given piece, and it is not outdated.
 func exists() -> bool:
-	if _entry_path.empty():
+	if _entry_path.is_empty():
 		push_error("Internal entry path is empty!")
 		return false
 	
 	var scene_path = _cache_path() + "." + _scene_ext()
 	
-	var file = File.new()
-	if not file.file_exists(scene_path):
+	var file: FileAccess
+	if not FileAccess.file_exists(scene_path):
 		return false
 	
 	if ProjectSettings.has_setting("application/config/version"):
 		var version_path = _cache_path() + ".version"
-		if not file.file_exists(version_path):
+		if not FileAccess.file_exists(version_path):
 			return false
 		
-		if file.open(version_path, File.READ) != OK:
+		file = FileAccess.open(version_path, FileAccess.READ)
+		if FileAccess.get_open_error() != OK:
 			return false
 		
 		var piece_version = file.get_line()
@@ -104,17 +106,17 @@ func exists() -> bool:
 
 # Retrieves a cached piece created by the cache() function.
 # Returns: The cached piece. Null if the cache does not exist, or is outdated.
-func get_scene() -> RigidBody:
+func get_scene() -> RigidBody3D:
 	if not exists():
 		return null
 	
 	var scene_path = _cache_path() + "." + _scene_ext()
 	var packed_scene: PackedScene = ResourceManager.load_res(scene_path)
-	if not packed_scene.can_instance():
+	if not packed_scene.can_instantiate():
 		push_error("Cache '%s' has no nodes!" % scene_path)
 		return null
 	
-	var piece: RigidBody = packed_scene.instance()
+	var piece: RigidBody3D = packed_scene.instantiate()
 	
 	# Pieces need their own separate outline shaders.
 	if piece is Piece:
@@ -136,7 +138,7 @@ static func should_cache(piece_entry: Dictionary) -> bool:
 # entry_path: The entry path of the cached piece we want to access.
 # thumbnail: If true, access the thumbnail version of the given piece.
 func _init(entry_path: String, thumbnail: bool = false):
-	if not AssetDB.search_path(entry_path).empty():
+	if not AssetDB.search_path(entry_path).is_empty():
 		_entry_path = entry_path
 		_is_thumbnail = thumbnail
 	else:

@@ -29,13 +29,13 @@ signal stack_requested(piece1, piece2)
 const DISTANCE_THRESHOLD = 1.0
 const DOT_STACK_THRESHOLD = 0.9
 
-export(bool) var stack_ignore_y_rotation: bool = false
+@export var stack_ignore_y_rotation: bool = false
 
 # Check if another piece has a matching shape and scale.
 # Returns: If the other piece has a matching shape and scale.
 # body: The piece to check against.
 func matches(body: Piece) -> bool:
-	if not body.piece_entry.empty():
+	if not body.piece_entry.is_empty():
 		if body.piece_entry.scene_path == piece_entry.scene_path:
 			if body.piece_entry.scale == piece_entry.scale:
 				return true
@@ -45,7 +45,7 @@ func matches(body: Piece) -> bool:
 # Can this piece stack with another piece?
 # Returns: If the piece can stack with the other piece.
 # body: The piece to check against.
-func _can_stack(body: Spatial) -> bool:
+func _can_stack(body: Node3D) -> bool:
 	var me = transform
 	var you = body.transform
 	
@@ -64,12 +64,12 @@ func _can_stack(body: Spatial) -> bool:
 	return false
 
 func _on_body_entered(body) -> void:
-	._on_body_entered(body)
+	super._on_body_entered(body)
 	
 	# This check is needed, as stackable pieces can move in and out of the
 	# scene tree when they are being moved in and out of stacks.
 	if get_tree() != null:
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			
 			# We can't write "if body is StackablePiece", since according to
 			# Godot that would cause a cyclic reference. So instead, we'll check

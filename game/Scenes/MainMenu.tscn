@@ -1,19 +1,19 @@
 [gd_scene load_steps=15 format=2]
 
 [ext_resource path="res://Scenes/FallingWorld.tscn" type="PackedScene" id=1]
-[ext_resource path="res://Images/HelpIcon.svg" type="Texture" id=2]
+[ext_resource path="res://Images/HelpIcon.svg" type="Texture2D" id=2]
 [ext_resource path="res://Scripts/MainMenu.gd" type="Script" id=3]
 [ext_resource path="res://Scenes/OptionsMenu.tscn" type="PackedScene" id=4]
-[ext_resource path="res://Fonts/Cabin/Cabin-Italic.tres" type="DynamicFont" id=5]
+[ext_resource path="res://Fonts/Cabin/Cabin-Italic.tres" type="Font" id=5]
 [ext_resource path="res://Scenes/RandomMusicPlayer.tscn" type="PackedScene" id=6]
-[ext_resource path="res://tabletop_club_logo.png" type="Texture" id=7]
-[ext_resource path="res://Fonts/Cabin/Modified/Cabin-MainMenu.tres" type="DynamicFont" id=8]
-[ext_resource path="res://Images/InfoIcon.svg" type="Texture" id=9]
-[ext_resource path="res://Images/internet_icon.svg" type="Texture" id=10]
-[ext_resource path="res://Images/CodeIcon.svg" type="Texture" id=11]
-[ext_resource path="res://Images/ErrorIcon.svg" type="Texture" id=12]
-[ext_resource path="res://Images/donate_icon.svg" type="Texture" id=13]
-[ext_resource path="res://Images/ChatIconFilled.svg" type="Texture" id=14]
+[ext_resource path="res://tabletop_club_logo.png" type="Texture2D" id=7]
+[ext_resource path="res://Fonts/Cabin/Modified/Cabin-MainMenu.tres" type="Font" id=8]
+[ext_resource path="res://Images/InfoIcon.svg" type="Texture2D" id=9]
+[ext_resource path="res://Images/internet_icon.svg" type="Texture2D" id=10]
+[ext_resource path="res://Images/CodeIcon.svg" type="Texture2D" id=11]
+[ext_resource path="res://Images/ErrorIcon.svg" type="Texture2D" id=12]
+[ext_resource path="res://Images/donate_icon.svg" type="Texture2D" id=13]
+[ext_resource path="res://Images/ChatIconFilled.svg" type="Texture2D" id=14]
 
 [node name="MainMenu" type="Control"]
 anchor_right = 1.0
@@ -29,133 +29,139 @@ anchor_bottom = 1.0
 alignment = 1
 
 [node name="MainList" type="VBoxContainer" parent="MainView"]
-margin_left = 384.0
-margin_right = 640.0
-margin_bottom = 600.0
+offset_left = 384.0
+offset_right = 640.0
+offset_bottom = 600.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="TextureRect" type="TextureRect" parent="MainView/MainList"]
-margin_right = 256.0
-margin_bottom = 256.0
-rect_min_size = Vector2( 256, 256 )
+offset_right = 256.0
+offset_bottom = 256.0
+custom_minimum_size = Vector2( 256, 256 )
 texture = ExtResource( 7 )
 expand = true
 
 [node name="SingleplayerButton" type="Button" parent="MainView/MainList"]
-margin_top = 260.0
-margin_right = 256.0
-margin_bottom = 291.0
-custom_fonts/font = ExtResource( 8 )
+offset_top = 260.0
+offset_right = 256.0
+offset_bottom = 291.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
 text = "Singleplayer"
 
 [node name="MultiplayerButton" type="Button" parent="MainView/MainList"]
-margin_top = 295.0
-margin_right = 256.0
-margin_bottom = 326.0
-custom_fonts/font = ExtResource( 8 )
+offset_top = 295.0
+offset_right = 256.0
+offset_bottom = 326.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
 text = "Multiplayer"
 
 [node name="OptionsButton" type="Button" parent="MainView/MainList"]
-margin_top = 330.0
-margin_right = 256.0
-margin_bottom = 361.0
-custom_fonts/font = ExtResource( 8 )
+offset_top = 330.0
+offset_right = 256.0
+offset_bottom = 361.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
 text = "Options"
 
 [node name="CreditsButton" type="Button" parent="MainView/MainList"]
-margin_top = 365.0
-margin_right = 256.0
-margin_bottom = 396.0
-custom_fonts/font = ExtResource( 8 )
+offset_top = 365.0
+offset_right = 256.0
+offset_bottom = 396.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
 text = "Credits"
 
 [node name="QuitButton" type="Button" parent="MainView/MainList"]
-margin_top = 400.0
-margin_right = 256.0
-margin_bottom = 431.0
-custom_fonts/font = ExtResource( 8 )
+offset_top = 400.0
+offset_right = 256.0
+offset_bottom = 431.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
 text = "Quit"
 
 [node name="Gap" type="Control" parent="MainView/MainList"]
-margin_top = 435.0
-margin_right = 256.0
-margin_bottom = 564.0
+offset_top = 435.0
+offset_right = 256.0
+offset_bottom = 564.0
 size_flags_vertical = 3
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MainView/MainList"]
-margin_top = 568.0
-margin_right = 256.0
-margin_bottom = 600.0
+offset_top = 568.0
+offset_right = 256.0
+offset_bottom = 600.0
 alignment = 2
 
 [node name="ImportErrorButton" type="Button" parent="MainView/MainList/HBoxContainer"]
 visible = false
-margin_right = 49.0
-margin_bottom = 32.0
-hint_tooltip = "Import Log"
+offset_right = 49.0
+offset_bottom = 32.0
+tooltip_text = "Import Log"
 text = "0"
 icon = ExtResource( 12 )
 
 [node name="WebsiteButton" type="Button" parent="MainView/MainList/HBoxContainer"]
-margin_left = 80.0
-margin_right = 112.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Website"
+offset_left = 80.0
+offset_right = 112.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Website"
 icon = ExtResource( 10 )
 expand_icon = true
 
 [node name="SourceCodeButton" type="Button" parent="MainView/MainList/HBoxContainer"]
-margin_left = 116.0
-margin_right = 148.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Source Code"
+offset_left = 116.0
+offset_right = 148.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Source Code"
 icon = ExtResource( 11 )
 expand_icon = true
 
 [node name="HelpButton" type="Button" parent="MainView/MainList/HBoxContainer"]
-margin_left = 152.0
-margin_right = 184.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Documentation"
+offset_left = 152.0
+offset_right = 184.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Documentation"
 icon = ExtResource( 2 )
 expand_icon = true
 
 [node name="CommunityButton" type="Button" parent="MainView/MainList/HBoxContainer"]
-margin_left = 188.0
-margin_right = 220.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Community"
+offset_left = 188.0
+offset_right = 220.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Community"
 icon = ExtResource( 14 )
 expand_icon = true
 
 [node name="DonateButton" type="Button" parent="MainView/MainList/HBoxContainer"]
 visible = false
-margin_left = 188.0
-margin_right = 220.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Donate"
+offset_left = 188.0
+offset_right = 220.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Donate"
 icon = ExtResource( 13 )
 expand_icon = true
 
 [node name="InfoButton" type="Button" parent="MainView/MainList/HBoxContainer"]
-margin_left = 224.0
-margin_right = 256.0
-margin_bottom = 32.0
-rect_min_size = Vector2( 32, 32 )
-hint_tooltip = "Information"
+offset_left = 224.0
+offset_right = 256.0
+offset_bottom = 32.0
+custom_minimum_size = Vector2( 32, 32 )
+tooltip_text = "Information"
 icon = ExtResource( 9 )
 expand_icon = true
 
-[node name="MultiplayerDialog" type="WindowDialog" parent="."]
-margin_right = 431.0
-margin_bottom = 121.0
+[node name="MultiplayerDialog" type="Window" parent="."]
+visible = false
+offset_right = 431.0
+offset_bottom = 121.0
 window_title = "Multiplayer"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MultiplayerDialog"]
@@ -167,43 +173,44 @@ __meta__ = {
 }
 
 [node name="HostGameContainer" type="VBoxContainer" parent="MultiplayerDialog/HBoxContainer"]
-margin_right = 213.0
-margin_bottom = 121.0
+offset_right = 213.0
+offset_bottom = 121.0
 size_flags_horizontal = 3
 
 [node name="HostGameButton" type="Button" parent="MultiplayerDialog/HBoxContainer/HostGameContainer"]
-margin_right = 213.0
-margin_bottom = 26.0
+offset_right = 213.0
+offset_bottom = 26.0
 text = "Host Game"
 
 [node name="HostGameLabel" type="Label" parent="MultiplayerDialog/HBoxContainer/HostGameContainer"]
-margin_top = 30.0
-margin_right = 213.0
-margin_bottom = 96.0
+offset_top = 30.0
+offset_right = 213.0
+offset_bottom = 96.0
 text = "Create a new lobby for your friends to join over the Internet."
 autowrap = true
 
 [node name="EnterCodeContainer" type="VBoxContainer" parent="MultiplayerDialog/HBoxContainer"]
-margin_left = 217.0
-margin_right = 431.0
-margin_bottom = 121.0
+offset_left = 217.0
+offset_right = 431.0
+offset_bottom = 121.0
 size_flags_horizontal = 3
 
 [node name="EnterCodeButton" type="Button" parent="MultiplayerDialog/HBoxContainer/EnterCodeContainer"]
-margin_right = 214.0
-margin_bottom = 26.0
+offset_right = 214.0
+offset_bottom = 26.0
 text = "Join Game"
 
 [node name="EnterCodeLabel" type="Label" parent="MultiplayerDialog/HBoxContainer/EnterCodeContainer"]
-margin_top = 30.0
-margin_right = 214.0
-margin_bottom = 73.0
+offset_top = 30.0
+offset_right = 214.0
+offset_bottom = 73.0
 text = "Use a room code to join your friend's lobby."
 autowrap = true
 
-[node name="EnterCodeDialog" type="WindowDialog" parent="."]
-margin_right = 177.0
-margin_bottom = 63.0
+[node name="EnterCodeDialog" type="Window" parent="."]
+visible = false
+offset_right = 177.0
+offset_bottom = 63.0
 window_title = "Enter Room Code"
 __meta__ = {
 "_edit_use_anchors_": false
@@ -217,33 +224,34 @@ __meta__ = {
 }
 
 [node name="RoomCodeContainer" type="HBoxContainer" parent="EnterCodeDialog/VBoxContainer"]
-margin_right = 177.0
-margin_bottom = 30.0
+offset_right = 177.0
+offset_bottom = 30.0
 
 [node name="RoomCodeLabel" type="Label" parent="EnterCodeDialog/VBoxContainer/RoomCodeContainer"]
-margin_top = 5.0
-margin_right = 85.0
-margin_bottom = 25.0
+offset_top = 5.0
+offset_right = 85.0
+offset_bottom = 25.0
 text = "Room Code:"
 
 [node name="RoomCodeEdit" type="LineEdit" parent="EnterCodeDialog/VBoxContainer/RoomCodeContainer"]
-margin_left = 89.0
-margin_right = 177.0
-margin_bottom = 30.0
+offset_left = 89.0
+offset_right = 177.0
+offset_bottom = 30.0
 size_flags_horizontal = 3
-align = 1
+horizontal_alignment = 1
 max_length = 4
 placeholder_text = "ABCD"
 
 [node name="JoinGameButton" type="Button" parent="EnterCodeDialog/VBoxContainer"]
-margin_top = 34.0
-margin_right = 177.0
-margin_bottom = 60.0
+offset_top = 34.0
+offset_right = 177.0
+offset_bottom = 60.0
 text = "Join Game"
 
-[node name="InfoDialog" type="WindowDialog" parent="."]
-margin_right = 720.0
-margin_bottom = 450.0
+[node name="InfoDialog" type="Window" parent="."]
+visible = false
+offset_right = 720.0
+offset_bottom = 450.0
 window_title = "Information"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="InfoDialog"]
@@ -255,8 +263,8 @@ __meta__ = {
 }
 
 [node name="VBoxContainer" type="VBoxContainer" parent="InfoDialog/ScrollContainer"]
-margin_right = 720.0
-margin_bottom = 450.0
+offset_right = 720.0
+offset_bottom = 450.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 __meta__ = {
@@ -264,29 +272,30 @@ __meta__ = {
 }
 
 [node name="InfoLogoContainer" type="HBoxContainer" parent="InfoDialog/ScrollContainer/VBoxContainer"]
-margin_right = 720.0
-margin_bottom = 128.0
+offset_right = 720.0
+offset_bottom = 128.0
 alignment = 1
 
 [node name="TextureRect" type="TextureRect" parent="InfoDialog/ScrollContainer/VBoxContainer/InfoLogoContainer"]
-margin_left = 296.0
-margin_right = 424.0
-margin_bottom = 128.0
-rect_min_size = Vector2( 128, 128 )
+offset_left = 296.0
+offset_right = 424.0
+offset_bottom = 128.0
+custom_minimum_size = Vector2( 128, 128 )
 texture = ExtResource( 7 )
 expand = true
 
 [node name="VersionLabel" type="Label" parent="InfoDialog/ScrollContainer/VBoxContainer"]
-margin_top = 132.0
-margin_right = 720.0
-margin_bottom = 157.0
-custom_fonts/font = ExtResource( 8 )
-align = 1
+offset_top = 132.0
+offset_right = 720.0
+offset_bottom = 157.0
+theme_override_fonts/font = ExtResource( 8 )
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
 
 [node name="LicenseLabel" type="RichTextLabel" parent="InfoDialog/ScrollContainer/VBoxContainer"]
-margin_top = 161.0
-margin_right = 720.0
-margin_bottom = 450.0
+offset_top = 161.0
+offset_right = 720.0
+offset_bottom = 450.0
 focus_mode = 2
 size_flags_vertical = 3
 text = "Copyright (c) 2020-2026 Benjamin 'drwhut' Beddows.
@@ -310,9 +319,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE."
 
-[node name="CreditsDialog" type="WindowDialog" parent="."]
-margin_right = 512.0
-margin_bottom = 300.0
+[node name="CreditsDialog" type="Window" parent="."]
+visible = false
+offset_right = 512.0
+offset_bottom = 300.0
 window_title = "Credits"
 __meta__ = {
 "_edit_use_anchors_": false
@@ -322,22 +332,24 @@ __meta__ = {
 anchor_right = 1.0
 anchor_bottom = 1.0
 focus_mode = 2
-custom_fonts/italics_font = ExtResource( 5 )
+theme_override_fonts/italics_font = ExtResource( 5 )
+theme_override_font_sizes/italics_font_size = 16
 bbcode_enabled = true
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="ErrorDialog" type="AcceptDialog" parent="."]
-margin_right = 243.0
-margin_bottom = 150.0
+offset_right = 243.0
+offset_bottom = 150.0
 window_title = "Error"
 dialog_autowrap = true
 
-[node name="ImportErrorDialog" type="WindowDialog" parent="."]
-margin_right = 650.0
-margin_bottom = 450.0
-rect_min_size = Vector2( 100, 100 )
+[node name="ImportErrorDialog" type="Window" parent="."]
+visible = false
+offset_right = 650.0
+offset_bottom = 450.0
+min_size = Vector2i(100, 100)
 window_title = "Import Log"
 resizable = true
 
@@ -368,8 +380,18 @@ visible = false
 [connection signal="pressed" from="MultiplayerDialog/HBoxContainer/HostGameContainer/HostGameButton" to="." method="_on_HostGameButton_pressed"]
 [connection signal="pressed" from="MultiplayerDialog/HBoxContainer/EnterCodeContainer/EnterCodeButton" to="." method="_on_EnterCodeButton_pressed"]
 [connection signal="text_changed" from="EnterCodeDialog/VBoxContainer/RoomCodeContainer/RoomCodeEdit" to="." method="_on_RoomCodeEdit_text_changed"]
-[connection signal="text_entered" from="EnterCodeDialog/VBoxContainer/RoomCodeContainer/RoomCodeEdit" to="." method="_on_RoomCodeEdit_text_entered"]
+[connection signal="text_submitted" from="EnterCodeDialog/VBoxContainer/RoomCodeContainer/RoomCodeEdit" to="." method="_on_RoomCodeEdit_text_entered"]
 [connection signal="pressed" from="EnterCodeDialog/VBoxContainer/JoinGameButton" to="." method="_on_JoinGameButton_pressed"]
 [connection signal="keep_video_dialog_hide" from="OptionsMenu" to="." method="_on_OptionsMenu_keep_video_dialog_hide"]
 [connection signal="locale_changed" from="OptionsMenu" to="." method="_on_OptionsMenu_locale_changed"]
 [connection signal="visibility_changed" from="OptionsMenu" to="." method="_on_OptionsMenu_visibility_changed"]
+
+[connection signal="close_requested" from="MultiplayerDialog" to="MultiplayerDialog" method="hide"]
+
+[connection signal="close_requested" from="EnterCodeDialog" to="EnterCodeDialog" method="hide"]
+
+[connection signal="close_requested" from="InfoDialog" to="InfoDialog" method="hide"]
+
+[connection signal="close_requested" from="CreditsDialog" to="CreditsDialog" method="hide"]
+
+[connection signal="close_requested" from="ImportErrorDialog" to="ImportErrorDialog" method="hide"]

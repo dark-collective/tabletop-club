@@ -26,7 +26,7 @@ class_name Dice
 
 # TODO: export(RandomAudioSample)
 # See: https://github.com/godotengine/godot/pull/44879
-export(Resource) var shake_sounds
+@export var shake_sounds: Resource
 
 var _rng = RandomNumberGenerator.new()
 
@@ -34,7 +34,7 @@ var _rng = RandomNumberGenerator.new()
 # Returns: The top face's value, the empty string if no values are configured.
 func get_face_value() -> String:
 	var face_values: Dictionary = piece_entry["face_values"]
-	if face_values.empty():
+	if face_values.is_empty():
 		return ""
 	
 	var max_dot = -1.0
@@ -42,7 +42,7 @@ func get_face_value() -> String:
 	for value in face_values:
 		var normals: Array = face_values[value]
 		for normal in normals:
-			var dot = transform.basis.xform(normal).dot(Vector3.UP)
+			var dot = (transform.basis * normal).dot(Vector3.UP)
 			if dot > max_dot:
 				max_dot = dot
 				closest_value = value
@@ -50,13 +50,15 @@ func get_face_value() -> String:
 	return closest_value
 
 func _ready():
+	super._ready()
 	_rng.randomize()
 
 func _physics_process(_delta):
+	super._physics_process(_delta)
 	if is_being_shaked():
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			var new_angles = 2 * PI * Vector3(_rng.randf(), _rng.randf(), _rng.randf())
-			srv_set_hover_rotation(Quat(new_angles))
+			srv_set_hover_rotation(Quaternion.from_euler(new_angles))
 		
 		if shake_sounds != null:
 			play_effect(shake_sounds.random_stream())

@@ -5,9 +5,10 @@
 [ext_resource path="res://Scenes/Game/UI/Previews/GenericPreview.tscn" type="PackedScene" id=3]
 [ext_resource path="res://Scenes/Game/UI/Previews/ObjectPreview.tscn" type="PackedScene" id=4]
 
-[node name="RoomDialog" type="WindowDialog"]
-margin_right = 450.0
-margin_bottom = 350.0
+[node name="RoomDialog" type="Window"]
+visible = false
+offset_right = 450.0
+offset_bottom = 350.0
 window_title = "Room"
 script = ExtResource( 1 )
 __meta__ = {
@@ -23,137 +24,142 @@ __meta__ = {
 }
 
 [node name="TabContainer" type="TabContainer" parent="VBoxContainer"]
-margin_right = 450.0
-margin_bottom = 320.0
+offset_right = 450.0
+offset_bottom = 320.0
 size_flags_vertical = 3
 
 [node name="Table" type="VBoxContainer" parent="VBoxContainer/TabContainer"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 
 [node name="CurrentTableLabel" type="Label" parent="VBoxContainer/TabContainer/Table"]
-margin_right = 442.0
-margin_bottom = 20.0
+offset_right = 442.0
+offset_bottom = 20.0
 text = "Current table:"
 
 [node name="TablePreview" parent="VBoxContainer/TabContainer/Table" instance=ExtResource( 4 )]
-margin_top = 24.0
-margin_right = 442.0
-margin_bottom = 143.0
+offset_top = 24.0
+offset_right = 442.0
+offset_bottom = 143.0
 
 [node name="ChangeTableButton" type="Button" parent="VBoxContainer/TabContainer/Table"]
-margin_top = 147.0
-margin_right = 442.0
-margin_bottom = 173.0
+offset_top = 147.0
+offset_right = 442.0
+offset_bottom = 173.0
 text = "Change table"
 
 [node name="Skybox" type="VBoxContainer" parent="VBoxContainer/TabContainer"]
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 size_flags_horizontal = 3
 
 [node name="CurrentSkyboxLabel" type="Label" parent="VBoxContainer/TabContainer/Skybox"]
-margin_right = 442.0
-margin_bottom = 20.0
+offset_right = 442.0
+offset_bottom = 20.0
 text = "Current skybox:"
 
 [node name="SkyboxPreview" parent="VBoxContainer/TabContainer/Skybox" instance=ExtResource( 3 )]
-margin_top = 24.0
-margin_right = 442.0
-margin_bottom = 128.0
+offset_top = 24.0
+offset_right = 442.0
+offset_bottom = 128.0
 selectable = false
 
 [node name="ChangeSkyboxButton" type="Button" parent="VBoxContainer/TabContainer/Skybox"]
-margin_top = 132.0
-margin_right = 442.0
-margin_bottom = 158.0
+offset_top = 132.0
+offset_right = 442.0
+offset_bottom = 158.0
 text = "Change skybox"
 
 [node name="Lighting" type="VBoxContainer" parent="VBoxContainer/TabContainer"]
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 
 [node name="TypeLabel" type="Label" parent="VBoxContainer/TabContainer/Lighting"]
-margin_right = 442.0
-margin_bottom = 20.0
+offset_right = 442.0
+offset_bottom = 20.0
 text = "Lamp Type"
 
 [node name="TypeButton" type="OptionButton" parent="VBoxContainer/TabContainer/Lighting"]
-margin_top = 24.0
-margin_right = 442.0
-margin_bottom = 50.0
+offset_top = 24.0
+offset_right = 442.0
+offset_bottom = 50.0
 text = "Sunlight"
-items = [ "Sunlight", null, false, 0, null, "Spotlight", null, false, 1, null ]
+item_count = 2
+popup/item_0/text = "Sunlight"
+popup/item_0/id = 0
+popup/item_1/text = "Spotlight"
+popup/item_1/id = 1
 selected = 0
 
 [node name="IntensityLabel" type="Label" parent="VBoxContainer/TabContainer/Lighting"]
-margin_top = 54.0
-margin_right = 442.0
-margin_bottom = 74.0
+offset_top = 54.0
+offset_right = 442.0
+offset_bottom = 74.0
 text = "Lamp Intensity"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/TabContainer/Lighting"]
-margin_top = 78.0
-margin_right = 442.0
-margin_bottom = 98.0
+offset_top = 78.0
+offset_right = 442.0
+offset_bottom = 98.0
 
 [node name="IntensitySlider" type="HSlider" parent="VBoxContainer/TabContainer/Lighting/HBoxContainer"]
-margin_right = 388.0
-margin_bottom = 16.0
-rect_min_size = Vector2( 100, 0 )
+offset_right = 388.0
+offset_bottom = 16.0
+custom_minimum_size = Vector2( 100, 0 )
 size_flags_horizontal = 3
 max_value = 3.0
 step = 0.05
 value = 1.0
 
 [node name="IntensityValueLabel" type="Label" parent="VBoxContainer/TabContainer/Lighting/HBoxContainer"]
-margin_left = 392.0
-margin_right = 442.0
-margin_bottom = 20.0
-rect_min_size = Vector2( 50, 0 )
+offset_left = 392.0
+offset_right = 442.0
+offset_bottom = 20.0
+custom_minimum_size = Vector2( 50, 0 )
 text = "10%"
 
 [node name="ColorLabel" type="Label" parent="VBoxContainer/TabContainer/Lighting"]
-margin_top = 102.0
-margin_right = 442.0
-margin_bottom = 122.0
+offset_top = 102.0
+offset_right = 442.0
+offset_bottom = 122.0
 text = "Lamp Color"
 
 [node name="ColorPickerButton" type="ColorPickerButton" parent="VBoxContainer/TabContainer/Lighting"]
-margin_top = 126.0
-margin_right = 442.0
-margin_bottom = 152.0
+offset_top = 126.0
+offset_right = 442.0
+offset_bottom = 152.0
 color = Color( 1, 1, 1, 1 )
 edit_alpha = false
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-margin_top = 324.0
-margin_right = 450.0
-margin_bottom = 350.0
+offset_top = 324.0
+offset_right = 450.0
+offset_bottom = 350.0
 alignment = 2
 
 [node name="ApplyButton" type="Button" parent="VBoxContainer/HBoxContainer"]
-margin_left = 398.0
-margin_right = 450.0
-margin_bottom = 26.0
+offset_left = 398.0
+offset_right = 450.0
+offset_bottom = 26.0
 disabled = true
 text = "Apply"
 
 [node name="SkyboxDialog" parent="." instance=ExtResource( 2 )]
+visible = false
 window_title = "Select a skybox..."
 db_types = {
 "SKYBOXES": "skyboxes"
@@ -161,13 +167,14 @@ db_types = {
 status_text_multiple = "Loaded %d skyboxes."
 
 [node name="TableDialog" parent="." instance=ExtResource( 2 )]
+visible = false
 window_title = "Select a table..."
 db_types = {
 "TABLES": "tables"
 }
 status_text_multiple = "Loaded %d tables."
 
-[connection signal="about_to_show" from="." to="." method="_on_RoomDialog_about_to_show"]
+[connection signal="about_to_popup" from="." to="." method="_on_RoomDialog_about_to_show"]
 [connection signal="pressed" from="VBoxContainer/TabContainer/Table/ChangeTableButton" to="." method="_on_ChangeTableButton_pressed"]
 [connection signal="pressed" from="VBoxContainer/TabContainer/Skybox/ChangeSkyboxButton" to="." method="_on_ChangeSkyboxButton_pressed"]
 [connection signal="item_selected" from="VBoxContainer/TabContainer/Lighting/TypeButton" to="." method="_on_TypeButton_item_selected"]
@@ -176,3 +183,5 @@ status_text_multiple = "Loaded %d tables."
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/ApplyButton" to="." method="_on_ApplyButton_pressed"]
 [connection signal="entry_requested" from="SkyboxDialog" to="." method="_on_SkyboxDialog_entry_requested"]
 [connection signal="entry_requested" from="TableDialog" to="." method="_on_TableDialog_entry_requested"]
+
+[connection signal="close_requested" from="." to="." method="hide"]

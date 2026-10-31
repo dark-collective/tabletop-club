@@ -22,15 +22,15 @@
 
 extends Node
 
-onready var _audio_player = $AudioStreamPlayer
-onready var _track_label = $TrackLabel
+@onready var _audio_player = $AudioStreamPlayer
+@onready var _track_label = $TrackLabel
 
 var _music_queue = []
 var _track_name = ""
 
 # Play the next track in the queue.
 func next_track() -> void:
-	if _music_queue.empty():
+	if _music_queue.is_empty():
 		_track_name = tr("Nothing")
 		update_label_text()
 		return
@@ -46,10 +46,10 @@ func next_track() -> void:
 	# This literally makes NO sense. - an annoyed drwhut.
 	if track_stream is AudioStreamMP3:
 		track_stream.loop = false
-	elif track_stream is AudioStreamOGGVorbis:
+	elif track_stream is AudioStreamOggVorbis:
 		track_stream.loop = false
-	elif track_stream is AudioStreamSample:
-		track_stream.loop_mode = AudioStreamSample.LOOP_DISABLED
+	elif track_stream is AudioStreamWAV:
+		track_stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
 	
 	_audio_player.stream = track_stream
 	_audio_player.play()
@@ -71,3 +71,7 @@ func _ready():
 
 func _on_AudioStreamPlayer_finished():
 	next_track()
+
+func _exit_tree() -> void:
+	_audio_player.stop()
+	_audio_player.stream = null

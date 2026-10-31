@@ -28,12 +28,12 @@ enum {
 	FONT_LARGE
 }
 
-onready var _chat_container = $VBoxContainer
-onready var _chat_text = $VBoxContainer/ChatBackground/ChatText
-onready var _message_edit = $VBoxContainer/HBoxContainer/MessageEdit
-onready var _toggle_button = $ToggleButton
+@onready var _chat_container = $VBoxContainer
+@onready var _chat_text = $VBoxContainer/ChatBackground/ChatText
+@onready var _message_edit = $VBoxContainer/HBoxContainer/MessageEdit
+@onready var _toggle_button = $ToggleButton
 
-export(int) var font_size: int = FONT_LARGE setget set_font_size
+@export var font_size: int = FONT_LARGE: set = set_font_size
 
 const NUM_CHARS_BEFORE_TIMEOUT: int = 1000
 const TIMEOUT_WAIT_TIME: float = 1.0
@@ -55,7 +55,7 @@ func add_raw_message(raw_message: String, stdout: bool = true) -> void:
 		if _num_chars_recent >= NUM_CHARS_BEFORE_TIMEOUT:
 			_chat_text.add_text("\n[%s]" % tr("Too much text being sent, waiting..."))
 		else:
-			_chat_text.bbcode_text += "\n" + raw_message
+			_chat_text.text += "\n" + raw_message
 			_time_since_last_msg = 0.0
 			
 			# Print an unformatted version of the message to stdout.
@@ -77,7 +77,7 @@ func clear_all() -> void:
 func clear_tag(tag: String) -> void:
 	var end_tag = "/" + tag.split("=", true, 1)[0]
 	
-	var old_text = _chat_text.bbcode_text
+	var old_text = _chat_text.text
 	var text_length = old_text.length()
 	var start_length = tag.length() + 2
 	var end_length = end_tag.length() + 2
@@ -102,7 +102,7 @@ func clear_tag(tag: String) -> void:
 	
 	if not currently_in_tag:
 		new_text += old_text.substr(start_add_from)
-	_chat_text.bbcode_text = new_text
+	_chat_text.text = new_text
 
 # Check if the chat box is visible.
 # Returns: If the chat box is visible.
@@ -114,7 +114,7 @@ func prepare_send_message() -> void:
 	var message: String = _message_edit.text.strip_edges()
 	_message_edit.clear()
 	
-	if message.empty():
+	if message.is_empty():
 		return
 	
 	if message.begins_with("/"):
@@ -129,7 +129,7 @@ func prepare_send_message() -> void:
 			# We may need to combine some of the strings if there are quotes.
 			var quote_arg: String = ""
 			for arg in arg_split:
-				if quote_arg.empty():
+				if quote_arg.is_empty():
 					if arg.begins_with("\"") and not arg.ends_with("\""):
 						quote_arg = arg
 					else:
@@ -140,7 +140,7 @@ func prepare_send_message() -> void:
 						args.append(quote_arg)
 						quote_arg = ""
 			
-			if not quote_arg.empty():
+			if not quote_arg.is_empty():
 				push_error("Quote in arguments was not terminated!")
 				return
 		
@@ -178,7 +178,7 @@ func prepare_send_message() -> void:
 				push_error("%d players with name '%s'!" % [num_candidates, send_to_name])
 				return
 			
-			if send_to_id == get_tree().get_network_unique_id():
+			if send_to_id == multiplayer.get_unique_id():
 				push_error("Cannot send whisper to yourself!")
 				return
 			
@@ -192,7 +192,7 @@ func prepare_send_message() -> void:
 			# message, it does not get sent back to us, so we need to log it
 			# ourselves.
 			message_private = message_private.strip_edges().strip_escapes().replace("[", "[ ")
-			if message_private.empty():
+			if message_private.is_empty():
 				return
 			
 			var display = "[color=#f9f]>> [/color]%s[color=#f9f]: %s[/color]" % [
@@ -206,8 +206,9 @@ func prepare_send_message() -> void:
 		rpc_id(1, "send_message", message)
 
 # Called by the server to say a message was sent by someone.
-remotesync func receive_message(sender_id: int, message: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func receive_message(sender_id: int, message: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Security!
@@ -223,8 +224,9 @@ remotesync func receive_message(sender_id: int, message: String) -> void:
 	add_raw_message(message)
 
 # Called by the server when a player sent a private message to us.
-remotesync func receive_message_private(sender_id: int, message: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func receive_message_private(sender_id: int, message: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Security!
@@ -242,18 +244,24 @@ remotesync func receive_message_private(sender_id: int, message: String) -> void
 
 # Send a message to the server.
 # message: The message to send.
-master func send_message(message: String) -> void:
-	rpc("receive_message", get_tree().get_rpc_sender_id(), message)
+@rpc("any_peer", "call_local", "reliable")
+func send_message(message: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	rpc("receive_message", Global.get_sender_id(self), message)
 
 # Send a private message to the server.
 # send_to: The client ID to send the message to.
 # message: The message to send.
-master func send_message_private(send_to: int, message: String) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func send_message_private(send_to: int, message: String) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not Lobby.player_exists(send_to):
 		push_error("Player with ID %d does not exist!" % send_to)
 		return
 	
-	rpc_id(send_to, "receive_message_private", get_tree().get_rpc_sender_id(),
+	rpc_id(send_to, "receive_message_private", Global.get_sender_id(self),
 			message)
 
 # Set the chat box to be visible.
@@ -274,9 +282,9 @@ func set_font_size(size: int) -> void:
 		return
 	
 	if size != font_size:
-		var normal_font: DynamicFont = null
-		var bold_font: DynamicFont   = null
-		var italic_font: DynamicFont = null
+		var normal_font: Font = null
+		var bold_font: Font   = null
+		var italic_font: Font = null
 		
 		match size:
 			FONT_SMALL:
@@ -292,16 +300,18 @@ func set_font_size(size: int) -> void:
 				bold_font   = preload("res://Fonts/Cabin/Cabin-Bold.tres")
 				italic_font = preload("res://Fonts/Cabin/Cabin-Italic.tres")
 		
-		_chat_text.add_font_override("normal_font", normal_font)
-		_chat_text.add_font_override("bold_font", bold_font)
-		_chat_text.add_font_override("italics_font", italic_font)
+		_chat_text.add_theme_font_override("normal_font", normal_font)
+		_chat_text.add_theme_font_override("bold_font", bold_font)
+		_chat_text.add_theme_font_override("italics_font", italic_font)
 		
+		for kind in ["normal", "bold", "italics", "bold_italics", "mono"]:
+			_chat_text.add_theme_font_size_override(kind + "_font_size", [10, 12, 16][size])
 		font_size = size
 
 func _ready():
 	set_chat_visible(true)
 	
-	Global.connect("censor_changed", self, "_on_Global_censor_changed")
+	Global.connect("censor_changed", Callable(self, "_on_Global_censor_changed"))
 
 func _process(delta):
 	_time_since_last_msg += delta
@@ -310,7 +320,7 @@ func _process(delta):
 # Returns: A random line from the given array.
 # text_file: The array to get the line from.
 func _random_string_from_array(array: Array) -> String:
-	if array.empty():
+	if array.is_empty():
 		return ""
 	
 	var rng = RandomNumberGenerator.new()
@@ -321,7 +331,7 @@ func _random_string_from_array(array: Array) -> String:
 
 func _on_Global_censor_changed():
 	if Global.censoring_profanity:
-		_chat_text.bbcode_text = Global.censor_profanity(_chat_text.bbcode_text)
+		_chat_text.text = Global.censor_profanity(_chat_text.text)
 
 func _on_MessageEdit_text_entered(_new_text: String):
 	prepare_send_message()

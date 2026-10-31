@@ -30,8 +30,8 @@ func get_action_input_event(action: String) -> InputEvent:
 	if not InputMap.has_action(action):
 		return null
 	
-	var events = InputMap.get_action_list(action)
-	if events.empty():
+	var events = InputMap.action_get_events(action)
+	if events.is_empty():
 		return null
 	
 	return events[0]
@@ -51,26 +51,26 @@ func get_input_event_text(event: InputEvent) -> String:
 		return tr("Not bound")
 	
 	if event is InputEventKey:
-		return OS.get_scancode_string(event.scancode)
+		return OS.get_keycode_string(event.keycode)
 	elif event is InputEventMouseButton:
 		match event.button_index:
-			BUTTON_LEFT:
+			MOUSE_BUTTON_LEFT:
 				return tr("Left Mouse Button")
-			BUTTON_RIGHT:
+			MOUSE_BUTTON_RIGHT:
 				return tr("Right Mouse Button")
-			BUTTON_MIDDLE:
+			MOUSE_BUTTON_MIDDLE:
 				return tr("Middle Mouse Button")
-			BUTTON_XBUTTON1:
+			MOUSE_BUTTON_XBUTTON1:
 				return tr("Extra Mouse Button 1")
-			BUTTON_XBUTTON2:
+			MOUSE_BUTTON_XBUTTON2:
 				return tr("Extra Mouse Button 2")
-			BUTTON_WHEEL_UP:
+			MOUSE_BUTTON_WHEEL_UP:
 				return tr("Mouse Wheel Up")
-			BUTTON_WHEEL_DOWN:
+			MOUSE_BUTTON_WHEEL_DOWN:
 				return tr("Mouse Wheel Down")
-			BUTTON_WHEEL_LEFT:
+			MOUSE_BUTTON_WHEEL_LEFT:
 				return tr("Mouse Wheel Left")
-			BUTTON_WHEEL_RIGHT:
+			MOUSE_BUTTON_WHEEL_RIGHT:
 				return tr("Mouse Wheel Right")
 			_:
 				return tr("Unknown Mouse Button")

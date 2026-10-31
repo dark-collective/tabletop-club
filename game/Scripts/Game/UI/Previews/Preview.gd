@@ -26,8 +26,8 @@ class_name Preview
 
 signal clicked(preview, event)
 
-export(bool) var allow_multiple_select: bool = false
-export(bool) var selectable: bool = true
+@export var allow_multiple_select: bool = false
+@export var selectable: bool = true
 
 var _entry: Dictionary = {}
 
@@ -52,7 +52,7 @@ func is_selected() -> bool:
 # Set the entry the preview will display.
 # entry: The entry the preview will display.
 func set_entry(entry: Dictionary) -> void:
-	if entry.empty():
+	if entry.is_empty():
 		return
 	
 	_entry = entry
@@ -81,13 +81,13 @@ func set_selected_single() -> void:
 	if is_selected():
 		remove_from_group("preview_selected")
 	
-	get_tree().call_group_flags(SceneTree.GROUP_CALL_REALTIME , "preview_selected", "set_selected", false)
+	get_tree().call_group_flags(SceneTree.GROUP_CALL_DEFAULT , "preview_selected", "set_selected", false)
 	
 	set_selected(true)
 
 func _ready():
-	connect("gui_input", self, "_on_gui_input")
-	connect("visibility_changed", self, "_on_visibility_changed")
+	connect("gui_input", Callable(self, "_on_gui_input"))
+	connect("visibility_changed", Callable(self, "_on_visibility_changed"))
 
 # Called when the preview is cleared.
 func _clear_gui() -> void:
@@ -105,15 +105,15 @@ func _set_selected_gui(_selected: bool) -> void:
 
 func _on_gui_input(event):
 	# Completely ignore any events if the preview isn't displaying anything.
-	if _entry.empty():
+	if _entry.is_empty():
 		return
 	
 	if event is InputEventMouseButton:
 		emit_signal("clicked", self, event)
 		
 		# If the preview has been clicked, register it as selected.
-		if event.pressed and event.button_index == BUTTON_LEFT:
-			var ctrl = event.command if OS.get_name() == "OSX" else event.control
+		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			var ctrl = event.meta if OS.get_name() == "macOS" else event.ctrl_pressed
 			if allow_multiple_select and ctrl:
 				set_selected(not is_selected())
 			else:

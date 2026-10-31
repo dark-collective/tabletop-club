@@ -1,7 +1,7 @@
 shader_type canvas_item;
 
 uniform float AspectRatio;
-uniform vec4 BrushColor: hint_color;
+uniform vec4 BrushColor: source_color;
 uniform bool BrushEnabled;
 uniform vec2 BrushPosition;
 uniform float BrushSize;

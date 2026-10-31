@@ -2,12 +2,13 @@
 
 importer="image"
 type="Image"
-path="res://.import/ForbiddenCursor.png-35b6e998096d01a55b312418f72e5621.image"
+uid="uid://du10wvn0i8dwo"
+path="res://.godot/imported/ForbiddenCursor.png-35b6e998096d01a55b312418f72e5621.image"
 
 [deps]
 
 source_file="res://Images/ForbiddenCursor.png"
-dest_files=[ "res://.import/ForbiddenCursor.png-35b6e998096d01a55b312418f72e5621.image" ]
+dest_files=["res://.godot/imported/ForbiddenCursor.png-35b6e998096d01a55b312418f72e5621.image"]
 
 [params]
 

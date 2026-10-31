@@ -59,9 +59,9 @@ var ERROR_MESSAGES = {
 	4018: tr("Join queue is full."),
 }
 
-export(String) var room_code = "" # If empty, create a new room.
+@export var room_code: String = "" # If empty, create a new room.
 
-var client = WebSocketClient.new()
+var client = WebSocketPeer.new()
 
 # If we suddenly disconnect from the master server without getting an error
 # code, assume we couldn't connect to the master server.
@@ -71,12 +71,15 @@ var reason: String = ERROR_MESSAGES[code]
 # Connect to the master server.
 func connect_to_server() -> void:
 	close()
+	code = 4001
+	reason = ERROR_MESSAGES[code]
+	_previous_state = WebSocketPeer.STATE_CONNECTING
 	
 	# Players can change where the game looks for the master server by passing
 	# a "--master-server" argument when running the game, as well as an
 	# "--ssl-certificate" argument that points to a .crt file for the "new"
 	# master server.
-	var cmdline_args = OS.get_cmdline_args()
+	var cmdline_args = OS.get_cmdline_user_args()
 	var master_server_index = -1
 	var ssl_certificate_index = -1
 	
@@ -108,10 +111,10 @@ func connect_to_server() -> void:
 	
 	if ssl_certificate_index >= 0:
 		var path: String = cmdline_args[ssl_certificate_index]
-		if path.is_abs_path() or path.is_rel_path():
+		if path.is_absolute_path() or path.is_relative_path():
 			if path.get_extension() == "crt":
-				var file: File = File.new()
-				if file.file_exists(path):
+				var file: FileAccess
+				if FileAccess.file_exists(path):
 					var err = custom_certificate.load(path)
 					if err == OK:
 						custom_certificate_ok = true
@@ -124,43 +127,44 @@ func connect_to_server() -> void:
 		else:
 			push_error("--ssl-certificate is not a valid path!")
 	
-	if custom_server.empty():
+	if custom_server.is_empty():
 		if custom_certificate_ok:
 			push_warning("SSL certificate provided with no custom master server, ignoring.")
-		var connect_err = client.connect_to_url(URL)
+		var connect_err = client.connect_to_url(URL, TLSOptions.client(load("res://master_server.crt")))
 		if connect_err != OK:
 			push_error("Could not connect to the master server (error %d)!" % connect_err)
 			emit_signal("disconnected")
 	else:
 		push_warning("Connecting to an unofficial master server at '%s', proceed with caution!" % custom_server)
 		if custom_certificate_ok:
-			client.trusted_ssl_certificate = custom_certificate
+			pass # TLS options are passed to connect_to_url below.
 		else:
 			push_warning("No SSL certificate was loaded for '%s', this will not end well..." % custom_server)
-		var connect_err = client.connect_to_url(custom_server)
+		var connect_err = client.connect_to_url(custom_server, TLSOptions.client(custom_certificate) if custom_certificate_ok else null)
 		if connect_err != OK:
 			push_error("Could not connect to the custom master server (error %d)!" % connect_err)
 			emit_signal("disconnected")
 
 # Close the connection to the master server.
 func close() -> void:
-	client.disconnect_from_host()
+	client.close()
+	_previous_state = WebSocketPeer.STATE_CLOSED
 
 # Check if we are currently connected to the master server.
 # Returns: If there is an ongoing connection to the master server.
 func is_connection_established() -> bool:
-	return client.get_connection_status() == NetworkedMultiplayerPeer.CONNECTION_CONNECTED
+	return client.get_ready_state() == WebSocketPeer.STATE_OPEN
 
 # Ask the master server to join the room with the given room code.
 # Returns: An Error.
 # new_room_code: The room code.
 func join_room(new_room_code: String) -> int:
-	return client.get_peer(1).put_packet(("J: %s\n" % new_room_code).to_utf8())
+	return client.send_text(("J: %s\n" % new_room_code))
 
 # Ask the master server to seal the room, which closes it.
 # Returns: An Error.
 func seal_room() -> int:
-	return client.get_peer(1).put_packet("S: \n".to_utf8())
+	return client.send_text("S: \n")
 
 # Send an answer back to a peer via the master server.
 # Returns: An Error.
@@ -185,19 +189,20 @@ func send_candidate(id: int, mid: String, index: int, sdp: String) -> int:
 func send_offer(id: int, offer: String) -> int:
 	return _send_msg("O", id, offer)
 
-func _init():
-	client.connect("connection_closed", self, "_on_closed")
-	client.connect("connection_error", self, "_on_closed")
-	client.connect("connection_established", self, "_on_connected")
-	client.connect("data_received", self, "_on_data_received")
-	client.connect("server_close_request", self, "_on_close_request")
-	
-	client.verify_ssl = true
+var _previous_state = WebSocketPeer.STATE_CLOSED
 
 func _process(_delta):
-	var status: int = client.get_connection_status()
-	if status == WebSocketClient.CONNECTION_CONNECTING or status == WebSocketClient.CONNECTION_CONNECTED:
-		client.poll()
+	client.poll()
+	var state = client.get_ready_state()
+	if state == WebSocketPeer.STATE_OPEN:
+		if _previous_state != WebSocketPeer.STATE_OPEN:
+			_on_connected()
+		while client.get_available_packet_count() > 0:
+			_on_data_received()
+	elif state == WebSocketPeer.STATE_CLOSED and _previous_state != WebSocketPeer.STATE_CLOSED:
+		_on_close_request(client.get_close_code(), client.get_close_reason())
+		_on_closed()
+	_previous_state = state
 
 # Send a message to a peer via the master server.
 # Returns: An Error.
@@ -205,7 +210,7 @@ func _process(_delta):
 # id: The ID of the peer.
 # data: The data to send.
 func _send_msg(type: String, id: int, data: String) -> int:
-	return client.get_peer(1).put_packet(("%s: %d\n%s" % [type, id, data]).to_utf8())
+	return client.send_text(("%s: %d\n%s" % [type, id, data]))
 
 func _on_closed(_was_clean: bool = false):
 	emit_signal("disconnected")
@@ -219,13 +224,12 @@ func _on_close_request(close_code: int, close_reason: String):
 		self.reason = close_reason
 
 func _on_connected(_protocol: String = ""):
-	client.get_peer(1).set_write_mode(WebSocketPeer.WRITE_MODE_TEXT)
 	join_room(room_code)
 
 func _on_data_received():
-	var pkt_str: String = client.get_peer(1).get_packet().get_string_from_utf8()
+	var pkt_str: String = client.get_packet().get_string_from_utf8()
 	
-	var req: PoolStringArray = pkt_str.split("\n", true, 1)
+	var req: PackedStringArray = pkt_str.split("\n", true, 1)
 	if req.size() != 2: # Invalid request size
 		return
 	
@@ -241,7 +245,7 @@ func _on_data_received():
 		return
 	
 	var src_str: String = type.substr(3, type.length() - 3)
-	if not src_str.is_valid_integer(): # Source id is not an integer
+	if not src_str.is_valid_int(): # Source id is not an integer
 		return
 	
 	var src_id: int = int(src_str)
@@ -262,9 +266,9 @@ func _on_data_received():
 		emit_signal("answer_received", src_id, req[1])
 	elif type.begins_with("C: "):
 		# Candidate received
-		var candidate: PoolStringArray = req[1].split("\n", false)
+		var candidate: PackedStringArray = req[1].split("\n", false)
 		if candidate.size() != 3:
 			return
-		if not candidate[1].is_valid_integer():
+		if not candidate[1].is_valid_int():
 			return
 		emit_signal("candidate_received", src_id, candidate[0], int(candidate[1]), candidate[2])

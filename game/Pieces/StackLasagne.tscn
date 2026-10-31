@@ -10,9 +10,9 @@
 [ext_resource path="res://Sounds/Chips/ChipStackOrientSounds.tres" type="Resource" id=8]
 [ext_resource path="res://Sounds/Chips/ChipStackRemoveSounds.tres" type="Resource" id=9]
 
-[node name="StackLasagne" type="RigidBody"]
+[node name="StackLasagne" type="RigidBody3D"]
 mass = 0.01
-contacts_reported = 1
+max_contacts_reported = 1
 contact_monitor = true
 script = ExtResource( 1 )
 __meta__ = {
@@ -22,8 +22,8 @@ The shape of the stack is determined by the first piece that enters the stack, a
 
 A lasagne stack renders all of the pieces inside it."
 }
-collision_shape_path = NodePath("CollisionShape")
-outline_mesh_path = NodePath("CollisionShape/OutlineMeshInstance")
+collision_shape_path = NodePath("CollisionShape3D")
+outline_mesh_path = NodePath("CollisionShape3D/OutlineMeshInstance")
 card_add_sounds = ExtResource( 6 )
 card_orient_sounds = ExtResource( 4 )
 card_remove_sounds = ExtResource( 3 )
@@ -32,14 +32,14 @@ chip_add_sounds = ExtResource( 7 )
 chip_orient_sounds = ExtResource( 8 )
 chip_remove_sounds = ExtResource( 9 )
 chip_shuffle_sounds = ExtResource( 2 )
-pieces_path = NodePath("CollisionShape/Pieces")
+pieces_path = NodePath("CollisionShape3D/Pieces")
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 
-[node name="Pieces" type="Spatial" parent="CollisionShape"]
+[node name="Pieces" type="Node3D" parent="CollisionShape3D"]
 __meta__ = {
 "_editor_description_": "All of the pieces of the stack are put as children of this node, and are converted to MeshInstances."
 }
 
-[node name="OutlineMeshInstance" type="MeshInstance" parent="CollisionShape"]
+[node name="OutlineMeshInstance" type="MeshInstance3D" parent="CollisionShape3D"]
 skeleton = NodePath("")

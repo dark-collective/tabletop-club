@@ -20,14 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends WindowDialog
+extends Window
 
 signal take_all_from(container)
 signal take_from(container, names)
 
-onready var _preview_grid = $VBoxContainer/ObjectPreviewGrid
-onready var _take_button = $VBoxContainer/HBoxContainer/TakeButton
-onready var _take_all_button = $VBoxContainer/HBoxContainer/TakeAllButton
+@onready var _preview_grid = $VBoxContainer/ObjectPreviewGrid
+@onready var _take_button = $VBoxContainer/HBoxContainer/TakeButton
+@onready var _take_all_button = $VBoxContainer/HBoxContainer/TakeAllButton
 
 var _last_container: PieceContainer = null
 
@@ -37,7 +37,7 @@ func display_contents(container: PieceContainer) -> void:
 	_last_container = container
 	
 	var container_name = container.piece_entry["name"]
-	window_title = tr("Contents of %s") % container_name
+	title = tr("Contents of %s") % container_name
 	
 	_take_button.disabled = true
 	_take_all_button.disabled = true
@@ -46,7 +46,7 @@ func display_contents(container: PieceContainer) -> void:
 	_preview_grid.reset()
 
 func _on_ObjectPreviewGrid_preview_clicked(_preview: ObjectPreview, _event: InputEventMouseButton):
-	var none_selected = get_tree().get_nodes_in_group("preview_selected").empty()
+	var none_selected = get_tree().get_nodes_in_group("preview_selected").is_empty()
 	_take_button.disabled = none_selected
 
 func _on_ObjectPreviewGrid_requesting_objects(start: int, length: int):
@@ -60,7 +60,7 @@ func _on_ObjectPreviewGrid_requesting_objects(start: int, length: int):
 		var duplicate = _last_container.duplicate_piece(piece_names[i])
 		objects.append(duplicate)
 	
-	_take_all_button.disabled = objects.empty()
+	_take_all_button.disabled = objects.is_empty()
 	
 	var after = max(0, piece_names.size() - start - length)
 	_preview_grid.provide_objects(objects, after)
@@ -75,7 +75,7 @@ func _on_TakeButton_pressed():
 		if preview is ObjectPreview:
 			# The original name of the node should have been duplicated.
 			var piece_name = preview.get_piece_name()
-			if not piece_name.empty():
+			if not piece_name.is_empty():
 				take_out_names.append(piece_name)
 	
 	emit_signal("take_from", _last_container, take_out_names)

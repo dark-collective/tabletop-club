@@ -27,7 +27,7 @@ class_name PieceContainer
 signal absorbing_hovered(container, player_id)
 signal releasing_random_piece(container)
 
-onready var _pieces = $Pieces
+@onready var _pieces = $Pieces
 
 var _srv_is_locked: bool = false
 
@@ -38,7 +38,7 @@ func add_piece(piece: Piece) -> void:
 	# Move the piece out of the way of the table so it is not visible, and make
 	# sure it cannot move.
 	piece.transform.origin = Vector3(9999, 9999, 9999)
-	piece.mode = MODE_STATIC
+	piece.freeze = FREEZE_MODE_STATIC
 	
 	_pieces.add_child(piece)
 	mass += piece.mass
@@ -66,7 +66,7 @@ func get_piece_count() -> int:
 func get_piece_names() -> Array:
 	var out = []
 	for piece in _pieces.get_children():
-		out.append(piece.name)
+		out.append(str(piece.name))
 	return out
 
 # Does the container have the given piece?
@@ -80,19 +80,20 @@ func has_piece(piece_name: String) -> bool:
 func is_locked() -> bool:
 	if _srv_is_locked:
 		return true
-	return .is_locked()
+	return super.is_locked()
 
 # Called by the server to lock the piece on all clients, with the given
 # transform.
-puppet func lock_client(locked_transform: Transform) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func lock_client(locked_transform: Transform3D) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		transform = locked_transform
 		_srv_set_locked_container(true)
 	else:
-		.lock_client(locked_transform)
+		super.lock_client(locked_transform)
 
 # Recalculate the mass of the container, based on the items inside it.
 # You should use this if you added a piece to the container, but not via the
@@ -133,7 +134,7 @@ func remove_piece(piece_name: String) -> Piece:
 		var new_origin = transform.origin + distance * transform.basis.y
 		piece.transform.origin = new_origin
 		
-		piece.mode = MODE_RIGID
+		piece.freeze = false
 		
 		return piece
 	
@@ -145,18 +146,20 @@ func srv_lock() -> void:
 	rpc("lock_client", transform)
 
 # Called by the server to unlock the piece.
-remotesync func unlock() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func unlock() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		_srv_set_locked_container(false)
 		sleeping = false
 	else:
-		.unlock()
+		super.unlock()
 
 func _physics_process(_delta):
-	if get_tree().is_network_server():
+	super._physics_process(_delta)
+	if multiplayer.is_server():
 		var shakable: bool = piece_entry["shakable"]
 		if shakable:
 			# If the container is upside down, and it is being shaken, then
@@ -166,7 +169,7 @@ func _physics_process(_delta):
 
 func _integrate_forces(state):
 	if not _srv_is_locked:
-		._integrate_forces(state)
+		super._integrate_forces(state)
 
 # Set if the container is locked on the server.
 # NOTE: Locking a container on the server side is different to every other
@@ -186,9 +189,9 @@ func _srv_set_locked_container(is_locked: bool) -> void:
 	custom_integrator = is_locked
 
 func _on_body_entered(body) -> void:
-	._on_body_entered(body)
+	super._on_body_entered(body)
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		
 		# If a piece has collided with this container, then figure out if the
 		# piece was being hovered by a player. If it is, then we can add it to

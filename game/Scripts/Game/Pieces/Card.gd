@@ -36,8 +36,9 @@ func is_collisions_on() -> bool:
 
 # Called by the server to set whether the card will collide with other pieces.
 # on: If the card will collide with other pieces.
-remotesync func set_collisions_on(on: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_collisions_on(on: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var mask = 4
@@ -46,7 +47,8 @@ remotesync func set_collisions_on(on: bool) -> void:
 	collision_mask = mask
 
 func _ready():
-	connect("tree_exiting", self, "_on_tree_exiting")
+	super._ready()
+	connect("tree_exiting", Callable(self, "_on_tree_exiting"))
 
 func _on_tree_exiting():
 	emit_signal("card_exiting_tree", self)

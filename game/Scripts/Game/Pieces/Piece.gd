@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends RigidBody
+extends RigidBody3D
 
 class_name Piece
 
@@ -37,29 +37,29 @@ const SHAKING_THRESHOLD = 1000.0
 const SHAKE_WAIT_DURATION = 500
 const TRANSFORM_LERP_ALPHA = 0.9
 
-export(NodePath) var effect_player_path: String
+@export var effect_player_path: NodePath
 
 # Set if you know where the mesh instance is, and if there is only one mesh
 # instance. Otherwise, the game will try and find it automatically when it
 # needs it (e.g. when using a custom piece).
-export(NodePath) var mesh_instance_path: String
+@export var mesh_instance_path: NodePath
 
 # TODO: export(RandomAudioSample)
 # See: https://github.com/godotengine/godot/pull/44879
 # NOTE: Contact reporting needs to be enabled for these sounds to be played.
-export(Resource) var table_collide_fast_sounds
-export(Resource) var table_collide_slow_sounds
+@export var table_collide_fast_sounds: Resource
+@export var table_collide_slow_sounds: Resource
 
 # Exported so cached pieces save the piece entry, it is not expected to fill
 # this manually.
-export(Dictionary) var piece_entry: Dictionary = {}
+@export var piece_entry: Dictionary = {}
 
 # When setting these vectors, make sure you call set_angular_lock(false),
 # otherwise the piece won't rotate towards the orientation!
 var hover_offset = Vector3.ZERO
 var hover_player = 0 # 0 = Not hovering, > 0 is the player ID.
 var hover_position = Vector3.ZERO
-var hover_quat = Quat.IDENTITY
+var hover_quat = Quaternion.IDENTITY
 var hover_start_time: int = 0
 
 var srv_retrieve_from_hell: bool = true
@@ -69,7 +69,7 @@ var srv_retrieve_from_hell: bool = true
 # contains the rotation. This format reduces the size of the packets that are
 # sent to the clients.
 var _last_server_state_vecs: Basis
-var _last_server_state_quat: Quat
+var _last_server_state_quat: Quaternion
 var _last_server_state_invalid: bool = true
 var _last_server_state_time: int = 0
 var _last_slow_table_collision = 0.0
@@ -80,7 +80,7 @@ var _new_velocity = Vector3()
 # For optimisation purposes, we rarely check if a Basis is orthonormalized
 # before converting it into a Quat. Since the game uses frame interpolation,
 # the "main thread" transform is not 100% reliable.
-var _last_physics_state_transform: Transform = Transform.IDENTITY
+var _last_physics_state_transform: Transform3D = Transform3D.IDENTITY
 var _last_physics_state_transform_set = false
 
 var _outline_material: ShaderMaterial = null
@@ -93,29 +93,29 @@ var _original_shape_scales_saved = false
 # Apply a texture to the piece.
 # texture: The texture to apply.
 # surface: The index of the surface to apply the texture to.
-func apply_texture(texture: Texture, surface: int = 0) -> void:
+func apply_texture(texture: Texture2D, surface: int = 0) -> void:
 	for mesh_instance in get_mesh_instances():
-		var material = SpatialMaterial.new()
+		var material = StandardMaterial3D.new()
 		material.albedo_texture = texture
 		
-		mesh_instance.set_surface_material(surface, material)
+		mesh_instance.set_surface_override_material(surface, material)
 
 # Get the current albedo colour in the piece's material.
 # Returns: The current albedo colour.
 func get_albedo_color() -> Color:
 	if not _expose_albedo_color:
 		push_error("Albedo color is not exposed!")
-		return Color.white
+		return Color.WHITE
 	
-	var current_color = Color.white
-	var original_color = Color.white
+	var current_color = Color.WHITE
+	var original_color = Color.WHITE
 	for mesh_instance in get_mesh_instances():
-		if mesh_instance.get_surface_material_count() > 0:
-			var material = mesh_instance.get_surface_material(0)
+		if mesh_instance.get_surface_override_material_count() > 0:
+			var material = mesh_instance.get_surface_override_material(0)
 			
 			# Skip if the first surface does not have a material.
 			if material == null:
-				push_warning("Mesh instance %s has no material for surface 0, ignoring." % mesh_instance.name)
+				push_warning("Mesh instance %s has no material for surface 0, ignoring." % str(mesh_instance.name))
 				continue
 			
 			current_color = material.albedo_color
@@ -139,7 +139,7 @@ func get_albedo_color() -> Color:
 func get_collision_shapes() -> Array:
 	var out = []
 	for child in get_children():
-		if child is CollisionShape:
+		if child is CollisionShape3D:
 			out.append(child)
 	return out
 
@@ -148,10 +148,10 @@ func get_collision_shapes() -> Array:
 func get_current_scale() -> Vector3:
 	if _original_shape_scales_saved:
 		var collision_shapes = get_collision_shapes()
-		if not collision_shapes.empty():
+		if not collision_shapes.is_empty():
 			# The scale should be consistent across all of the collision shapes,
 			# so just compare it against the first one.
-			var shape: CollisionShape = collision_shapes[0]
+			var shape: CollisionShape3D = collision_shapes[0]
 			# We want the local scale, ignoring any rotation from the parent.
 			var true_scale = shape.transform.basis.get_scale()
 			var x = true_scale.x / _original_shape_scales[0].x
@@ -178,13 +178,13 @@ func get_effect_player() -> AudioStreamPlayer3D:
 func get_mesh_instances() -> Array:
 	if mesh_instance_path:
 		var mesh_instance = get_node(mesh_instance_path)
-		if mesh_instance is MeshInstance:
-			return [mesh_instance as MeshInstance]
+		if mesh_instance is MeshInstance3D:
+			return [mesh_instance as MeshInstance3D]
 	
 	var out = []
 	for collision_shape in get_collision_shapes():
 		for child in collision_shape.get_children():
-			if child is MeshInstance:
+			if child is MeshInstance3D:
 				out.append(child)
 	return out
 
@@ -225,7 +225,7 @@ func is_being_shaked() -> bool:
 # Returns: Time the piece is being hovered for in msec
 func hovering_duration() -> int:
 	if hover_player == 0: return 0
-	return OS.get_ticks_msec() - hover_start_time
+	return Time.get_ticks_msec() - hover_start_time
 
 # Is the piece being hovered?
 # Returns: If the piece is being hovered.
@@ -235,15 +235,16 @@ func is_hovering() -> bool:
 # Is the piece locked, i.e. unable to move?
 # Returns: If the piece is locked.
 func is_locked() -> bool:
-	return mode == MODE_STATIC
+	return freeze
 
 # Called by the server to lock the piece on all clients, with the given
 # transform.
-puppet func lock_client(locked_transform: Transform) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func lock_client(locked_transform: Transform3D) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	mode = MODE_STATIC
+	freeze = true
 	transform = locked_transform
 
 # Play a sound effect from the effect player, if it exists.
@@ -263,42 +264,63 @@ func play_effect(sound: AudioStream) -> void:
 	effect_player.play()
 
 # If you are not hovering this piece, ask the server to flip the piece vertically.
-master func request_flip_vertically_on_ground() -> void:
-	var current_quat = transform.basis.get_rotation_quat()
-	var modify_quat = Quat(transform.basis.z, PI)
+@rpc("any_peer", "call_local", "reliable")
+func request_flip_vertically_on_ground() -> void:
+	if not is_multiplayer_authority():
+		return
+	var current_quat = transform.basis.get_rotation_quaternion()
+	var modify_quat = Quaternion(transform.basis.z, PI)
 	request_set_rotation_quat(modify_quat * current_quat)
 
 # If you are hovering this piece, ask the server to flip the piece vertically.
-master func request_flip_vertically() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_flip_vertically() -> void:
+	if not is_multiplayer_authority():
+		return
 	var back_basis = hover_quat * Vector3.BACK
-	var modify_quat = Quat(back_basis, PI)
+	var modify_quat = Quaternion(back_basis, PI)
 	request_set_hover_rotation(modify_quat * hover_quat)
 
 # Request the server to apply an impulse to the piece.
 # position: The position to apply the impulse, relative to the piece's origin.
 # impulse: The impulse to apply, using the global rotation.
-master func request_impulse(position: Vector3, impulse: Vector3) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_impulse(position: Vector3, impulse: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not (is_hovering() or is_locked()):
-		apply_impulse(position, impulse)
+		apply_impulse(impulse, position)
 
 # Request the server to lock the piece.
-master func request_lock() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_lock() -> void:
+	if not is_multiplayer_authority():
+		return
 	srv_lock()
 
-# If you are not hovering the piece, ask the server to reset the 
+# If you are not hovering the piece, ask the server to reset the
 # orientation of the piece.
-master func request_reset_orientation_on_ground() -> void:
-	request_set_rotation_quat(Quat.IDENTITY)
+@rpc("any_peer", "call_local", "reliable")
+func request_reset_orientation_on_ground() -> void:
+	if not is_multiplayer_authority():
+		return
+	request_set_rotation_quat(Quaternion.IDENTITY)
 
 # If you are hovering the piece, ask the server to reset the orientation of the
 # piece.
-master func request_reset_orientation() -> void:
-	request_set_hover_rotation(Quat.IDENTITY)
+@rpc("any_peer", "call_local", "reliable")
+func request_reset_orientation() -> void:
+	if not is_multiplayer_authority():
+		return
+	request_set_hover_rotation(Quaternion.IDENTITY)
 
 # If you are hovering the piece, request the server to rotate it
 # around the y-axis by the given rotation.
 # rot: The amount to rotate it by in radians.
-master func request_rotate_y(rot: float) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_rotate_y(rot: float) -> void:
+	if not is_multiplayer_authority():
+		return
 	if is_zero_approx(rot):
 		return
 
@@ -314,80 +336,121 @@ master func request_rotate_y(rot: float) -> void:
 	var target_y_euler = current_euler
 	target_y_euler.y = wrapf(target_y_scale * abs(rot), -PI, PI)
 	
-	request_set_hover_rotation(Quat(target_y_euler))
+	request_set_hover_rotation(Quaternion.from_euler(target_y_euler))
 
 # If you are not hovering the piece, request the server to
 # rotate it around the y-axis by the given rotation.
 # rot: The amount to rotate it by in radians.
-master func request_rotate_y_on_ground(rot: float) -> void:
-	var current_quat = transform.basis.get_rotation_quat()
-	var modify_quat = Quat(transform.basis.y, rot)
+@rpc("any_peer", "call_local", "reliable")
+func request_rotate_y_on_ground(rot: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	var current_quat = transform.basis.get_rotation_quaternion()
+	var modify_quat = Quaternion(transform.basis.y, rot)
 	request_set_rotation_quat(modify_quat * current_quat)
 
 # Request the server to set the material's albedo color.
 # color: The new albedo color.
 # unreliable: Should the server send the RPC unreliably?
-master func request_set_albedo_color(color: Color, unreliable: bool = false) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_albedo_color(color: Color, unreliable: bool = false) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not _expose_albedo_color:
 		push_error("Albedo color is not exposed!")
 		return
 	
 	if unreliable:
-		rpc_unreliable("set_albedo_color", color)
+		rpc("set_albedo_color_unreliable", color)
 	else:
 		rpc("set_albedo_color", color)
+
+# Godot 4 selects reliability at the receiver, so live color previews use
+# separate RPCs while the final picker value remains reliable.
+@rpc("any_peer", "call_local", "unreliable")
+func request_set_albedo_color_unreliable(color: Color) -> void:
+	request_set_albedo_color(color, true)
+
+@rpc("any_peer", "call_local", "unreliable")
+func set_albedo_color_unreliable(color: Color) -> void:
+	set_albedo_color(color)
 
 # Request the server to set the hover rotation if you are the client hovering
 # the piece.
 # new_hover_quat: The quaternion the hovering piece will go towards.
-master func request_set_hover_rotation(new_hover_quat: Quat) -> void:
-	if get_tree().get_rpc_sender_id() == hover_player:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_hover_rotation(new_hover_quat: Quaternion) -> void:
+	if not is_multiplayer_authority():
+		return
+	if Global.get_sender_id(self) == hover_player:
 		srv_set_hover_rotation(new_hover_quat)
 
 # Request the server to set the hover position if you are the client hovering
 # the piece.
 # new_hover_position: The position the hovering piece will go towards.
-master func request_set_hover_position(new_hover_position: Vector3) -> void:
-	if get_tree().get_rpc_sender_id() == hover_player:
+@rpc("any_peer", "call_local", "unreliable")
+func request_set_hover_position(new_hover_position: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
+	if Global.get_sender_id(self) == hover_player:
 		srv_set_hover_position(new_hover_position)
 		emit_signal("client_set_hover_position", self)
 
 # Request the server to set the rotation of this piece.
 # new_rotation: The piece's new rotation.
-master func request_set_rotation_quat(new_rotation: Quat) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_rotation_quat(new_rotation: Quaternion) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not is_hovering():
 		rpc("set_rotation_quat", new_rotation)
 
 # Request the server to set the transform of this piece.
 # new_transform: The piece's new transform.
-master func request_set_transform(new_transform: Transform) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_transform(new_transform: Transform3D) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not is_hovering():
-		rpc("set_transform", new_transform)
+		rpc("sync_transform", new_transform)
 
 # Request the server to set the translation of this piece.
 # new_translation: The piece's new translation.
-master func request_set_translation(new_translation: Vector3) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_translation(new_translation: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not is_hovering():
-		rpc("set_translation", new_translation)
+		rpc("sync_position", new_translation)
 
 # Request the server to start hovering the piece.
-master func request_start_hovering(init_pos: Vector3, offset_pos: Vector3) -> void:
-	srv_start_hovering(get_tree().get_rpc_sender_id(), init_pos, offset_pos)
+@rpc("any_peer", "call_local", "reliable")
+func request_start_hovering(init_pos: Vector3, offset_pos: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
+	srv_start_hovering(Global.get_sender_id(self), init_pos, offset_pos)
 
 # If you are hovering the piece, request the server to stop hovering it.
-master func request_stop_hovering() -> void:
-	var player_id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_stop_hovering() -> void:
+	if not is_multiplayer_authority():
+		return
+	var player_id = Global.get_sender_id(self)
 	if player_id == hover_player or player_id == 1:
 		rpc("stop_hovering")
 
 # Request the server to unlock the piece.
-master func request_unlock() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_unlock() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("unlock")
 
 # Called by the server to set the material's albedo color.
 # color: The new albedo color.
-remotesync func set_albedo_color(color: Color) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_albedo_color(color: Color) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	set_albedo_color_client(color)
@@ -400,14 +463,14 @@ func set_albedo_color_client(color: Color) -> void:
 		return
 	
 	for mesh_instance in get_mesh_instances():
-		for surface in range(mesh_instance.get_surface_material_count()):
-			var material = mesh_instance.get_surface_material(surface)
+		for surface in range(mesh_instance.get_surface_override_material_count()):
+			var material = mesh_instance.get_surface_override_material(surface)
 			
 			# There's a chance the surface does not have a material - if this is
 			# the case, then skip this surface.
 			if material == null:
 				push_warning("Mesh instance %s has no material for surface %d, ignoring." % [
-						mesh_instance.name, surface])
+						str(mesh_instance.name), surface])
 				continue
 			
 			# Some materials will already have an albedo colour set, so keep
@@ -453,8 +516,9 @@ func set_current_scale(new_scale: Vector3) -> void:
 
 # Set the hover rotation of the piece.
 # new_hover_quat: The quaternion the hovering piece will go towards.
-remotesync func set_hover_rotation(new_hover_quat: Quat) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "unreliable")
+func set_hover_rotation(new_hover_quat: Quaternion) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var quat_length_sq = new_hover_quat.length_squared()
@@ -468,8 +532,9 @@ remotesync func set_hover_rotation(new_hover_quat: Quat) -> void:
 
 # Set the hover position of the piece.
 # new_hover_position: The position the hovering piece will go towards.
-remotesync func set_hover_position(new_hover_position: Vector3) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "unreliable")
+func set_hover_position(new_hover_position: Vector3) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	hover_position = new_hover_position
@@ -480,8 +545,9 @@ remotesync func set_hover_position(new_hover_position: Vector3) -> void:
 # the size of the packet that is sent to the clients.
 # vecs: The angular velocity, the linear velocity, and the transform origin.
 # quat: The rotation.
-puppet func ss(vecs: Basis, quat: Quat) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "unreliable")
+func ss(vecs: Basis, quat: Quaternion) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var quat_length_sq = quat.length_squared()
@@ -493,7 +559,7 @@ puppet func ss(vecs: Basis, quat: Quat) -> void:
 	_last_server_state_vecs = vecs
 	_last_server_state_quat = quat
 	_last_server_state_invalid = false
-	_last_server_state_time = OS.get_ticks_msec()
+	_last_server_state_time = Time.get_ticks_msec()
 	sleeping = false
 
 # Set the color of the piece's outline.
@@ -501,14 +567,15 @@ puppet func ss(vecs: Basis, quat: Quat) -> void:
 # color: The color of the outline.
 func set_outline_color(color: Color) -> void:
 	if _outline_material:
-		_outline_material.set_shader_param("OutlineColor", color)
+		_outline_material.set_shader_parameter("OutlineColor", color)
 	else:
 		push_error("Outline material has not been created!")
 
 # Called by the server to set the rotation of the piece.
 # new_rotation: The piece's new rotation.
-remotesync func set_rotation_quat(new_rotation: Quat) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_rotation_quat(new_rotation: Quaternion) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var quat_length_sq = new_rotation.length_squared()
@@ -522,35 +589,37 @@ remotesync func set_rotation_quat(new_rotation: Quat) -> void:
 
 # Called by the server to set the transform of the piece.
 # new_transform: The piece's new transform.
-remotesync func set_transform(new_transform: Transform) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func sync_transform(new_transform: Transform3D) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	set_translation(new_transform.origin)
-	set_rotation_quat(new_transform.basis.get_rotation_quat())
+	sync_position(new_transform.origin)
+	set_rotation_quat(new_transform.basis.get_rotation_quaternion())
 	set_current_scale(new_transform.basis.get_scale())
 
 # Called by the server to set the translation of the piece.
 # new_translation: The new translation.
-remotesync func set_translation(new_translation: Vector3) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func sync_position(new_translation: Vector3) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	translation = new_translation
+	position = new_translation
 	sleeping = false
 
 # Add the outline material to all mesh instances in this piece.
 func setup_outline_material():
-	var outline_shader = preload("res://Shaders/OutlineShader.shader")
+	var outline_shader = preload("res://Shaders/OutlineShader.gdshader")
 	
 	_outline_material = ShaderMaterial.new()
 	_outline_material.shader = outline_shader
-	_outline_material.set_shader_param("OutlineColor", Color.transparent)
+	_outline_material.set_shader_parameter("OutlineColor", Color.TRANSPARENT)
 	
 	for mesh_instance in get_mesh_instances():
-		if mesh_instance is MeshInstance:
-			for surface in range(mesh_instance.get_surface_material_count()):
-				var material = mesh_instance.get_surface_material(surface)
+		if mesh_instance is MeshInstance3D:
+			for surface in range(mesh_instance.get_surface_override_material_count()):
+				var material = mesh_instance.get_surface_override_material(surface)
 				if material:
 					material.next_pass = _outline_material
 
@@ -558,8 +627,9 @@ func setup_outline_material():
 # player_id: The ID of the player hovering the piece.
 # init_pos: The initial hover position.
 # offset_pos: The hover position offset.
-remotesync func start_hovering(player_id: int, init_pos: Vector3, offset_pos: Vector3) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func start_hovering(player_id: int, init_pos: Vector3, offset_pos: Vector3) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# There is a chance this function could be called immediately after the
@@ -569,20 +639,21 @@ remotesync func start_hovering(player_id: int, init_pos: Vector3, offset_pos: Ve
 	if not _last_physics_state_transform_set:
 		_last_physics_state_transform = transform.orthonormalized()
 	
-	hover_quat = Quat(_last_physics_state_transform.basis)
+	hover_quat = Quaternion(_last_physics_state_transform.basis)
 	hover_position = init_pos
 	
 	hover_offset = offset_pos
 	hover_player = player_id
 	
-	hover_start_time = OS.get_ticks_msec()
+	hover_start_time = Time.get_ticks_msec()
 	
 	sleeping = false
 	collision_layer = 2
 
 # Called by the server to stop hovering the piece.
-remotesync func stop_hovering() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func stop_hovering() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	hover_player = 0
@@ -599,18 +670,18 @@ remotesync func stop_hovering() -> void:
 
 # Lock the piece server-side.
 func srv_lock() -> void:
-	mode = MODE_STATIC
+	freeze = true
 	rpc("lock_client", transform)
 
 # As the server, set the hover rotation of the piece.
 # new_hover_quat: The quaternion the hovering piece will go towards.
-func srv_set_hover_rotation(new_hover_quat: Quat) -> void:
-	rpc_unreliable("set_hover_rotation", new_hover_quat)
+func srv_set_hover_rotation(new_hover_quat: Quaternion) -> void:
+	rpc("set_hover_rotation", new_hover_quat)
 
 # As the server, set the hover position of the piece.
 # new_hover_position: The position the hovering piece will go towards.
 func srv_set_hover_position(new_hover_position: Vector3) -> void:
-	rpc_unreliable("set_hover_position", new_hover_position)
+	rpc("set_hover_position", new_hover_position)
 
 # As the server, start hovering the piece.
 # Returns: If the piece started hovering.
@@ -625,20 +696,21 @@ func srv_start_hovering(player_id: int, init_pos: Vector3, offset_pos: Vector3) 
 	return false
 
 # Called by the server to unlock the piece.
-remotesync func unlock() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func unlock() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	mode = MODE_RIGID
+	freeze = false
 	sleeping = false
 
 func _ready():
-	if not get_tree().is_network_server():
+	if not multiplayer.is_server():
 		# The clients are at the mercy of the server.
 		custom_integrator = true
 	
-	connect("body_entered", self, "_on_body_entered")
-	connect("tree_entered", self, "_on_tree_entered")
+	connect("body_entered", Callable(self, "_on_body_entered"))
+	connect("tree_entered", Callable(self, "_on_tree_entered"))
 
 func _process(delta):
 	_last_slow_table_collision += delta
@@ -647,26 +719,26 @@ func _physics_process(_delta):
 	_last_velocity = _new_velocity
 	_new_velocity  = linear_velocity
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		if Engine.get_physics_frames() % Global.srv_num_physics_frames_per_state_update == 0:
 			if not _last_server_state_invalid:
 				if not (sleeping or is_hovering() or is_locked()):
-					for id in Lobby.get_player_list():
-						if id != 1 and (not id in Global.srv_state_update_blacklist):
-							rpc_unreliable_id(id, "ss", _last_server_state_vecs,
+					for id in multiplayer.get_peers():
+						if id != 1 and (not id in Global.srv_state_update_blacklist) and Global.can_send_to(self, id):
+							rpc_id(id, "ss", _last_server_state_vecs,
 									_last_server_state_quat)
 
 # Apply forces to the piece to get it to the desired hover position and
 # orientation.
 # state: The direct physics state of the piece.
-func _apply_hover_to_state(state: PhysicsDirectBodyState) -> void:
+func _apply_hover_to_state(state: PhysicsDirectBodyState3D) -> void:
 	# Force the piece to the given location.
 	var pos = state.transform.origin
 	var linear_dir = hover_position + hover_offset - pos
 	state.linear_velocity = LINEAR_FORCE_SCALAR * linear_dir
 	
 	# Force the piece to the given quaternion.
-	var current_quat = Quat(state.transform.basis)
+	var current_quat = Quaternion(state.transform.basis)
 	var new_quat = hover_quat
 	if not current_quat.is_equal_approx(hover_quat):
 		new_quat = current_quat.slerp(hover_quat, ROTATION_SLERP_ALPHA).normalized()
@@ -680,11 +752,11 @@ func _integrate_forces(state):
 	if is_hovering():
 		_apply_hover_to_state(state)
 	else:
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			# If the piece has fallen off the table and decended into hell, recover
 			# it so the devil doesn't tickle it to death.
 			if srv_retrieve_from_hell and state.transform.origin.y < HELL_HEIGHT:
-				state.transform = Transform.IDENTITY
+				state.transform = Transform3D.IDENTITY
 				state.transform.origin.y = get_size().y / 2.0
 				
 				state.angular_velocity = Vector3.ZERO
@@ -694,9 +766,9 @@ func _integrate_forces(state):
 			# order to send it to the client.
 			_last_server_state_vecs = Basis(state.angular_velocity,
 				state.linear_velocity, state.transform.origin)
-			_last_server_state_quat = Quat(state.transform.basis)
+			_last_server_state_quat = Quaternion(state.transform.basis)
 			_last_server_state_invalid = false
-			_last_server_state_time = OS.get_ticks_msec()
+			_last_server_state_time = Time.get_ticks_msec()
 		
 		else:
 			# The client, if it has received a new physics state from the
@@ -709,14 +781,14 @@ func _integrate_forces(state):
 				# it as smooth as possible, even if the server fails to send
 				# the state.
 				var server_origin = _last_server_state_vecs.z
-				var lerp_origin = state.transform.origin.linear_interpolate(
+				var lerp_origin = state.transform.origin.lerp(
 						server_origin, TRANSFORM_LERP_ALPHA)
 				
-				var client_quat = Quat(state.transform.basis)
+				var client_quat = Quaternion(state.transform.basis)
 				var lerp_quat = client_quat.slerp(_last_server_state_quat,
 						TRANSFORM_LERP_ALPHA).normalized()
 				
-				var new_transform = Transform(lerp_quat)
+				var new_transform = Transform3D(lerp_quat)
 				new_transform.origin = lerp_origin
 				state.transform = new_transform
 				
@@ -728,7 +800,7 @@ func _integrate_forces(state):
 # Get the starting albedo colour of a given material.
 # Returns: The starting albedo of the material.
 # material: The material to get the albedo from.
-func _get_original_albedo(material: SpatialMaterial) -> Color:
+func _get_original_albedo(material: StandardMaterial3D) -> Color:
 	var original_color = material.albedo_color
 	
 	if material.has_meta("original_color"):
@@ -740,7 +812,7 @@ func _get_original_albedo(material: SpatialMaterial) -> Color:
 
 func _on_body_entered(body):
 	# If we collided with another object...
-	if body is RigidBody:
+	if body is RigidBody3D:
 		# ... play a sound effect depending on our angular velocity.
 		if angular_velocity.length_squared() > 100.0:
 			if table_collide_fast_sounds != null:

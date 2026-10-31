@@ -12,6 +12,22 @@ easy-to-make
 The game is available on Windows, macOS, and Linux, and is being developed with
 the [Godot Engine](https://godotengine.org/).
 
+## Godot 4 fork
+
+This fork ports the existing game to **Godot 4.7.2** (standard GDScript build),
+with stock-engine runtime asset loading and Godot 4 WebRTC multiplayer.
+WebAssembly and Matrix/Vommet widget integration are planned separately.
+
+```sh
+python3 tools/setup_webrtc.py  # desktop multiplayer extension
+godot --editor --path game
+```
+
+See [running and testing the port](docs/general/download/compiling_from_source.rst)
+for setup, validation, save compatibility, and current limitations.
+Upstream has paused code PRs during its rewrite; this port is developed in
+[dark-collective/tabletop-club](https://github.com/dark-collective/tabletop-club).
+
 ## Screenshots
 
 <p align="center">

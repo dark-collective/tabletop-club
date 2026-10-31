@@ -32,16 +32,13 @@ enum {
 	MODE_SINGLEPLAYER
 }
 
-const LOADING_BLOCK_TIME = 20
-
-# From the tabletop_club_godot_module:
-# https://github.com/drwhut/tabletop_club_godot_module
-var tabletop_importer = null
-var error_reporter = null
+# Public Godot 4 replacements for the former custom engine module.
+var tabletop_importer = preload("res://Scripts/Runtime/AssetImporter.gd").new()
+var error_reporter = preload("res://Scripts/Runtime/ErrorReporter.gd").new()
 
 var system_locale: String = ""
 
-var censoring_profanity: bool = true setget set_censoring_profanity
+var censoring_profanity: bool = true: set = set_censoring_profanity
 
 # Throttle the piece state transmissions if there are many active physics
 # objects.
@@ -52,7 +49,7 @@ var srv_num_physics_frames_per_state_update: int = 1
 var srv_state_update_blacklist: Array = []
 
 var _current_scene: Node = null
-var _loader: ResourceInteractiveLoader = null
+var _loader: String = ""
 var _loader_args: Dictionary = {}
 var _wait_frames = 0
 
@@ -70,20 +67,20 @@ func censor_profanity(string: String) -> String:
 		var profanity = _profanity_list[i].to_lower()
 		var j = 0
 		while j >= 0:
-			j = lower_string.find_last(profanity)
+			j = lower_string.rfind(profanity)
 			if j >= 0:
 				var censor = false
 				if lower_string.length() == profanity.length():
 					censor = true
 				elif j == 0:
 					# Most control and punctuation characters are below 65.
-					if lower_string.ord_at(profanity.length()) < 65:
+					if lower_string.unicode_at(profanity.length()) < 65:
 						censor = true
 				elif j == lower_string.length() - profanity.length():
-					if lower_string.ord_at(j - 1) < 65:
+					if lower_string.unicode_at(j - 1) < 65:
 						censor = true
 				else:
-					if lower_string.ord_at(j - 1) < 65 and lower_string.ord_at(j + profanity.length()) < 65:
+					if lower_string.unicode_at(j - 1) < 65 and lower_string.unicode_at(j + profanity.length()) < 65:
 						censor = true
 				
 				if censor:
@@ -98,11 +95,13 @@ func censor_profanity(string: String) -> String:
 # the user:// folder instead.
 # Returns: The directory of the subfolder in the output folder.
 # subfolder: The subfolder to get the directory of.
-func get_output_subdir(subfolder: String) -> Directory:
-	var dir = Directory.new()
+func get_output_subdir(subfolder: String) -> DirAccess:
+	var dir = DirAccess.open("user://")
 	
-	if dir.open(OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)) != OK:
-		if dir.open("user://") != OK:
+	dir = DirAccess.open(OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS))
+	if DirAccess.get_open_error() != OK:
+		dir = DirAccess.open("user://")
+		if DirAccess.get_open_error() != OK:
 			push_error("Could not open the output directory!")
 			return dir
 	
@@ -201,6 +200,8 @@ func start_main_menu_with_error(error: String) -> void:
 	})
 
 func _ready():
+	# Apply the game font after imports, rather than during editor bootstrap.
+	ThemeDB.get_default_theme().default_font = load("res://Fonts/Cabin/Cabin-Medium.tres")
 	var root = get_tree().get_root()
 	_current_scene = root.get_child(root.get_child_count() - 1)
 	
@@ -210,15 +211,12 @@ func _ready():
 	system_locale = TranslationServer.get_locale()
 	
 	# We may be running the game with vanilla Godot!
-	if type_exists("TabletopImporter"):
-		tabletop_importer = ClassDB.instance("TabletopImporter")
-	if type_exists("ErrorReporter"):
-		error_reporter = ClassDB.instance("ErrorReporter")
+	OS.add_logger(error_reporter)
 	
 	_profanity_list = preload("res://Text/Profanity.tres").text.split("\n", false)
 
 func _process(_delta):
-	if _loader == null:
+	if _loader.is_empty():
 		set_process(false)
 		return
 	
@@ -226,48 +224,39 @@ func _process(_delta):
 		_wait_frames -= 1
 		return
 	
-	var time = OS.get_ticks_msec()
-	while OS.get_ticks_msec() < time + LOADING_BLOCK_TIME:
-		var err = _loader.poll()
-		
-		if err == ERR_FILE_EOF:
-			var scene = _loader.get_resource()
-			call_deferred("_set_scene", scene.instance(), _loader_args)
-			
-			_loader = null
-			_loader_args = {}
-			break
-		elif err == OK:
-			# The current scene should be the loading scene, so we should be
-			# able to update the progress it is displaying.
-			var progress = 0.0
-			var stages = _loader.get_stage_count()
-			if stages > 0:
-				progress = float(_loader.get_stage()) / stages
-			_current_scene.set_progress(progress)
-		else:
-			push_error("Loader encountered an error (error code %d)!" % err)
-			_loader = null
-			break
+	var progress = []
+	var status = ResourceLoader.load_threaded_get_status(_loader, progress)
+	if status == ResourceLoader.THREAD_LOAD_LOADED:
+		var scene = ResourceLoader.load_threaded_get(_loader)
+		call_deferred("_set_scene", scene.instantiate(), _loader_args)
+		_loader = ""
+		_loader_args = {}
+	elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if not progress.is_empty():
+			_current_scene.set_progress(progress[0])
+	else:
+		push_error("Failed to load scene '%s'." % _loader)
+		_loader = ""
 
 # Go to a given scene, with a set of arguments.
 # path: The file path of the scene to load.
 # args: The arguments for the scene to use after it has loaded.
 func _goto_scene(path: String, args: Dictionary) -> void:
 	# Are we already loading a scene?
-	if _loader != null:
+	if not _loader.is_empty():
 		return
 	
 	# Create the interactive loader for the new scene.
-	_loader = ResourceLoader.load_interactive(path)
-	if _loader == null:
+	var err = ResourceLoader.load_threaded_request(path)
+	if err != OK:
 		push_error("Failed to create loader for '%s'!" % path)
 		return
+	_loader = path
 	_loader_args = args
 	
 	# Load the loading scene so the player can see the progress in loading the
 	# new scene.
-	var loading_scene = preload("res://Scenes/Loading.tscn").instance()
+	var loading_scene = preload("res://Scenes/Loading.tscn").instantiate()
 	call_deferred("_set_scene", loading_scene, { "mode": MODE_NONE })
 	
 	set_process(true)
@@ -347,4 +336,34 @@ func _set_scene(scene: Node, args: Dictionary) -> void:
 # NOTE: This function should be called via call_deferred.
 func _terminate_peer() -> void:
 	# TODO: Send a message to say we are leaving first.
-	get_tree().network_peer = null
+	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+
+func _exit_tree() -> void:
+	OS.remove_logger(error_reporter)
+
+# Godot 4 installs an OfflineMultiplayerPeer by default. In the menu and while
+# constructing a game scene, it replaces Godot 3's unassigned peer.
+func has_network_peer() -> bool:
+	return multiplayer.multiplayer_peer != null and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer
+
+# Local server calls and nested local RPCs have sender 0 in Godot 4. Resolve
+# those to the local peer, while retaining the remote ID for client requests.
+func get_sender_id(node: Node) -> int:
+	var api = node.get_multiplayer()
+	var sender = api.get_remote_sender_id()
+	if sender != 0:
+		return sender
+	return api.get_unique_id() if api.has_multiplayer_peer() else 0
+
+# SceneMultiplayer may still list a peer during the frame its WebRTC channels
+# close. Avoid sending physics packets through that stale high-level entry.
+func can_send_to(node: Node, id: int) -> bool:
+	var peer = node.get_multiplayer().multiplayer_peer
+	if peer is WebRTCMultiplayerPeer:
+		if not peer.has_peer(id):
+			return false
+		var remote = peer.get_peer(id)
+		for channel in remote["channels"]:
+			if channel.get_ready_state() != WebRTCDataChannel.STATE_OPEN:
+				return false
+	return true

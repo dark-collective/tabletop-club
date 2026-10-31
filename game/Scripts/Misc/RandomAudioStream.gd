@@ -23,7 +23,7 @@ extends Resource
 
 class_name RandomAudioStream
 
-export(Array, AudioStream) var streams = []
+@export var streams = [] # (Array, AudioStream)
 
 var _rng = RandomNumberGenerator.new()
 
@@ -31,7 +31,7 @@ var _rng = RandomNumberGenerator.new()
 # Returns: A random audio stream from the 'streams' array, null if the array is
 # empty.
 func random_stream() -> AudioStream:
-	if streams.empty():
+	if streams.is_empty():
 		return null
 	
 	return streams[_rng.randi() % streams.size()]

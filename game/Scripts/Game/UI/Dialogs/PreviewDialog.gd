@@ -20,18 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends WindowDialog
+extends Window
 
 signal entry_requested(pack, type, entry)
 
-onready var _load_button = $VBoxContainer/HBoxContainer/LoadButton
-onready var _preview_filter = $VBoxContainer/PreviewFilter
-onready var _status = $VBoxContainer/HBoxContainer/StatusLabel
+@onready var _load_button = $VBoxContainer/HBoxContainer/LoadButton
+@onready var _preview_filter = $VBoxContainer/PreviewFilter
+@onready var _status = $VBoxContainer/HBoxContainer/StatusLabel
 
-export(Dictionary) var db_types = {}
-export(String) var load_button_text = "Load"
-export(String) var status_text_one = "Loaded %s."
-export(String) var status_text_multiple = "Loaded %d assets."
+@export var db_types: Dictionary = {}
+@export var load_button_text: String = "Load"
+@export var status_text_one: String = "Loaded %s."
+@export var status_text_multiple: String = "Loaded %d assets."
 
 # Re-configure the preview filter, forcing it to read the AssetDB again.
 # Use this if you know the AssetDB contents have changed.
@@ -41,10 +41,10 @@ func reconfigure() -> void:
 func _ready():
 	_preview_filter.db_types = db_types
 	_load_button.text = load_button_text
-	connect("gui_input", self, "_on_gui_input")
+	connect("window_input", Callable(self, "_on_gui_input"))
 	
 func _on_gui_input(event):
-	if event is InputEventMouseButton and event.pressed and event.doubleclick and event.button_index == BUTTON_LEFT:
+	if event is InputEventMouseButton and event.pressed and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
 		_on_LoadButton_pressed()
 
 func _on_LoadButton_pressed():
@@ -57,7 +57,7 @@ func _on_LoadButton_pressed():
 			var entry = preview.get_entry()
 			
 			num_pieces += 1
-			if entry_name.empty():
+			if entry_name.is_empty():
 				entry_name = entry["name"]
 			
 			var pack = _preview_filter.get_pack()
@@ -75,8 +75,10 @@ func _on_PreviewDialog_about_to_show():
 	_preview_filter.display_previews()
 
 func _on_PreviewDialog_popup_hide():
+	if visible:
+		return
 	_preview_filter.clear_previews()
 
 func _on_PreviewFilter_preview_clicked(_preview: ObjectPreview, _event: InputEventMouseButton):
-	var none_selected = get_tree().get_nodes_in_group("preview_selected").empty()
+	var none_selected = get_tree().get_nodes_in_group("preview_selected").is_empty()
 	_load_button.disabled = none_selected

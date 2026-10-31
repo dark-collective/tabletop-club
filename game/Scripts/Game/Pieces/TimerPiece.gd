@@ -63,7 +63,7 @@ func get_time_string() -> String:
 			return _time_to_hms(_time)
 		
 		MODE_SYSTEM_TIME:
-			var time_dict = OS.get_time()
+			var time_dict = Time.get_time_dict_from_system()
 			
 			var hour   = time_dict["hour"]
 			var minute = time_dict["minute"]
@@ -81,8 +81,9 @@ func is_timer_paused() -> bool:
 
 # Pause the timer at a specific time.
 # time: The time to pause the timer at.
-remotesync func pause_timer_at(time: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func pause_timer_at(time: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_paused = true
@@ -91,42 +92,62 @@ remotesync func pause_timer_at(time: float) -> void:
 	emit_signal("timer_paused")
 
 # Request the server to pause the timer.
-master func request_pause_timer() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_pause_timer() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("pause_timer_at", get_time())
 
 # Request the server to resume the internal timer if it is paused.
-master func request_resume_timer() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_resume_timer() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("resume_timer")
 
 # Request the server to start a countdown on the timer.
 # from: The number of seconds the countdown should last.
-master func request_start_countdown(from: float) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_start_countdown(from: float) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("start_countdown", from)
 
 # Request the server to starts a stopwatch on the timer.
-master func request_start_stopwatch() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_start_stopwatch() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("start_stopwatch")
 
 # Request the server to switch to the system time mode.
-master func request_stop_timer() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_stop_timer() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("stop_timer")
 
 # Request the server to sync the internal timer.
-master func request_sync_timer() -> void:
-	var player_id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func request_sync_timer() -> void:
+	if not is_multiplayer_authority():
+		return
+	var player_id = Global.get_sender_id(self)
 	if player_id > 1:
 		rpc_id(player_id, "request_sync_timer_accepted", get_time())
 
 # Called by the server when the request to sync the internal timer was accepted.
-puppet func request_sync_timer_accepted(time: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("authority", "call_remote", "reliable")
+func request_sync_timer_accepted(time: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	set_time(time)
 
 # Resume the internal timer.
-remotesync func resume_timer() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func resume_timer() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_paused = false
@@ -155,36 +176,40 @@ func set_time(time: float) -> void:
 
 # Start a countdown on the timer.
 # from: The number of seconds the countdown should last.
-remotesync func start_countdown(from: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func start_countdown(from: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	set_time(from)
 	set_mode(MODE_COUNTDOWN)
 
 # Start the stopwatch on the timer.
-remotesync func start_stopwatch() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func start_stopwatch() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	set_time(0.0)
 	set_mode(MODE_STOPWATCH)
 
 # If the timer is in countdown or stopwatch mode, switch it to system time mode.
-remotesync func stop_timer() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func stop_timer() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	set_mode(MODE_SYSTEM_TIME)
 
 func _process(delta):
+	super._process(delta)
 	if not _paused:
 		if _mode == MODE_COUNTDOWN:
 			_time -= delta
 			
 			# Only one peer should decide when the countdown ends for everyone
 			# else - the server.
-			if get_tree().is_network_server():
+			if multiplayer.is_server():
 				if _time < 0:
 					request_stop_timer()
 					request_play_track()
@@ -192,7 +217,7 @@ func _process(delta):
 		elif _mode == MODE_STOPWATCH:
 			_time += delta
 		
-		if _mode != MODE_SYSTEM_TIME and (not get_tree().is_network_server()):
+		if _mode != MODE_SYSTEM_TIME and (not multiplayer.is_server()):
 			_last_sync += delta
 			if _last_sync > SYNC_INTERVAL:
 				rpc_id(1, "request_sync_timer")

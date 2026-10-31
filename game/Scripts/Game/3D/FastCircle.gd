@@ -20,14 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Spatial
+extends Node3D
 
 const ROTATE_SPEED = 0.25
 
 var _fade_offset: float = 0.0
 
-var _inner_material: SpatialMaterial
-var _outer_material: SpatialMaterial
+var _inner_material: StandardMaterial3D
+var _outer_material: StandardMaterial3D
 
 # Restart the fade-in animation.
 func restart() -> void:
@@ -40,8 +40,8 @@ func restart() -> void:
 	$AudioStreamPlayer.play()
 
 func _ready():
-	_inner_material = $InnerCircle.get_surface_material(0)
-	_outer_material = $OuterCircle.get_surface_material(0)
+	_inner_material = $InnerCircle.get_surface_override_material(0)
+	_outer_material = $OuterCircle.get_surface_override_material(0)
 
 func _process(delta):
 	rotate_y(ROTATE_SPEED * delta)

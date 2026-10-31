@@ -24,8 +24,8 @@ extends ColorRect
 
 class_name OutlineColorRect
 
-export(Color) var outline_color = Color.transparent
-export(float) var outline_width = 1.0
+@export var outline_color: Color = Color.TRANSPARENT
+@export var outline_width: float = 1.0
 
 func _draw():
-	draw_rect(Rect2(Vector2(), rect_size), outline_color, false, outline_width)
+	draw_rect(Rect2(Vector2(), size), outline_color, false, outline_width)

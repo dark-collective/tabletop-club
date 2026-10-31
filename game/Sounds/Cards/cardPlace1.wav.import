@@ -1,13 +1,14 @@
 [remap]
 
 importer="wav"
-type="AudioStreamSample"
-path="res://.import/cardPlace1.wav-2ad0d23e57e167f00333e1ae125da641.sample"
+type="AudioStreamWAV"
+uid="uid://b8rc76xqi0t6a"
+path="res://.godot/imported/cardPlace1.wav-2ad0d23e57e167f00333e1ae125da641.sample"
 
 [deps]
 
 source_file="res://Sounds/Cards/cardPlace1.wav"
-dest_files=[ "res://.import/cardPlace1.wav-2ad0d23e57e167f00333e1ae125da641.sample" ]
+dest_files=["res://.godot/imported/cardPlace1.wav-2ad0d23e57e167f00333e1ae125da641.sample"]
 
 [params]
 
@@ -17,5 +18,7 @@ force/max_rate=false
 force/max_rate_hz=44100
 edit/trim=false
 edit/normalize=false
-edit/loop=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
 compress/mode=0

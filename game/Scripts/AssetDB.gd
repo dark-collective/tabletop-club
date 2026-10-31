@@ -153,7 +153,7 @@ var _import_files_total = 0
 var _import_mutex = Mutex.new()
 var _import_send_signal = false
 var _import_stop = false
-var _import_thread = Thread.new()
+var _importing = false
 
 var _import_err_dict: Dictionary = {}
 var _import_err_source: String = ""
@@ -180,14 +180,14 @@ func get_asset_paths() -> Array:
 	var downloads_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
 	var documents_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS)
 	var desktop_dir = OS.get_system_dir(OS.SYSTEM_DIR_DESKTOP)
-	if downloads_dir.empty():
+	if downloads_dir.is_empty():
 		downloads_dir = "."
-	if documents_dir.empty():
+	if documents_dir.is_empty():
 		documents_dir = "."
-	if desktop_dir.empty():
+	if desktop_dir.is_empty():
 		desktop_dir = "."
 	
-	var args = OS.get_cmdline_args()
+	var args = OS.get_cmdline_user_args()
 	var base_asset_dir_index = -1
 	for index in range(args.size()):
 		if args[index] == "--base-asset-dir":
@@ -199,7 +199,7 @@ func get_asset_paths() -> Array:
 		if base_asset_dir_index < args.size() - 1:
 			var dir_path: String = args[base_asset_dir_index + 1]
 			
-			var dir_test = Directory.new()
+			var dir_test = DirAccess.open("user://")
 			if dir_test.dir_exists(dir_path):
 				dir_path = dir_path.trim_suffix("/")
 				dir_path = dir_path.trim_suffix("\\")
@@ -222,7 +222,7 @@ func get_asset_paths() -> Array:
 # Get the asset database.
 # Returns: The asset database.
 func get_db() -> Dictionary:
-	if _temp_db.empty():
+	if _temp_db.is_empty():
 		return _db
 	else:
 		return _temp_db
@@ -236,10 +236,10 @@ func get_error_dict() -> Dictionary:
 	
 	return dict
 
-# Check if the import thread is currently running.
-# Returns: If the import thread is running.
+# Check if an import is currently running.
+# Returns: If an import is running.
 func is_importing() -> bool:
-	return _import_thread.is_alive()
+	return _importing
 
 # Parse translation config files in the assets directory for the given locale.
 # NOTE: This must be run AFTER the assets have been imported.
@@ -248,10 +248,8 @@ func parse_translations(locale: String) -> void:
 	if locale in _tr_locales:
 		return
 	
-	if _import_thread.is_active():
-		_import_thread.wait_to_finish()
 	
-	if _db.empty():
+	if _db.is_empty():
 		return
 	
 	_tr_locales.append(locale)
@@ -262,8 +260,8 @@ func parse_translations(locale: String) -> void:
 		var pack_path = pack_catalog["path"]
 		for type in pack_catalog["types"]:
 			var cfg_path = pack_path + "/" + type + "/" + "config.%s.cfg" % locale
-			var file = File.new()
-			if file.file_exists(cfg_path):
+			var file: FileAccess
+			if FileAccess.file_exists(cfg_path):
 				var cfg_file = ConfigFile.new()
 				var err = cfg_file.load(cfg_path)
 				if err == OK:
@@ -291,7 +289,7 @@ func random_asset(pack: String, type: String, default: bool = false) -> Dictiona
 							filtered.append(entry)
 				array = filtered
 			
-			if not array.empty():
+			if not array.is_empty():
 				randomize()
 				return array[randi() % array.size()]
 	
@@ -309,7 +307,7 @@ func search_type(pack: String, type: String, asset: String) -> Dictionary:
 			# The array of assets should be sorted by name, so we can use
 			# binary search!
 			var array: Array = db[pack][type]
-			var index = array.bsearch_custom(asset, self, "_search_assets")
+			var index = array.bsearch_custom(asset, Callable(self, "_search_assets"))
 			if index < array.size():
 				if array[index]["name"] == asset:
 					return array[index]
@@ -335,10 +333,8 @@ func search_path(path: String) -> Dictionary:
 	var asset = asset_split[1]
 	return search_type(pack, type, asset)
 
-# Start the importing thread.
+# Start the import, yielding between files to keep the UI responsive.
 func start_importing() -> void:
-	if _import_thread.is_active():
-		_import_thread.wait_to_finish()
 	
 	_import_err_mutex.lock()
 	_import_err_dict.clear()
@@ -349,7 +345,10 @@ func start_importing() -> void:
 	_import_stop = false
 	_import_mutex.unlock()
 	
-	_import_thread.start(self, "_import_all")
+	if _importing:
+		return
+	_importing = true
+	call_deferred("_import_all")
 	
 	_tr_locales = []
 
@@ -362,7 +361,7 @@ func temp_add_entry(pack: String, type: String, entry: Dictionary) -> void:
 		push_error("Cannot add entry to AssetDB, entry is invalid!")
 		return
 	
-	if _temp_db.empty():
+	if _temp_db.is_empty():
 		_temp_db = _db.duplicate(true)
 	
 	if not _temp_db.has(pack):
@@ -374,7 +373,7 @@ func temp_add_entry(pack: String, type: String, entry: Dictionary) -> void:
 	# Insert the entry in the type list, making sure the names of each entry are
 	# still in order.
 	var type_arr: Array = _temp_db[pack][type]
-	var insert_index = type_arr.bsearch_custom(entry, self, "_order_assets")
+	var insert_index = type_arr.bsearch_custom(entry, Callable(self, "_order_assets"))
 	
 	if insert_index < type_arr.size():
 		if type_arr[insert_index]["name"] == entry["name"]:
@@ -389,11 +388,11 @@ func temp_add_entry(pack: String, type: String, entry: Dictionary) -> void:
 # type: The type of entry.
 # index: The index of the entry in the type's array.
 func temp_remove_entry(pack: String, type: String, index: int) -> void:
-	if _db.empty():
+	if _db.is_empty():
 		push_error("Attempted to remove an entry from the AssetDB while it is empty!")
 		return
 	
-	if _temp_db.empty():
+	if _temp_db.is_empty():
 		_temp_db = _db.duplicate(true)
 	
 	if not _temp_db.has(pack):
@@ -409,15 +408,15 @@ func temp_remove_entry(pack: String, type: String, index: int) -> void:
 		push_error("Invalid index to temporary AssetDB (index = %d, size = %d)" % [index, arr_size])
 		return
 	
-	_temp_db[pack][type].remove(index)
+	_temp_db[pack][type].remove_at(index)
 
 func _ready():
-	connect("tree_exiting", self, "_on_exiting_tree")
+	connect("tree_exiting", Callable(self, "_on_exiting_tree"))
 
 func _process(_delta):
 	_import_mutex.lock()
 	if _import_send_signal:
-		if _import_file_path.empty():
+		if _import_file_path.is_empty():
 			emit_signal("completed", _import_dir_found)
 		else:
 			emit_signal("importing_file", _import_file_path,
@@ -426,8 +425,7 @@ func _process(_delta):
 	_import_mutex.unlock()
 
 # Import assets from all directories.
-# _userdata: Ignored, required for it to be run by a thread.
-func _import_all(_userdata) -> void:
+func _import_all() -> void:
 	var catalog = _catalog_assets()
 	
 	_send_importing_file_signal(tr("Cleaning old files..."), 0, 1)
@@ -454,17 +452,18 @@ func _import_all(_userdata) -> void:
 				var err = config_file.load(config_file_path)
 				if err == OK:
 					print("Loaded: %s" % config_file_path)
-					var md5_check = File.new()
-					new_config_md5 = md5_check.get_md5(config_file_path)
+					var md5_check: FileAccess
+					new_config_md5 = FileAccess.get_md5(config_file_path)
 				else:
 					_log_error("Failed to load '%s' (error %d)!" % [config_file_path, err])
 			
 			var old_config_md5 = "?" # if .md5 file does not exist, will differ from new.
-			var old_config_md5_file = File.new()
+			var old_config_md5_file: FileAccess
 			
 			var md5_file_path = "user://assets/%s/%s/config.cfg.md5" % [pack, type]
-			if old_config_md5_file.file_exists(md5_file_path):
-				var err = old_config_md5_file.open(md5_file_path, File.READ)
+			if FileAccess.file_exists(md5_file_path):
+				old_config_md5_file = FileAccess.open(md5_file_path, FileAccess.READ)
+				var err = FileAccess.get_open_error()
 				if err == OK:
 					old_config_md5 = old_config_md5_file.get_line()
 					old_config_md5_file.close()
@@ -475,14 +474,15 @@ func _import_all(_userdata) -> void:
 			if config_changed:
 				# The directory holding the .md5 file might not exist yet if
 				# nothing has been imported!
-				var md5_dir = Directory.new()
+				var md5_dir = DirAccess.open("user://")
 				var md5_dir_path = md5_file_path.get_base_dir()
 				if not md5_dir.dir_exists(md5_dir_path):
 					var err = md5_dir.make_dir_recursive(md5_dir_path)
 					if err != OK:
 						_log_error("Failed to create directory at '%s'!" % md5_dir_path)
 				
-				var err = old_config_md5_file.open(md5_file_path, File.WRITE)
+				old_config_md5_file = FileAccess.open(md5_file_path, FileAccess.WRITE)
+				var err = FileAccess.get_open_error()
 				if err == OK:
 					old_config_md5_file.store_line(new_config_md5)
 					old_config_md5_file.close()
@@ -495,6 +495,7 @@ func _import_all(_userdata) -> void:
 				_import_mutex.unlock()
 				
 				if stop_requested:
+					_importing = false
 					return
 				
 				var file_path = type_path + "/" + file
@@ -510,6 +511,8 @@ func _import_all(_userdata) -> void:
 					_log_error("Failed to import '%s' (error %d)!" % [file_path, err])
 				
 				files_imported += 1
+				# Runtime import creates render resources and nodes on the main thread.
+				await get_tree().process_frame
 			
 			_import_err_mutex.lock()
 			_import_err_source = type_path
@@ -521,8 +524,8 @@ func _import_all(_userdata) -> void:
 			var asset_scene = type_meta["scene"]
 			
 			var is_stackable = false
-			if not asset_scene.empty():
-				var piece = load(asset_scene).instance()
+			if not asset_scene.is_empty():
+				var piece = load(asset_scene).instantiate()
 				is_stackable = piece is StackablePiece
 				piece.free()
 			
@@ -536,6 +539,7 @@ func _import_all(_userdata) -> void:
 				else:
 					_log_error("Failed to load '%s' (error %d)!" % [stacks_file_path, err])
 	
+	_importing = false
 	_send_completed_signal(catalog["asset_dir_exists"])
 
 # Add an asset entry to the database.
@@ -559,7 +563,7 @@ func _add_entry_to_db(pack: String, type: String, entry: Dictionary) -> void:
 		_db[pack][type] = []
 	
 	var type_arr: Array = _db[pack][type]
-	var index = type_arr.bsearch_custom(entry, self, "_order_assets")
+	var index = type_arr.bsearch_custom(entry, Callable(self, "_order_assets"))
 	
 	var is_duplicate = false
 	if index < type_arr.size():
@@ -587,14 +591,14 @@ func _add_inheriting_assets(pack_path: String, pack_name: String, type: String) 
 		return
 	
 	var children = []
-	var file = File.new()
+	var file: FileAccess
 	for section in config_file.get_sections():
 		if not "*" in section:
-			if not file.file_exists(type_path + "/" + section):
+			if not FileAccess.file_exists(type_path + "/" + section):
 				var parent = config_file.get_value(section, "parent", "")
-				if not parent.empty():
+				if not parent.is_empty():
 					var inherit = search_type(pack_name, type, parent)
-					if not inherit.empty():
+					if not inherit.is_empty():
 						var child = inherit.duplicate()
 						child["name"] = section
 						child["entry_path"] = "%s/%s/%s" % [pack_name, type, section]
@@ -628,7 +632,7 @@ func _add_inheriting_assets(pack_path: String, pack_name: String, type: String) 
 				else:
 					_log_error("Unknown object '%s' has no 'parent' key!" % section)
 	
-	if not children.empty():
+	if not children.is_empty():
 		for child in children:
 			_add_entry_to_db(pack_name, type, child)
 
@@ -643,24 +647,24 @@ class GeometryMetadata:
 # Calculate the geometry metadata of a custom 3D scene.
 # Returns: The geometry metadata for the scene.
 # scene: The scene to calculate the metadata from.
-func _calculate_geometry_metadata(scene: Spatial) -> GeometryMetadata:
-	return _calculate_geometry_metadata_recursive(scene, Transform.IDENTITY)
+func _calculate_geometry_metadata(scene: Node3D) -> GeometryMetadata:
+	return _calculate_geometry_metadata_recursive(scene, Transform3D.IDENTITY)
 
 # A helper function for calculating the geometry metadata of a 3D scene.
 # Returns: The geometry metadata for the sub-scene.
 # scene: The scene to calculate the metadata from.
 # transform: The transform of the scene up to this point.
-func _calculate_geometry_metadata_recursive(scene: Spatial,
-	transform: Transform) -> GeometryMetadata:
+func _calculate_geometry_metadata_recursive(scene: Node3D,
+	transform: Transform3D) -> GeometryMetadata:
 	
 	var new_basis     = scene.transform.basis * transform.basis
 	var new_origin    = scene.transform.origin + transform.origin
-	var new_transform = Transform(new_basis, new_origin)
+	var new_transform = Transform3D(new_basis, new_origin)
 	
 	var metadata: GeometryMetadata = GeometryMetadata.new()
 	var set_box = true
 	
-	if scene is MeshInstance:
+	if scene is MeshInstance3D:
 		var mesh: Mesh = scene.mesh
 		for surface in range(mesh.get_surface_count()):
 			var vert_arr: Array = mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
@@ -684,7 +688,7 @@ func _calculate_geometry_metadata_recursive(scene: Spatial,
 					metadata.box_min.z = min(metadata.box_min.z, adj_vertex.z)
 	
 	for child in scene.get_children():
-		if child is Spatial:
+		if child is Node3D:
 			var child_meta = _calculate_geometry_metadata_recursive(child, new_transform)
 			if child_meta.vertex_count <= 0:
 				continue
@@ -710,14 +714,15 @@ func _calculate_geometry_metadata_recursive(scene: Spatial,
 # Catalog all the assets from every asset directory.
 # Returns: A catalog of all asset files.
 func _catalog_assets() -> Dictionary:
-	var dir = Directory.new()
+	var dir = DirAccess.open("user://")
 	
 	var scanned_asset_dirs = []
 	var asset_dir_exists = false
 	var file_count = 0
 	var packs = {}
 	for asset_dir in get_asset_paths():
-		var err = dir.open(asset_dir)
+		dir = DirAccess.open(asset_dir)
+		var err = DirAccess.get_open_error()
 		if err == OK:
 			asset_dir_exists = true
 			
@@ -725,7 +730,7 @@ func _catalog_assets() -> Dictionary:
 			if dir.get_current_dir() in scanned_asset_dirs:
 				continue
 			
-			dir.list_dir_begin(true, true)
+			dir.list_dir_begin()
 			
 			var folder = dir.get_next()
 			while folder:
@@ -736,8 +741,9 @@ func _catalog_assets() -> Dictionary:
 					_import_err_source = pack_path
 					_import_err_mutex.unlock()
 					
-					var pack_dir = Directory.new()
-					err = pack_dir.open(pack_path)
+					var pack_dir = DirAccess.open("user://")
+					pack_dir = DirAccess.open(pack_path)
+					err = DirAccess.get_open_error()
 					if err == OK:
 						var pack_catalog = _catalog_pack_dir(pack_dir)
 						var pack_name = folder
@@ -774,16 +780,17 @@ func _catalog_assets() -> Dictionary:
 # Catalog the assets in a pack directory.
 # Returns: A catalog of the pack directory.
 # pack_dir: The pack directory to catalog.
-func _catalog_pack_dir(pack_dir: Directory) -> Dictionary:
+func _catalog_pack_dir(pack_dir: DirAccess) -> Dictionary:
 	print("Scanning pack '%s'..." % pack_dir.get_current_dir())
 	
 	var file_count = 0
 	var types = {}
 	for type in ASSET_PACK_SUBFOLDERS:
 		if pack_dir.dir_exists(type):
-			var type_dir = Directory.new()
+			var type_dir = DirAccess.open("user://")
 			var type_path = pack_dir.get_current_dir() + "/" + type
-			var err = type_dir.open(type_path)
+			type_dir = DirAccess.open(type_path)
+			var err = DirAccess.get_open_error()
 			if err == OK:
 				var type_catalog = _catalog_type_dir(type_dir)
 				types[type] = type_catalog
@@ -800,13 +807,13 @@ func _catalog_pack_dir(pack_dir: Directory) -> Dictionary:
 # Catalog the assets in a type directory.
 # Returns: A catalog of the type directory.
 # type_dir: The type directory to catalog.
-func _catalog_type_dir(type_dir: Directory) -> Dictionary:
+func _catalog_type_dir(type_dir: DirAccess) -> Dictionary:
 	print("Scanning subfolder '%s'..." % type_dir.get_current_dir())
 	var config_file = type_dir.file_exists("config.cfg")
 	var stacks_file = type_dir.file_exists("stacks.cfg")
 	
 	var files = []
-	type_dir.list_dir_begin(true, true)
+	type_dir.list_dir_begin()
 	
 	var file = type_dir.get_next()
 	while file:
@@ -832,9 +839,10 @@ func _catalog_type_dir(type_dir: Directory) -> Dictionary:
 # Returns: The directory as a Directory object.
 # pack: The name of the pack.
 # type_dir: The relative path from the pack directory.
-func _get_asset_dir(pack: String, type_dir: String) -> Directory:
-	var dir = Directory.new()
-	var dir_error = dir.open("user://")
+func _get_asset_dir(pack: String, type_dir: String) -> DirAccess:
+	var dir = DirAccess.open("user://")
+	dir = DirAccess.open("user://")
+	var dir_error = DirAccess.get_open_error()
 	
 	if dir_error == OK:
 		var path = "assets/" + pack + "/" + type_dir
@@ -880,7 +888,7 @@ func _get_file_config_value(config: ConfigFile, query: String, key: String,
 			or (wildcard_at_front and wildcard_at_end and search_term in query)):
 				found_sections.append(section)
 	
-	found_sections.sort_custom(AssetDBSorter, "sort_length")
+	found_sections.sort_custom(Callable(AssetDBSorter, "sort_length"))
 	
 	var value = default
 	for section in found_sections:
@@ -896,7 +904,7 @@ func _get_file_config_value(config: ConfigFile, query: String, key: String,
 	
 	if type_value == type_default:
 		return value
-	elif type_value == TYPE_INT and type_default == TYPE_REAL:
+	elif type_value == TYPE_INT and type_default == TYPE_FLOAT:
 		return float(value)
 	else:
 		_log_error("Value of key %s for %s is incorrect type! (expected %d, got %d)" % [
@@ -989,15 +997,16 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 			# has a cached geometry data file (.geo), so we do not have to go
 			# and calculate the metadata again.
 			var geo_file_path = to + ".box"
-			var geo_file = File.new()
+			var geo_file: FileAccess
 			var file_was_read = false
 			
 			var avg_point: Vector3        = Vector3.ZERO
 			var bounding_box_min: Vector3 = Vector3.ZERO
 			var bounding_box_max: Vector3 = Vector3.ZERO
 			
-			if import_err == ERR_ALREADY_EXISTS and geo_file.file_exists(geo_file_path):
-				var err = geo_file.open(geo_file_path, File.READ)
+			if import_err == ERR_ALREADY_EXISTS and FileAccess.file_exists(geo_file_path):
+				geo_file = FileAccess.open(geo_file_path, FileAccess.READ)
+				var err = FileAccess.get_open_error()
 				if err == OK:
 					var data: Array = geo_file.get_var()
 					geo_file.close()
@@ -1014,7 +1023,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 					_log_error("Failed to open '%s'! (error: %d)" % [geo_file_path, err])
 			
 			if not file_was_read:
-				var custom_scene = load(to).instance()
+				var custom_scene = ResourceManager.load_res(to).instantiate()
 				var geo_data = _calculate_geometry_metadata(custom_scene)
 				custom_scene.free()
 				
@@ -1022,7 +1031,8 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 				bounding_box_min = geo_data.box_min
 				avg_point = (1.0 / geo_data.vertex_count) * geo_data.vertex_sum
 				
-				var err = geo_file.open(geo_file_path, File.WRITE)
+				geo_file = FileAccess.open(geo_file_path, FileAccess.WRITE)
+				var err = FileAccess.get_open_error()
 				if err == OK:
 					geo_file.store_var([ avg_point, bounding_box_min,
 						bounding_box_max ])
@@ -1059,7 +1069,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 			entry = { "scene_path": asset_scene, "texture_path": to }
 	
 	# The file is the wrong file type for this type of asset.
-	if entry.empty():
+	if entry.is_empty():
 		return OK
 	
 	entry["name"] = _get_file_config_value(config, from.get_file(), "name",
@@ -1074,10 +1084,10 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 	if type == "games":
 		# If there is a picture that goes with the save file, use it, as it
 		# should also be imported.
-		var check_file = File.new()
+		var check_file: FileAccess
 		for ext in VALID_TEXTURE_EXTENSIONS:
 			var from_image_path = from.get_basename() + "." + ext
-			if check_file.file_exists(from_image_path):
+			if FileAccess.file_exists(from_image_path):
 				var to_image_path = to.get_base_dir() + "/" + from_image_path.get_file()
 				entry["texture_path"] = to_image_path
 				break
@@ -1104,7 +1114,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 	elif type == "tables":
 		# These values don't mean anything, but they are needed if we want to
 		# display the table like an object in an object preview.
-		entry["color"] = Color.white
+		entry["color"] = Color.WHITE
 		entry["mass"] = 1.0
 		entry["scale"] = Vector3.ONE
 		
@@ -1120,7 +1130,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 		var hands: Array = _get_file_config_value(config, from.get_file(),
 				"hands", [])
 		
-		if hands.empty():
+		if hands.is_empty():
 			_log_warning("No hand positions have been configured!")
 		else:
 			for hand in hands:
@@ -1191,11 +1201,11 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 			mass = 10.0
 		
 		var sfx: String = _get_file_config_value(config, from.get_file(), "sfx", "")
-		if not sfx.empty():
+		if not sfx.is_empty():
 			if not sfx in SFX_AUDIO_STREAMS:
 				_log_error("SFX value does not match any existing preset!")
 				sfx = ""
-		if sfx.empty():
+		if sfx.is_empty():
 			# Certain pieces already have their own sound effects - don't
 			# replace those.
 			if not (type == "cards" or type.begins_with("dice") or type.begins_with("tokens")):
@@ -1213,7 +1223,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 			var back_path: String = _get_file_config_value(config,
 					from.get_file(), "back_face", "")
 			
-			if not back_path.empty():
+			if not back_path.is_empty():
 				if "/" in back_path or "\\" in back_path:
 					_log_error("'%s' is invalid - back_face cannot point to another folder!" % back_path)
 				else:
@@ -1259,7 +1269,7 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 			# Total normals to check against faces
 			var num_normals := 0
 
-			if not face_values.empty():
+			if not face_values.is_empty():
 				for key in face_values:
 					var value = face_values[key]
 					# Figure out 0.2.0 A:V versus 0.1.x V:A
@@ -1294,23 +1304,18 @@ func _import_asset(from: String, pack: String, type: String, config: ConfigFile,
 				_log_warning("face_values describes less normals (%d) than the dice should have faces (%d)" % [num_normals, num_faces])
 		
 		if type == "cards" or type.begins_with("tokens"):
-			# If we use null as a default value, ConfigFile will throw an error
-			# if there is no value there, so use something else temporarily
-			# to represent "nothing".
+			# _get_file_config_value checks has_section_key before reading,
+			# so null can represent an unspecified card/token value.
 			var value = _get_file_config_value(config, from.get_file(), "value",
-					Reference.new(), false)
+					null, false)
 			var suit  = _get_file_config_value(config, from.get_file(), "suit",
-					Reference.new(), false)
+					null, false)
 			
-			if value is Reference:
-				value = null
-			elif not (value is int or value is float or value is String):
+			if value != null and not (value is int or value is float or value is String):
 					_log_error("Value must be a number or a string!")
 					return ERR_INVALID_DATA
 			
-			if suit is Reference:
-				suit = null
-			elif not (suit is int or suit is float or suit is String):
+			if suit != null and not (suit is int or suit is float or suit is String):
 					_log_error("Suit must be a number or a string!")
 					return ERR_INVALID_DATA
 			
@@ -1346,9 +1351,10 @@ func _import_file(from: String, to: String) -> int:
 	# (if the pack name is the same), so keep track of where the imported file
 	# came from - if it doesn't match, forcefully re-import the new file.
 	var force_copy = true
-	var src_file = File.new()
-	if src_file.file_exists(to + ".src"):
-		var err = src_file.open(to + ".src", File.READ)
+	var src_file: FileAccess
+	if FileAccess.file_exists(to + ".src"):
+		src_file = FileAccess.open(to + ".src", FileAccess.READ)
+		var err = FileAccess.get_open_error()
 		if err == OK:
 			var src = src_file.get_line()
 			src_file.close()
@@ -1364,7 +1370,8 @@ func _import_file(from: String, to: String) -> int:
 		return copy_err
 	else:
 		if force_copy:
-			var err = src_file.open(to + ".src", File.WRITE)
+			src_file = FileAccess.open(to + ".src", FileAccess.WRITE)
+			var err = FileAccess.get_open_error()
 			if err == OK:
 				src_file.store_line(from)
 				src_file.close()
@@ -1377,15 +1384,17 @@ func _import_file(from: String, to: String) -> int:
 		# we'll edit the .obj file such that the path to the .mtl file is
 		# an absolute path.
 		if to.get_extension() == "obj":
-			var obj_file = File.new()
-			var open_err = obj_file.open(to, File.READ)
+			var obj_file: FileAccess
+			obj_file = FileAccess.open(to, FileAccess.READ)
+			var open_err = FileAccess.get_open_error()
 			if open_err == OK:
 				var obj_contents = obj_file.get_as_text()
 				obj_file.close()
 				
 				obj_contents = obj_contents.replace("mtllib ", "mtllib " + to.get_base_dir() + "/")
 				
-				open_err = obj_file.open(to, File.WRITE)
+				obj_file = FileAccess.open(to, FileAccess.WRITE)
+				open_err = FileAccess.get_open_error()
 				if open_err == OK:
 					obj_file.store_string(obj_contents)
 					obj_file.close()
@@ -1398,15 +1407,17 @@ func _import_file(from: String, to: String) -> int:
 		# saying that ambient light is ignored in PBR - so we'll comment out the
 		# property in the file.
 		elif to.get_extension() == "mtl":
-			var mtl_file = File.new()
-			var open_err = mtl_file.open(to, File.READ)
+			var mtl_file: FileAccess
+			mtl_file = FileAccess.open(to, FileAccess.READ)
+			var open_err = FileAccess.get_open_error()
 			if open_err == OK:
 				var mtl_contents = mtl_file.get_as_text()
 				mtl_file.close()
 				
 				mtl_contents = mtl_contents.replace("Ka ", "#Ka ")
 				
-				open_err = mtl_file.open(to, File.WRITE)
+				mtl_file = FileAccess.open(to, FileAccess.WRITE)
+				open_err = FileAccess.get_open_error()
 				if open_err == OK:
 					mtl_file.store_string(mtl_contents)
 					mtl_file.close()
@@ -1439,7 +1450,7 @@ func _import_stack_config(pack: String, type: String, stack_config: ConfigFile) 
 				var entry_names = []
 				for item in items:
 					var entry = search_type(pack, type, item)
-					if not entry.empty():
+					if not entry.is_empty():
 						if scale == null:
 							scale = entry["scale"]
 						else:
@@ -1471,7 +1482,7 @@ func _import_stack_config(pack: String, type: String, stack_config: ConfigFile) 
 		else:
 			_log_error("'%s' has no 'items' property!" % stack_name)
 	
-	if not stack_entries.empty():
+	if not stack_entries.is_empty():
 		for stack_entry in stack_entries:
 			_add_entry_to_db(pack, type, stack_entry)
 
@@ -1576,7 +1587,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'avg_point' in entry is not a Vector3!")
 					return false
 			"bounce":
-				if typeof(value) != TYPE_REAL:
+				if typeof(value) != TYPE_FLOAT:
 					_log_error("'bounce' in entry is not a float!")
 					return false
 				
@@ -1663,7 +1674,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					
 					var type_arr: Array = db[pack][type]
 					# TODO: Re-work _sort_assets function?
-					var element_index = type_arr.bsearch_custom({"name": element}, self, "_order_assets")
+					var element_index = type_arr.bsearch_custom({"name": element}, Callable(self, "_order_assets"))
 					var element_valid = false
 					if element_index < type_arr.size():
 						if type_arr[element_index]["name"] == element:
@@ -1731,7 +1742,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 						return false
 					
 					var dir = element["dir"]
-					if not (typeof(dir) == TYPE_INT or typeof(dir) == TYPE_REAL):
+					if not (typeof(dir) == TYPE_INT or typeof(dir) == TYPE_FLOAT):
 						_log_error("'dir' element in 'hands' is not a number!")
 						return false
 			"license":
@@ -1743,7 +1754,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'main_menu' in entry is not a boolean!")
 					return false
 			"mass":
-				if not (typeof(value) == TYPE_INT or typeof(value) == TYPE_REAL):
+				if not (typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT):
 					_log_error("'mass' in entry is not a number!")
 					return false
 				
@@ -1759,7 +1770,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'name' in entry is not a string!")
 					return false
 				
-				if value.empty():
+				if value.is_empty():
 					_log_error("'name' in entry is empty!")
 					return false
 				
@@ -1805,7 +1816,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					return false
 				
 				if type == "cards" or type.begins_with("dice") or type.begins_with("tokens"):
-					if not value.empty():
+					if not value.is_empty():
 						_log_error("'sfx' value in entry should be empty!")
 						return false
 				else:
@@ -1817,7 +1828,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'shakable' in entry is not a boolean!")
 					return false
 			"strength":
-				if not (typeof(value) == TYPE_INT or typeof(value) == TYPE_REAL):
+				if not (typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT):
 					_log_error("'strength' in entry is not a number!")
 					return false
 				
@@ -1826,7 +1837,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					return false
 			"suit":
 				var t = typeof(value)
-				if not (t == TYPE_INT or t == TYPE_REAL or t == TYPE_STRING or t == TYPE_NIL):
+				if not (t == TYPE_INT or t == TYPE_FLOAT or t == TYPE_STRING or t == TYPE_NIL):
 					_log_error("'suit' in entry is not a number or a string!")
 					return false
 			"table_path":
@@ -1850,7 +1861,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'textboxes' in entry is not a dictionary!")
 					return false
 				
-				if not value.empty():
+				if not value.is_empty():
 					var template_path = entry["template_path"]
 					if typeof(template_path) != TYPE_STRING:
 						_log_error("'template_path' in entry is not a string!")
@@ -1926,7 +1937,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 						_log_error("Textbox entry does not contain element 'rot'!")
 						return false
 					var rot = subvalue["rot"]
-					if not (typeof(rot) == TYPE_INT or typeof(rot) == TYPE_REAL):
+					if not (typeof(rot) == TYPE_INT or typeof(rot) == TYPE_FLOAT):
 						_log_error("Textbox element 'rot' is not a number!")
 						return false
 					if is_nan(rot) or is_inf(rot):
@@ -1975,7 +1986,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					_log_error("'texture_path_1' in entry is not a string!")
 					return false
 				
-				if not (value.empty() or _is_valid_path(value, VALID_TEXTURE_EXTENSIONS)):
+				if not (value.is_empty() or _is_valid_path(value, VALID_TEXTURE_EXTENSIONS)):
 					_log_error("'texture_path_1' in entry is not a valid path!")
 					return false
 			"url":
@@ -1984,7 +1995,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 					return false
 			"value":
 				var t = typeof(value)
-				if not (t == TYPE_INT or t == TYPE_REAL or t == TYPE_STRING or t == TYPE_NIL):
+				if not (t == TYPE_INT or t == TYPE_FLOAT or t == TYPE_STRING or t == TYPE_NIL):
 					_log_error("'value' in entry is not a number or a string!")
 					return false
 			_:
@@ -2006,7 +2017,7 @@ func _is_valid_entry(pack: String, type: String, entry: Dictionary) -> bool:
 # path: The string to check.
 # valid_ext: The list of valid extensions of the path.
 func _is_valid_path(path: String, valid_ext: Array) -> bool:
-	if not path.is_abs_path():
+	if not path.is_absolute_path():
 		return false
 	
 	if not path.begins_with("user://assets/"):
@@ -2034,12 +2045,12 @@ func _parse_tr_file(pack: String, type: String, config: ConfigFile, locale: Stri
 	var sections = config.get_sections()
 	for asset_name in sections:
 		var result = search_type(pack, type, asset_name)
-		if not result.empty():
+		if not result.is_empty():
 			for key in ["name", "desc"]:
 				if config.has_section_key(asset_name, key):
 					var tr_name = config.get_value(asset_name, key)
 					if tr_name is String:
-						if not tr_name.empty():
+						if not tr_name.is_empty():
 							result["%s_%s" % [key, locale]] = tr_name
 						else:
 							push_error("%s cannot be empty!" % key)
@@ -2054,8 +2065,8 @@ func _parse_tr_file(pack: String, type: String, config: ConfigFile, locale: Stri
 # rot: The rotation transformation, where the first element is the x rotation,
 # and the second element is the z rotation, both in degrees.
 func _precalculate_face_value_normal(rot: Vector2) -> Vector3:
-	var quat = Quat(Vector3(deg2rad(rot.x), 0.0, deg2rad(rot.y)))
-	return quat.inverse().xform(Vector3.UP)
+	var quat = Quaternion.from_euler(Vector3(deg_to_rad(rot.x), 0.0, deg_to_rad(rot.y)))
+	return quat.inverse() * (Vector3.UP)
 
 # Remove unused asset files under the user:// directory, including caches and
 # metadata files.
@@ -2064,15 +2075,16 @@ func _precalculate_face_value_normal(rot: Vector2) -> Vector3:
 func _remove_old_assets(catalog: Dictionary) -> void:
 	var asset_dir_path = ""
 	
-	var asset_dir = Directory.new()
+	var asset_dir = DirAccess.open("user://")
 	if asset_dir.dir_exists("user://assets"):
-		var err = asset_dir.open("user://assets")
+		asset_dir = DirAccess.open("user://assets")
+		var err = DirAccess.get_open_error()
 		if err == OK:
 			asset_dir_path = asset_dir.get_current_dir()
 			
-			asset_dir.list_dir_begin(true, true)
+			asset_dir.list_dir_begin()
 			var pack = asset_dir.get_next()
-			while not pack.empty():
+			while not pack.is_empty():
 				if asset_dir.current_is_dir():
 					for type in ASSET_PACK_SUBFOLDERS:
 						_remove_old_assets_type(catalog, pack, type)
@@ -2081,9 +2093,10 @@ func _remove_old_assets(catalog: Dictionary) -> void:
 		else:
 			_log_error("Failed to open user://assets! (error %d)" % err)
 	
-	var import_dir = Directory.new()
+	var import_dir = DirAccess.open("user://")
 	if import_dir.dir_exists("user://.import"):
-		var err = import_dir.open("user://.import")
+		import_dir = DirAccess.open("user://.import")
+		var err = DirAccess.get_open_error()
 		if err == OK:
 			# We need to simulate what the import module does to the file names so
 			# we can compare them to the actual files.
@@ -2103,9 +2116,9 @@ func _remove_old_assets(catalog: Dictionary) -> void:
 						var import_name = file + "-" + copy_path.md5_text()
 						safe_files[import_name] = 0
 			
-			import_dir.list_dir_begin(true, true)
+			import_dir.list_dir_begin()
 			var file = import_dir.get_next()
-			while not file.empty():
+			while not file.is_empty():
 				var base_name = file.get_basename()
 				if not safe_files.has(base_name):
 					err = import_dir.remove(file)
@@ -2148,23 +2161,24 @@ func _remove_old_assets_type(catalog: Dictionary, pack: String, type: String) ->
 					break
 	
 	var type_path = "user://assets/%s/%s" % [pack, type]
-	var type_dir = Directory.new()
+	var type_dir = DirAccess.open("user://")
 	if not type_dir.dir_exists(type_path):
 		return
 	
-	var err = type_dir.open(type_path)
+	type_dir = DirAccess.open(type_path)
+	var err = DirAccess.get_open_error()
 	if err != OK:
 		_log_error("Failed to open '%s'! (error: %d)" % [type_path, err])
 		return
 	
 	var files_to_remove = []
 	
-	type_dir.list_dir_begin(true, true)
+	type_dir.list_dir_begin()
 	var file = type_dir.get_next()
-	while not file.empty():
+	while not file.is_empty():
 		if file.get_extension() in VALID_EXTENSIONS and not file in safe_files:
 			# Check for additional files, as well as the original.
-			for suffix in ["", ".box", ".geo", ".import", ".src"]:
+			for suffix in ["", ".box", ".geo", ".import", ".src", ".runtime.res"]:
 				var full_file = file + suffix
 				if not type_dir.file_exists(full_file):
 					continue
@@ -2235,13 +2249,11 @@ func _on_exiting_tree() -> void:
 	_import_stop = true
 	_import_mutex.unlock()
 	
-	if _import_thread.is_active():
-		_import_thread.wait_to_finish()
 
 func _log_error(error: String):
 	push_error(error)
 	_import_err_mutex.lock()
-	if not _import_err_source.empty():
+	if not _import_err_source.is_empty():
 		var err = "E: %s" % error
 		if not _import_err_dict.has(_import_err_source):
 			_import_err_dict[_import_err_source] = []
@@ -2251,7 +2263,7 @@ func _log_error(error: String):
 func _log_warning(error: String):
 	push_warning(error)
 	_import_err_mutex.lock()
-	if not _import_err_source.empty():
+	if not _import_err_source.is_empty():
 		var err = "W: %s" % error
 		if not _import_err_dict.has(_import_err_source):
 			_import_err_dict[_import_err_source] = []

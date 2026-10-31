@@ -44,28 +44,28 @@ signal stopped_saving_table()
 signal table_requested(table_entry)
 signal undo_state()
 
-onready var _chat_box = $HideableUI/ChatBox
-onready var _clear_table_button = $HideableUI/TopPanel/ClearTableButton
-onready var _clear_table_dialog = $CanvasLayer/ClearTableConfirmDialog
-onready var _flip_table_button = $HideableUI/TopPanel/FlipTableButton
-onready var _game_menu_background = $CanvasLayer/GameMenuBackground
-onready var _games_dialog = $CanvasLayer/GamesDialog
-onready var _hideable_ui = $HideableUI
-onready var _multiplayer_container = $HideableUI/MultiplayerContainer
-onready var _notebook_dialog = $CanvasLayer/NotebookDialog
-onready var _objects_dialog = $CanvasLayer/ObjectsDialog
-onready var _options_menu = $CanvasLayer/OptionsMenu
-onready var _player_context_menu = $HideableUI/PlayerContextMenu
-onready var _player_list_container = $HideableUI/MultiplayerContainer/PlayerListContainer
-onready var _room_code_label = $HideableUI/MultiplayerContainer/RoomCodeLabel
-onready var _room_code_toggle_button = $HideableUI/MultiplayerContainer/RoomCodeVisibleContainer/RoomCodeToggleButton
-onready var _room_dialog = $CanvasLayer/RoomDialog
-onready var _rotation_option = $HideableUI/TopPanel/RotationOption
-onready var _save_dialog = $CanvasLayer/GameMenuBackground/SaveDialog
-onready var _undo_button = $HideableUI/TopPanel/UndoButton
+@onready var _chat_box = $HideableUI/ChatBox
+@onready var _clear_table_button = $HideableUI/TopPanel/ClearTableButton
+@onready var _clear_table_dialog = $CanvasLayer/ClearTableConfirmDialog
+@onready var _flip_table_button = $HideableUI/TopPanel/FlipTableButton
+@onready var _game_menu_background = $CanvasLayer/GameMenuBackground
+@onready var _games_dialog = $CanvasLayer/GamesDialog
+@onready var _hideable_ui = $HideableUI
+@onready var _multiplayer_container = $HideableUI/MultiplayerContainer
+@onready var _notebook_dialog = $CanvasLayer/NotebookDialog
+@onready var _objects_dialog = $CanvasLayer/ObjectsDialog
+@onready var _options_menu = $CanvasLayer/OptionsMenu
+@onready var _player_context_menu = $HideableUI/PlayerContextMenu
+@onready var _player_list_container = $HideableUI/MultiplayerContainer/PlayerListContainer
+@onready var _room_code_label = $HideableUI/MultiplayerContainer/RoomCodeLabel
+@onready var _room_code_toggle_button = $HideableUI/MultiplayerContainer/RoomCodeVisibleContainer/RoomCodeToggleButton
+@onready var _room_dialog = $CanvasLayer/RoomDialog
+@onready var _rotation_option = $HideableUI/TopPanel/RotationOption
+@onready var _save_dialog = $CanvasLayer/GameMenuBackground/SaveDialog
+@onready var _undo_button = $HideableUI/TopPanel/UndoButton
 
-export(bool) var show_errors: bool = true
-export(bool) var show_warnings: bool = true
+@export var show_errors: bool = true
+@export var show_warnings: bool = true
 
 var spawn_point_container_name: String = ""
 var spawn_point_origin: Vector3 = Vector3.ZERO
@@ -149,17 +149,15 @@ func set_flip_table_status(flip_table_status: bool) -> void:
 func _ready():
 	_clear_table_dialog.add_button(tr("Clear Paint"), false, "clear_paint")
 	
-	Lobby.connect("player_added", self, "_on_Lobby_player_added")
-	Lobby.connect("player_modified", self, "_on_Lobby_player_modified")
-	Lobby.connect("player_removed", self, "_on_Lobby_player_removed")
+	Lobby.connect("player_added", Callable(self, "_on_Lobby_player_added"))
+	Lobby.connect("player_modified", Callable(self, "_on_Lobby_player_modified"))
+	Lobby.connect("player_removed", Callable(self, "_on_Lobby_player_removed"))
 	
 	if Global.error_reporter != null:
-		Global.error_reporter.connect("error_received", self, "_on_error_received")
-		Global.error_reporter.connect("warning_received", self, "_on_warning_received")
-	else:
-		push_warning("ErrorReporter does not exist! Make sure to install the TabletopClub Godot module.")
+		Global.error_reporter.connect("error_received", Callable(self, "_on_error_received"))
+		Global.error_reporter.connect("warning_received", Callable(self, "_on_warning_received"))
 	
-	Global.connect("censor_changed", self, "_on_Global_censor_changed")
+	Global.connect("censor_changed", Callable(self, "_on_Global_censor_changed"))
 	
 	# Make sure we emit the signal when all of the nodes are ready:
 	call_deferred("_set_rotation_amount")
@@ -194,7 +192,7 @@ func _set_rotation_amount() -> void:
 		var deg_id = _rotation_option.get_item_id(_rotation_option.selected)
 		var deg_text = _rotation_option.get_item_text(deg_id)
 		deg_text = deg_text.replace("°", "")
-		var rad = deg2rad(float(deg_text))
+		var rad = deg_to_rad(float(deg_text))
 		emit_signal("rotation_amount_updated", rad)
 
 # Update the player list based on what is in the Lobby.
@@ -204,15 +202,15 @@ func _update_player_list() -> void:
 	# Before setting the names, check if there are any labels for players who
 	# have since left the game.
 	for label in _player_list_container.get_children():
-		if label.name.is_valid_integer():
-			if not int(label.name) in player_id_list:
-				if label.is_connected("meta_clicked", self, "_on_player_label_clicked"):
-					label.disconnect("meta_clicked", self, "_on_player_label_clicked")
+		if str(label.name).is_valid_int():
+			if not int(str(label.name)) in player_id_list:
+				if label.is_connected("meta_clicked", Callable(self, "_on_player_label_clicked")):
+					label.disconnect("meta_clicked", Callable(self, "_on_player_label_clicked"))
 				
 				_player_list_container.remove_child(label)
 				label.queue_free()
 		else:
-			push_warning("Player label name %s is not an integer, ignoring." % label.name)
+			push_warning("Player label name %s is not an integer, ignoring." % str(label.name))
 	
 	for player_id in player_id_list:
 		var player_id_str = str(player_id)
@@ -223,12 +221,12 @@ func _update_player_list() -> void:
 		else:
 			label = RichTextLabel.new()
 			label.name = player_id_str
-			label.rect_min_size.y = 20
+			label.custom_minimum_size.y = 20
 			label.bbcode_enabled = true
 			label.scroll_active = false
 			
 			label.meta_underlined = false
-			label.connect("meta_clicked", self, "_on_player_label_clicked")
+			label.connect("meta_clicked", Callable(self, "_on_player_label_clicked"))
 			
 			_player_list_container.add_child(label)
 		
@@ -236,7 +234,7 @@ func _update_player_list() -> void:
 			push_error("Label for player %d could not be created!" % player_id)
 			continue
 		
-		label.bbcode_text = "[right][url=%d]%s[/url][/right]" % [player_id,
+		label.text = "[right][url=%d]%s[/url][/right]" % [player_id,
 				Lobby.get_name_bb_code(player_id)]
 
 # Update the room code display.
@@ -246,7 +244,7 @@ func _update_room_code_display() -> void:
 		room_code_display = "*".repeat(_room_code.length())
 	
 	var text = "[right]" + tr("Room Code: [b]%s[/b]") % room_code_display + " [/right]"
-	_room_code_label.bbcode_text = text
+	_room_code_label.text = text
 	
 	if _room_code_visible:
 		_room_code_toggle_button.text = tr("Hide Room Code")
@@ -279,7 +277,7 @@ func _on_error_received(function: String, file: String, line: int,
 	# In the event that an error is caused by this code, disconnect the signal
 	# so that a stack overflow does not occur.
 	if Global.error_reporter != null:
-		Global.error_reporter.disconnect("error_received", self, "_on_error_received")
+		Global.error_reporter.disconnect("error_received", Callable(self, "_on_error_received"))
 	
 	# An error could occur while the chat box was in the middle of drawing (in
 	# another thread), so wait until a time where the chat box is guaranteed
@@ -288,7 +286,7 @@ func _on_error_received(function: String, file: String, line: int,
 			function, error])
 	
 	if Global.error_reporter != null:
-		Global.error_reporter.connect("error_received", self, "_on_error_received")
+		Global.error_reporter.connect("error_received", Callable(self, "_on_error_received"))
 
 func _on_FlipTableButton_pressed():
 	emit_signal("flipping_table")
@@ -305,11 +303,11 @@ func _on_GamesDialog_entry_requested(_pack: String, _type: String, entry: Dictio
 
 func _on_GameUI_tree_exiting():
 	if Global.error_reporter != null:
-		if Global.error_reporter.is_connected("error_received", self, "_on_error_received"):
-			Global.error_reporter.disconnect("error_received", self, "_on_error_received")
+		if Global.error_reporter.is_connected("error_received", Callable(self, "_on_error_received")):
+			Global.error_reporter.disconnect("error_received", Callable(self, "_on_error_received"))
 		
-		if Global.error_reporter.is_connected("warning_received", self, "_on_warning_received"):
-			Global.error_reporter.disconnect("warning_received", self, "_on_warning_received")
+		if Global.error_reporter.is_connected("warning_received", Callable(self, "_on_warning_received")):
+			Global.error_reporter.disconnect("warning_received", Callable(self, "_on_warning_received"))
 
 func _on_Global_censor_changed():
 	_update_player_list()
@@ -323,7 +321,7 @@ func _on_Lobby_player_added(id: int):
 	_update_player_list()
 
 func _on_Lobby_player_modified(id: int, old: Dictionary):
-	if not old.empty():
+	if not old.is_empty():
 		var old_name = Lobby.get_name_bb_code_custom(old)
 		var new_name = Lobby.get_name_bb_code(id)
 		add_notification_info(tr("%s changed their name to %s") % [old_name, new_name])
@@ -351,7 +349,7 @@ func _on_ObjectsButton_pressed():
 	popup_objects_dialog()
 
 func _on_ObjectsDialog_entry_requested(_pack: String, _type: String, entry: Dictionary):
-	if spawn_point_container_name.empty():
+	if spawn_point_container_name.is_empty():
 		emit_signal("piece_requested", entry, spawn_point_origin + spawn_point_temp_offset)
 	else:
 		emit_signal("piece_requested_in_container", entry, spawn_point_container_name)
@@ -371,7 +369,7 @@ func _on_PlayerContextMenu_id_pressed(id: int):
 			return
 
 func _on_player_label_clicked(player_id_str: String) -> void:
-	if not player_id_str.is_valid_integer():
+	if not player_id_str.is_valid_int():
 		push_error("Invalid player ID from label!")
 		return
 	
@@ -382,13 +380,13 @@ func _on_player_label_clicked(player_id_str: String) -> void:
 		return
 	
 	# For now, do not open the context menu for self.
-	if _player_context_menu_id == get_tree().get_network_unique_id():
+	if _player_context_menu_id == multiplayer.get_unique_id():
 		return
 	
 	_player_context_menu.clear()
 	_player_context_menu.add_item(tr("View notebook"), PLAYER_CONTEXT_VIEW_NOTEBOOK)
 	
-	_player_context_menu.rect_position = get_viewport().get_mouse_position()
+	_player_context_menu.position = get_viewport().get_mouse_position()
 	_player_context_menu.set_as_minsize()
 	_player_context_menu.popup()
 
@@ -430,6 +428,8 @@ func _on_SaveDialog_load_file(path: String):
 	_game_menu_background.visible = false
 
 func _on_SaveDialog_popup_hide():
+	if get_node("CanvasLayer/GameMenuBackground/SaveDialog").visible:
+		return
 	if _save_dialog.save_mode:
 		emit_signal("stopped_saving_table")
 
@@ -461,7 +461,7 @@ func _on_warning_received(function: String, file: String, line: int,
 	# In the event that a warning is caused by this code, disconnect the signal
 	# so that a stack overflow does not occur.
 	if Global.error_reporter != null:
-		Global.error_reporter.disconnect("warning_received", self, "_on_warning_received")
+		Global.error_reporter.disconnect("warning_received", Callable(self, "_on_warning_received"))
 	
 	# An error could occur while the chat box was in the middle of drawing (in
 	# another thread), so wait until a time where the chat box is guaranteed
@@ -470,4 +470,4 @@ func _on_warning_received(function: String, file: String, line: int,
 			function, error])
 	
 	if Global.error_reporter != null:
-		Global.error_reporter.connect("warning_received", self, "_on_warning_received")
+		Global.error_reporter.connect("warning_received", Callable(self, "_on_warning_received"))

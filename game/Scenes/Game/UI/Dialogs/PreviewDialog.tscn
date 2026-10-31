@@ -3,16 +3,10 @@
 [ext_resource path="res://Scripts/Game/UI/Dialogs/PreviewDialog.gd" type="Script" id=1]
 [ext_resource path="res://Scenes/Game/UI/Previews/PreviewFilter.tscn" type="PackedScene" id=2]
 
-[node name="PreviewDialog" type="WindowDialog"]
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-margin_left = -512.0
-margin_top = -300.0
-margin_right = 120.0
-margin_bottom = 174.0
-rect_min_size = Vector2( 570, 350 )
+[node name="PreviewDialog" type="Window"]
+size = Vector2i(632, 474)
+visible = false
+min_size = Vector2i(570, 350)
 script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false,
@@ -29,28 +23,30 @@ __meta__ = {
 }
 
 [node name="PreviewFilter" parent="VBoxContainer" instance=ExtResource( 2 )]
-margin_right = 632.0
-margin_bottom = 444.0
+offset_right = 632.0
+offset_bottom = 444.0
 size_flags_vertical = 3
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-margin_top = 448.0
-margin_right = 632.0
-margin_bottom = 474.0
+offset_top = 448.0
+offset_right = 632.0
+offset_bottom = 474.0
 
 [node name="StatusLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
-margin_top = 3.0
-margin_right = 582.0
-margin_bottom = 23.0
+offset_top = 3.0
+offset_right = 582.0
+offset_bottom = 23.0
 size_flags_horizontal = 3
 
 [node name="LoadButton" type="Button" parent="VBoxContainer/HBoxContainer"]
-margin_left = 586.0
-margin_right = 632.0
-margin_bottom = 26.0
+offset_left = 586.0
+offset_right = 632.0
+offset_bottom = 26.0
 disabled = true
 
-[connection signal="about_to_show" from="." to="." method="_on_PreviewDialog_about_to_show"]
-[connection signal="popup_hide" from="." to="." method="_on_PreviewDialog_popup_hide"]
+[connection signal="about_to_popup" from="." to="." method="_on_PreviewDialog_about_to_show"]
+[connection signal="visibility_changed" from="." to="." method="_on_PreviewDialog_popup_hide"]
 [connection signal="preview_clicked" from="VBoxContainer/PreviewFilter" to="." method="_on_PreviewFilter_preview_clicked"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/LoadButton" to="." method="_on_LoadButton_pressed"]
+
+[connection signal="close_requested" from="." to="." method="hide"]
