@@ -16,7 +16,8 @@ the [Godot Engine](https://godotengine.org/).
 
 This fork ports the existing game to **Godot 4.7.2** (standard GDScript build),
 with stock-engine runtime asset loading and Godot 4 WebRTC multiplayer.
-WebAssembly and Matrix/Vommet widget integration are planned separately.
+The single-threaded WebAssembly build also runs as a Matrix widget in Vommet.
+See [browser setup, widget URL, and deployment](docs/web-widget.md).
 
 ```sh
 python3 tools/setup_webrtc.py  # desktop multiplayer extension

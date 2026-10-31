@@ -40,7 +40,7 @@ func _ready():
 		locale = Global.system_locale
 	TranslationServer.set_locale(locale)
 	
-	if skip_splash_screen:
+	if skip_splash_screen or OS.has_feature("web"):
 		Global.start_importing_assets()
 	else:
 		_animation_player.play("FadeInAndOut")

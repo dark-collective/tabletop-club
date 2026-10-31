@@ -121,7 +121,7 @@ func _ready():
 	_keep_video_confirm.get_cancel_button().connect("pressed", Callable(self, "_on_KeepVideoConfirm_cancel_pressed"))
 	_keep_video_confirm.connect("close_requested", Callable(self, "_on_KeepVideoConfirm_close_button_pressed"))
 	
-	if OS.get_name() == "macOS":
+	if OS.get_name() == "macOS" or OS.has_feature("web"):
 		# Both borderless fullscreen and fullscreen don't work as intended on
 		# OSX, so disable the button - the player can always maximize the
 		# window, to get the same affect as making it fullscreen.
@@ -233,7 +233,7 @@ func _apply_config(config: ConfigFile) -> void:
 	
 	# As stated above, just let the player maximize the window if they want the
 	# game to be fullscreen on OSX.
-	if OS.get_name() != "macOS":
+	if OS.get_name() != "macOS" and not OS.has_feature("web"):
 		var window_mode_id = config.get_value("video", "window_mode")
 		var borderless = false
 		var fullscreen = false
@@ -250,7 +250,8 @@ func _apply_config(config: ConfigFile) -> void:
 		get_window().borderless = borderless
 		get_window().mode = Window.MODE_MAXIMIZED if (maximized) else Window.MODE_WINDOWED
 	
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if (config.get_value("video", "vsync")) else DisplayServer.VSYNC_DISABLED)
+	if not OS.has_feature("web"):
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if (config.get_value("video", "vsync")) else DisplayServer.VSYNC_DISABLED)
 	
 	var msaa = SubViewport.MSAA_DISABLED
 	var msaa_id = config.get_value("video", "msaa")

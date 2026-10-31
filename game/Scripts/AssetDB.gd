@@ -175,6 +175,8 @@ func clear_temp_db() -> void:
 # Get the list of asset directory paths the game will scan.
 # Returns: The list of asset directory paths.
 func get_asset_paths() -> Array:
+	if OS.has_feature("web"):
+		return ["user://bundled/assets"]
 	var out = []
 	var exec_dir = OS.get_executable_path().get_base_dir()
 	var downloads_dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS)
@@ -426,6 +428,10 @@ func _process(_delta):
 
 # Import assets from all directories.
 func _import_all() -> void:
+	if OS.has_feature("web") and not await WebRuntime.prepare_assets():
+		_importing = false
+		_send_completed_signal(false)
+		return
 	var catalog = _catalog_assets()
 	
 	_send_importing_file_signal(tr("Cleaning old files..."), 0, 1)
@@ -1378,54 +1384,7 @@ func _import_file(from: String, to: String) -> int:
 			else:
 				_log_error("Failed to open %s (error %d)" % [to + ".src", err])
 		
-		# With Wavefront files, there's an annoying thing where it will only
-		# look for the material file relative to the current working directory.
-		# So, after we've copied it (the hash file should have been generated),
-		# we'll edit the .obj file such that the path to the .mtl file is
-		# an absolute path.
-		if to.get_extension() == "obj":
-			var obj_file: FileAccess
-			obj_file = FileAccess.open(to, FileAccess.READ)
-			var open_err = FileAccess.get_open_error()
-			if open_err == OK:
-				var obj_contents = obj_file.get_as_text()
-				obj_file.close()
-				
-				obj_contents = obj_contents.replace("mtllib ", "mtllib " + to.get_base_dir() + "/")
-				
-				obj_file = FileAccess.open(to, FileAccess.WRITE)
-				open_err = FileAccess.get_open_error()
-				if open_err == OK:
-					obj_file.store_string(obj_contents)
-					obj_file.close()
-				else:
-					_log_error("Could not write to file at '%s'." % to)
-			else:
-				_log_error("Could not read file at '%s'." % to)
-		
-		# With .mtl material files, the "Ka" property gives a warning in Godot,
-		# saying that ambient light is ignored in PBR - so we'll comment out the
-		# property in the file.
-		elif to.get_extension() == "mtl":
-			var mtl_file: FileAccess
-			mtl_file = FileAccess.open(to, FileAccess.READ)
-			var open_err = FileAccess.get_open_error()
-			if open_err == OK:
-				var mtl_contents = mtl_file.get_as_text()
-				mtl_file.close()
-				
-				mtl_contents = mtl_contents.replace("Ka ", "#Ka ")
-				
-				mtl_file = FileAccess.open(to, FileAccess.WRITE)
-				open_err = FileAccess.get_open_error()
-				if open_err == OK:
-					mtl_file.store_string(mtl_contents)
-					mtl_file.close()
-				else:
-					_log_error("Could not write to file at '%s'." % to)
-			else:
-				_log_error("Could not read file at '%s'." % to)
-	
+
 	if EXTENSIONS_TO_IMPORT.has(from.get_extension()):
 		return Global.tabletop_importer.import(to)
 	else:

@@ -1,0 +1,12 @@
+{
+  "name": "tabletop-club-widget",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:shell": "esbuild web/src/main.js --bundle --format=esm --target=es2022 --minify --pure:console.log --outfile=.artifacts/web/widget.js",
+    "test:widget": "node --test web/tests/*.test.js",
+    "test:web": "playwright test -c web/playwright.config.js"
+  },
+  "dependencies": {"matrix-widget-api": "1.20.0"},
+  "devDependencies": {"@playwright/test": "1.64.1", "esbuild": "0.28.2"}
+}

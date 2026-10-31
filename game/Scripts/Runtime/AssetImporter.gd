@@ -5,6 +5,7 @@ extends RefCounted
 const TEXTURE_EXTENSIONS = ["bmp", "dds", "exr", "hdr", "jpeg", "jpg", "png", "tga", "svg", "svgz", "webp"]
 const RESOURCE_EXTENSIONS = TEXTURE_EXTENSIONS + ["ogg", "mp3", "wav", "obj", "gltf", "glb", "dae"]
 const CACHE_SUFFIX = ".runtime.res"
+var _web_bake = OS.get_cmdline_user_args().has("--web-assets")
 
 func copy_file(from: String, to: String, force: bool = false) -> int:
 	var err = DirAccess.make_dir_recursive_absolute(to.get_base_dir())
@@ -23,6 +24,8 @@ func import(path: String) -> int:
 		var image = Image.load_from_file(path)
 		if image == null or image.is_empty():
 			return ERR_FILE_CORRUPT
+		if _web_bake and not extension in ["svg", "svgz"]:
+			_limit_image(image)
 		image.generate_mipmaps()
 		resource = ImageTexture.create_from_image(image)
 	elif extension == "ogg":
@@ -40,6 +43,7 @@ func import(path: String) -> int:
 		var scene = document.generate_scene(state)
 		if scene == null:
 			return ERR_FILE_CORRUPT
+		if _web_bake: _limit_scene_textures(scene)
 		resource = _pack_scene(scene)
 	elif extension == "obj":
 		resource = _load_obj(path)
@@ -48,7 +52,7 @@ func import(path: String) -> int:
 		return ERR_UNAVAILABLE
 	if resource == null:
 		return ERR_FILE_CORRUPT
-	return ResourceSaver.save(resource, path + CACHE_SUFFIX)
+	return ResourceSaver.save(resource, path + CACHE_SUFFIX, ResourceSaver.FLAG_COMPRESS)
 
 func _pack_scene(scene: Node) -> PackedScene:
 	var packed = PackedScene.new()
@@ -155,5 +159,38 @@ func _load_mtl(path: String) -> Dictionary:
 					var texture_path = path.get_base_dir().path_join(" ".join(fields.slice(1)))
 					var image = Image.load_from_file(texture_path)
 					if image != null and not image.is_empty():
+						if _web_bake: _limit_image(image)
 						material.albedo_texture = ImageTexture.create_from_image(image)
 	return materials
+
+# Web assets retain all game content, with bounded raster texture resolution.
+# SVG templates keep their original dimensions so textbox coordinates match.
+func _limit_image(image: Image) -> void:
+	var largest = max(image.get_width(), image.get_height())
+	if largest > 1024:
+		if image.is_compressed(): image.decompress()
+		var factor = 1024.0 / largest
+		image.resize(maxi(1, roundi(image.get_width() * factor)), maxi(1, roundi(image.get_height() * factor)), Image.INTERPOLATE_LANCZOS)
+
+func _limit_scene_textures(scene: Node) -> void:
+	var nodes = [scene]
+	var scaled = {}
+	while not nodes.is_empty():
+		var node = nodes.pop_back()
+		nodes.append_array(node.get_children())
+		if not node is MeshInstance3D or node.mesh == null: continue
+		for surface in range(node.mesh.get_surface_count()):
+			var material = node.mesh.surface_get_material(surface)
+			if material == null: continue
+			for property in material.get_property_list():
+				if not str(property.name).ends_with("_texture"): continue
+				var texture = material.get(property.name)
+				if not texture is Texture2D: continue
+				var key = texture.get_instance_id()
+				if not scaled.has(key):
+					var image = texture.get_image()
+					if image == null: continue
+					_limit_image(image)
+					image.generate_mipmaps()
+					scaled[key] = ImageTexture.create_from_image(image)
+				material.set(property.name, scaled[key])

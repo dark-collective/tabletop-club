@@ -38,6 +38,7 @@ Lobby="*res://Scripts/Lobby.gd"
 PieceBuilder="*res://Scripts/PieceBuilder.gd"
 PieceFactory="*res://Scripts/PieceFactory.gd"
 ResourceManager="*res://Scripts/ResourceManager.gd"
+WebRuntime="*res://Scripts/Runtime/WebRuntime.gd"
 
 [debug]
 

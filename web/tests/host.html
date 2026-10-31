@@ -1,0 +1,63 @@
+<!doctype html><html><head><title>Vommet protocol fixture</title><style>body{margin:0;background:#111;display:flex;height:100vh}iframe{display:block;width:100vw;height:100vh;border:0}</style></head><body>
+<script>
+// Test-only implementation of the exact capability/event envelopes used by
+// Vommet's MatrixWidgetMessageHandler and MatrixCapabilityReceiveEvent.
+const frames = new Map(); let counter = 0;
+window.roomEvents = [];
+window.requests = [];
+window.deliverRoomEvent = roomEvent => {
+  window.roomEvents.push(roomEvent);
+  for (const [target, info] of frames) if (info.caps.includes(`org.matrix.msc2762.receive.event:${roomEvent.type}`)) send(target,"send_event",roomEvent);
+};
+window.addWidget = function(name, user) {
+  const frame = document.createElement("iframe"); frame.id = name;
+  frame.allow = "autoplay; fullscreen";
+  frame.setAttribute("sandbox", "allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-modals allow-downloads");
+  const url = new URL("http://127.0.0.1:8176/");
+  for (const [key,value] of Object.entries({widgetId:"table-1",parentUrl:location.href,roomId:"!table:test",userId:user,displayName:name})) url.searchParams.set(key,value);
+  frame.src = url;
+  frames.set(frame, {user, caps:[]});
+  document.body.append(frame);
+};
+function send(frame, action, data) {
+  frame.contentWindow.postMessage({api:"toWidget",widgetId:"table-1",requestId:`parent-${++counter}`,action,data},"http://127.0.0.1:8176");
+}
+window.addEventListener("message", event => {
+  const frame = [...frames.keys()].find(frame => frame.contentWindow === event.source);
+  if (!frame || event.origin !== "http://127.0.0.1:8176") return;
+  const message = event.data, metadata = frames.get(frame);
+  if (!message || message.widgetId !== "table-1") return;
+  if (message.api === "toWidget" && message.action === "capabilities" && message.response) {
+    const requested = message.response.capabilities;
+    metadata.caps = new URLSearchParams(location.search).has("deny") ? [] : requested;
+    send(frame,"notify_capabilities",{requested, approved:metadata.caps}); return;
+  }
+  if (message.api !== "fromWidget" || message.response) return;
+  window.requests.push({action:message.action, user:metadata.user});
+  let response = {};
+  if (message.action === "supported_api_versions") {
+    response = {supported_versions:["0.0.1","0.0.2","org.matrix.msc2762","org.matrix.msc2871","org.matrix.msc2974","town.robin.msc3846"]};
+    queueMicrotask(() => send(frame,"capabilities",{}));
+  } else if (message.action === "content_loaded") {
+    response = {error:{message:"Unknown or unsupported action"}};
+  } else if (message.action === "watch_turn_servers") {
+    queueMicrotask(() => send(frame,"update_turn_servers",{uris:["stun:127.0.0.1:9"],username:"test-user",password:"test-password"}));
+  } else if (message.action === "send_event") {
+    const type = message.data.type;
+    if (!metadata.caps.includes(`org.matrix.msc2762.send.event:${type}`)) response={error:{message:"Permission denied"}};
+    else {
+      const roomEvent={type, content:message.data.content, sender:metadata.user, room_id:"!table:test", event_id:`$test-${++counter}`,origin_server_ts:Date.now()};
+      response={room_id:roomEvent.room_id,event_id:roomEvent.event_id};
+      queueMicrotask(() => {
+        // Playwright relays between independent browser profiles, like the
+        // homeserver would between two real Vommet users.
+        if (window.matrixBroadcast) window.matrixBroadcast(roomEvent).catch(console.error);
+        else window.deliverRoomEvent(roomEvent);
+      });
+    }
+  } else response={error:{message:"Unsupported fixture action"}};
+  frame.contentWindow.postMessage({...message,response},event.origin);
+});
+const params = new URLSearchParams(location.search);
+window.addWidget(params.get("name") || "host", params.get("user") || "@alice:test");
+</script></body></html>

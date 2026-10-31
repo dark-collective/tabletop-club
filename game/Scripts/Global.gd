@@ -49,6 +49,7 @@ var srv_num_physics_frames_per_state_update: int = 1
 var srv_state_update_blacklist: Array = []
 
 var _current_scene: Node = null
+var _web_scene_pending = false
 var _loader: String = ""
 var _loader_args: Dictionary = {}
 var _wait_frames = 0
@@ -98,7 +99,7 @@ func censor_profanity(string: String) -> String:
 func get_output_subdir(subfolder: String) -> DirAccess:
 	var dir = DirAccess.open("user://")
 	
-	dir = DirAccess.open(OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS))
+	dir = DirAccess.open("user://" if OS.has_feature("web") else OS.get_system_dir(OS.SYSTEM_DIR_DOCUMENTS))
 	if DirAccess.get_open_error() != OK:
 		dir = DirAccess.open("user://")
 		if DirAccess.get_open_error() != OK:
@@ -243,9 +244,16 @@ func _process(_delta):
 # args: The arguments for the scene to use after it has loaded.
 func _goto_scene(path: String, args: Dictionary) -> void:
 	# Are we already loading a scene?
-	if not _loader.is_empty():
+	if not _loader.is_empty() or _web_scene_pending:
 		return
 	
+	if OS.has_feature("web"):
+		var packed = load(path)
+		if packed is PackedScene:
+			_web_scene_pending = true
+			call_deferred("_set_scene", packed.instantiate(), args)
+		return
+
 	# Create the interactive loader for the new scene.
 	var err = ResourceLoader.load_threaded_request(path)
 	if err != OK:
@@ -268,6 +276,7 @@ func _goto_scene(path: String, args: Dictionary) -> void:
 # scene: The scene to load.
 # args: The arguments for the scene to use after it has loaded.
 func _set_scene(scene: Node, args: Dictionary) -> void:
+	_web_scene_pending = false
 	if not args.has("mode"):
 		push_error("Scene argument 'mode' is missing!")
 		return

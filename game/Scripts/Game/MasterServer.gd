@@ -62,6 +62,7 @@ var ERROR_MESSAGES = {
 @export var room_code: String = "" # If empty, create a new room.
 
 var client = WebSocketPeer.new()
+var _matrix_active = false
 
 # If we suddenly disconnect from the master server without getting an error
 # code, assume we couldn't connect to the master server.
@@ -71,6 +72,10 @@ var reason: String = ERROR_MESSAGES[code]
 # Connect to the master server.
 func connect_to_server() -> void:
 	close()
+	if WebRuntime.is_widget():
+		_matrix_active = true
+		WebRuntime.open_lobby(self, room_code)
+		return
 	code = 4001
 	reason = ERROR_MESSAGES[code]
 	_previous_state = WebSocketPeer.STATE_CONNECTING
@@ -147,13 +152,16 @@ func connect_to_server() -> void:
 
 # Close the connection to the master server.
 func close() -> void:
+	if WebRuntime.is_widget():
+		_matrix_active = false
+		WebRuntime.close_lobby(self)
 	client.close()
 	_previous_state = WebSocketPeer.STATE_CLOSED
 
 # Check if we are currently connected to the master server.
 # Returns: If there is an ongoing connection to the master server.
 func is_connection_established() -> bool:
-	return client.get_ready_state() == WebSocketPeer.STATE_OPEN
+	return _matrix_active or client.get_ready_state() == WebSocketPeer.STATE_OPEN
 
 # Ask the master server to join the room with the given room code.
 # Returns: An Error.
@@ -164,6 +172,9 @@ func join_room(new_room_code: String) -> int:
 # Ask the master server to seal the room, which closes it.
 # Returns: An Error.
 func seal_room() -> int:
+	if _matrix_active:
+		WebRuntime.send_lobby("seal")
+		return OK
 	return client.send_text("S: \n")
 
 # Send an answer back to a peer via the master server.
@@ -192,6 +203,7 @@ func send_offer(id: int, offer: String) -> int:
 var _previous_state = WebSocketPeer.STATE_CLOSED
 
 func _process(_delta):
+	if _matrix_active: return
 	client.poll()
 	var state = client.get_ready_state()
 	if state == WebSocketPeer.STATE_OPEN:
@@ -210,6 +222,9 @@ func _process(_delta):
 # id: The ID of the peer.
 # data: The data to send.
 func _send_msg(type: String, id: int, data: String) -> int:
+	if _matrix_active:
+		WebRuntime.send_lobby("signal", {"kind": type, "peer": id, "data": data})
+		return OK
 	return client.send_text(("%s: %d\n%s" % [type, id, data]))
 
 func _on_closed(_was_clean: bool = false):
@@ -272,3 +287,34 @@ func _on_data_received():
 		if not candidate[1].is_valid_int():
 			return
 		emit_signal("candidate_received", src_id, candidate[0], int(candidate[1]), candidate[2])
+
+# Matrix carries only signaling. Physics and assets remain on WebRTC channels.
+func handle_matrix_event(event: Dictionary) -> void:
+	if not _matrix_active: return
+	var id = int(event.get("peer", 0))
+	match event.get("kind", ""):
+		"connected": connected.emit(id)
+		"room_joined":
+			room_code = str(event.get("code", ""))
+			room_joined.emit(room_code)
+		"peer_connected": peer_connected.emit(id)
+		"peer_disconnected": peer_disconnected.emit(id)
+		"O": offer_received.emit(id, str(event.get("data", "")))
+		"A": answer_received.emit(id, str(event.get("data", "")))
+		"C":
+			var fields = str(event.get("data", "")).split("\n", false)
+			if fields.size() == 3 and fields[1].is_valid_int():
+				candidate_received.emit(id, fields[0], int(fields[1]), fields[2])
+		"sealed": room_sealed.emit()
+		"error":
+			code = 4001
+			reason = str(event.get("message", "Matrix signaling failed."))
+			_matrix_active = false
+			disconnected.emit()
+
+func matrix_host_disconnected() -> void:
+	if _matrix_active:
+		_matrix_active = false
+		code = 4003
+		reason = ERROR_MESSAGES[code]
+		disconnected.emit()

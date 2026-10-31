@@ -128,7 +128,7 @@ func apply_options(config: ConfigFile) -> void:
 	
 	autosave_count = config.get_value("general", "autosave_file_count")
 	
-	_player_name = config.get_value("multiplayer", "name")
+	_player_name = WebRuntime.player_name() if WebRuntime.is_widget() else config.get_value("multiplayer", "name")
 	_player_color = config.get_value("multiplayer", "color")
 	
 	if Global.has_network_peer():
@@ -942,6 +942,7 @@ func respond_with_schema_results(client_db_need: Dictionary,
 
 # Ask the master server to host a game.
 func start_host() -> void:
+	if WebRuntime.is_widget(): _player_name = WebRuntime.player_name()
 	print("Hosting game...")
 	
 	_srv_schema_db = _create_schema_db()
@@ -964,6 +965,7 @@ func start_host() -> void:
 
 # Ask the master server to join a game.
 func start_join(room_code: String) -> void:
+	if WebRuntime.is_widget(): _player_name = WebRuntime.player_name()
 	print("Joining game with room code %s..." % room_code)
 	_connect_to_master_server(room_code)
 
@@ -978,6 +980,10 @@ func start_singleplayer() -> void:
 
 # Stop the connections to the other peers and the master server.
 func stop() -> void:
+	# Detach before closing: callbacks during scene teardown must not query
+	# the unique ID of a disconnected WebRTCMultiplayerPeer.
+	if multiplayer.multiplayer_peer == _rtc:
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_rtc.close()
 	_master_server.close()
 
@@ -1442,11 +1448,7 @@ func _create_peer(id: int) -> WebRTCPeerConnection:
 	print("Creating a connection for peer %d..." % id)
 	
 	var peer = WebRTCPeerConnection.new()
-	peer.initialize({
-		"iceServers": [
-			{ "urls": ["stun:stun.l.google.com:19302"] }
-		]
-	})
+	peer.initialize({"iceServers": WebRuntime.ice_servers()})
 	
 	peer.connect("session_description_created", Callable(self, "_on_offer_created").bind(id))
 	peer.connect("ice_candidate_created", Callable(self, "_on_new_ice_candidate").bind(id))
@@ -1982,6 +1984,9 @@ func _on_peer_connected(id: int):
 	_create_peer(id)
 
 func _on_peer_disconnected(id: int):
+	if WebRuntime.is_widget() and id == 1 and not multiplayer.is_server():
+		_master_server.matrix_host_disconnected()
+		return
 	# Do this as soon as possible, so a piece state update doesn't get through.
 	if multiplayer.is_server():
 		Global.srv_state_update_blacklist.erase(id)
