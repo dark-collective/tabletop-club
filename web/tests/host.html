@@ -12,6 +12,7 @@ window.deliverRoomEvent = roomEvent => {
 window.addWidget = function(name, user) {
   const frame = document.createElement("iframe"); frame.id = name;
   frame.allow = "autoplay; fullscreen";
+  frame.setAttribute("sandbox", "allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-modals allow-downloads");
   const url = new URL("http://127.0.0.1:8176/");
   for (const [key,value] of Object.entries({widgetId:"table-1",parentUrl:location.href,roomId:"!table:test",userId:user,displayName:name})) url.searchParams.set(key,value);
   frame.src = url;

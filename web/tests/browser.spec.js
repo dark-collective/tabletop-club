@@ -26,14 +26,15 @@ test("single-threaded WASM boots and renders a real table without isolation head
 });
 
 
-test("two cross-origin widgets negotiate Vommet permissions and exchange real WebRTC game traffic", async ({page, browser}) => {
+test("two cross-origin widgets negotiate Vommet permissions and exchange real WebRTC game traffic", async ({page, browser}, testInfo) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => {
     appendFileSync(".artifacts/browser/widget-console.log", message.type() + ": " + message.text() + "\n");
     if (message.type() === "error") errors.push(message.text());
   });
-  const clientContext = await browser.newContext();
+  const clientBrowser = await browser.browserType().launch(testInfo.project.use.launchOptions);
+  const clientContext = await clientBrowser.newContext();
   const clientPage = await clientContext.newPage();
   const parents = [page, clientPage];
   try {
@@ -62,14 +63,17 @@ test("two cross-origin widgets negotiate Vommet permissions and exchange real We
     await host.getByRole("button", {name:"Host table",exact:true}).click();
     await expect(host.locator("#session")).toHaveText(/Room [A-Z]{4}/);
     const code = (await host.locator("#session").innerText()).slice(-4);
+    console.info("Host table ready; starting the second browser.");
     await clientPage.goto("http://localhost:8176/__test__/host?name=client&user=%40bob%3Atest");
     const client = clientPage.frameLocator("#client");
     await expect(client.locator("body")).toHaveAttribute("data-scene", "MainMenu", {timeout:150000});
+    console.info("Client browser ready; joining the table.");
     await client.getByRole("textbox", {name:"Room code"}).fill(code);
     await client.getByRole("button", {name:"Join",exact:true}).click();
     await expect(client.locator("body")).toHaveAttribute("data-scene", "Game");
     await expect(host.locator("#players")).toHaveText("2 players", {timeout:45000});
     await expect(client.locator("#players")).toHaveText("2 players", {timeout:45000});
+    console.info("Two WebRTC peers connected.");
     const frame = clientPage.frames().find(frame => frame.url().includes("displayName=client"));
     await expect.poll(() => frame.evaluate(async () => {
       const all = await Promise.all(window.testPeers.map(peer => peer.getStats()));
@@ -87,7 +91,7 @@ test("two cross-origin widgets negotiate Vommet permissions and exchange real We
     await hostFrame.evaluate(() => window.tabletopWidget.fromGame(JSON.stringify({action:"disconnect"})));
     await expect(client.locator("body")).toHaveAttribute("data-scene", "MainMenu");
     expect(errors).toEqual([]);
-  } finally { await clientContext.close(); }
+  } finally { await clientBrowser.close(); }
 });
 
 test("denied room permissions leave solo play available", async ({page}) => {

@@ -77,6 +77,7 @@ func _process(_delta: float) -> void:
 	var scene = get_tree().current_scene
 	if scene != null and str(scene.name) != _ready_scene:
 		_ready_scene = str(scene.name)
+		_participants = -1
 		_send({"action": "scene", "name": _ready_scene})
 	if scene != null and str(scene.name) == "Game":
 		var count = scene.multiplayer.get_peers().size() + 1
