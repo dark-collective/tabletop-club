@@ -980,6 +980,10 @@ func start_singleplayer() -> void:
 
 # Stop the connections to the other peers and the master server.
 func stop() -> void:
+	# Detach before closing: callbacks during scene teardown must not query
+	# the unique ID of a disconnected WebRTCMultiplayerPeer.
+	if multiplayer.multiplayer_peer == _rtc:
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_rtc.close()
 	_master_server.close()
 
