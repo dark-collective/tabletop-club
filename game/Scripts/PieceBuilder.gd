@@ -40,7 +40,7 @@ enum {
 # extra_nodes: If true, also include nodes that provide extra functionality,
 # e.g. sound effects.
 func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
-	var piece = ResourceManager.load_res(piece_entry["scene_path"]).instance()
+	var piece = ResourceManager.load_res(piece_entry["scene_path"]).instantiate()
 	
 	# If the scene is not a piece (e.g. when importing a scene from the assets
 	# folder), make it a piece so it can interact with other objects.
@@ -52,9 +52,9 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 			build = PieceContainer.new()
 			
 			build.contact_monitor = true
-			build.contacts_reported = 2
+			build.max_contacts_reported = 2
 			
-			var pieces_node = Spatial.new()
+			var pieces_node = Node3D.new()
 			pieces_node.name = "Pieces"
 			build.add_child(pieces_node)
 			pieces_node.owner = build
@@ -82,7 +82,7 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 					# Dice, along with cards and tokens, have their own unique
 					# sound effects which are implemented here.
 					build.contact_monitor = true
-					build.contacts_reported = 1
+					build.max_contacts_reported = 1
 					
 					var effect_player = AudioStreamPlayer3D.new()
 					effect_player.name = "EffectPlayer"
@@ -98,7 +98,7 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 			else:
 				build = Piece.new()
 		
-		_extract_and_shape_mesh_instances(build, piece, Transform.IDENTITY,
+		_extract_and_shape_mesh_instances(build, piece, Transform3D.IDENTITY,
 				piece_entry["collision_mode"])
 		
 		if not piece.get_parent():
@@ -112,15 +112,15 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 	_adjust_centre_of_mass(piece, piece_entry)
 	
 	if piece_entry.has("texture_path") and piece_entry["texture_path"] is String:
-		var texture: Texture = ResourceManager.load_res(piece_entry["texture_path"])
+		var texture: Texture2D = ResourceManager.load_res(piece_entry["texture_path"])
 		piece.apply_texture(texture)
 		
 		# Check if the entry has textures for more than one surface.
 		var surface = 1
 		while piece_entry.has("texture_path_" + str(surface)):
 			var texture_path: String = piece_entry["texture_path_" + str(surface)]
-			var optional_texture: Texture
-			if not texture_path.empty():
+			var optional_texture: Texture2D
+			if not texture_path.is_empty():
 				optional_texture = ResourceManager.load_res(texture_path)
 			else:
 				optional_texture = preload("res://Images/BlackTexture.png")
@@ -149,7 +149,7 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 					provided_sfx = true
 		
 		if inbuilt_sfx or provided_sfx:
-			if piece.effect_player_path.empty():
+			if piece.effect_player_path.is_empty():
 				var effect_player = AudioStreamPlayer3D.new()
 				effect_player.name = "EffectPlayer"
 				effect_player.bus = "Effects"
@@ -163,7 +163,7 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 			# play the sound effects.
 			if not piece.contact_monitor:
 				piece.contact_monitor = true
-				piece.contacts_reported = 1
+				piece.max_contacts_reported = 1
 			
 			if provided_sfx:
 				var sounds = AssetDB.SFX_AUDIO_STREAMS[piece_entry["sfx"]]
@@ -175,17 +175,17 @@ func build_piece(piece_entry: Dictionary, extra_nodes: bool = true) -> Piece:
 # Build a table using a table entry from the AssetDB.
 # Returns: The table corresponding to the given entry.
 # table_entry: The entry to create the table with.
-func build_table(table_entry: Dictionary) -> RigidBody:
-	var scene: Spatial = ResourceManager.load_res(table_entry["scene_path"]).instance()
+func build_table(table_entry: Dictionary) -> RigidBody3D:
+	var scene: Node3D = ResourceManager.load_res(table_entry["scene_path"]).instantiate()
 	
-	var table = RigidBody.new()
-	_extract_and_shape_mesh_instances(table, scene, Transform.IDENTITY,
+	var table = RigidBody3D.new()
+	_extract_and_shape_mesh_instances(table, scene, Transform3D.IDENTITY,
 			table_entry["collision_mode"])
 	if not scene.get_parent():
 		ResourceManager.free_object(scene)
 	
 	table.mass = 100000 # = 10kg
-	table.mode = RigidBody.MODE_STATIC
+	table.freeze = true
 	
 	var physics_material = PhysicsMaterial.new()
 	physics_material.bounce = table_entry["bounce"]
@@ -207,11 +207,11 @@ func fill_stack(stack: Stack, stack_entry: Dictionary) -> void:
 	for entry_name in stack_entry["entry_names"]:
 		var entry_path = stack_entry_dir + "/" + entry_name
 		var piece_entry = AssetDB.search_path(entry_path)
-		if piece_entry.empty():
+		if piece_entry.is_empty():
 			push_error("Entry (%s) was not found!" % entry_path)
 			continue
 		
-		stack.add_piece(piece_entry, Transform.IDENTITY, Stack.STACK_BOTTOM,
+		stack.add_piece(piece_entry, Transform3D.IDENTITY, Stack.STACK_BOTTOM,
 			Stack.FLIP_NO)
 
 # Create an array of MeshInstances from a piece, which can also be inserted
@@ -222,16 +222,16 @@ func fill_stack(stack: Stack, stack_entry: Dictionary) -> void:
 func get_piece_meshes(piece: Piece) -> Array:
 	var out = []
 	for mesh_instance in piece.get_mesh_instances():
-		var piece_mesh = MeshInstance.new()
-		piece_mesh.name = piece.name
+		var piece_mesh = MeshInstance3D.new()
+		piece_mesh.name = str(piece.name)
 		piece_mesh.transform = mesh_instance.transform
 		
 		piece_mesh.set_meta("piece_entry", piece.piece_entry)
 		
 		piece_mesh.mesh = mesh_instance.mesh
-		for surface in range(mesh_instance.get_surface_material_count()):
-			var material = mesh_instance.get_surface_material(surface)
-			piece_mesh.set_surface_material(surface, material)
+		for surface in range(mesh_instance.get_surface_override_material_count()):
+			var material = mesh_instance.get_surface_override_material(surface)
+			piece_mesh.set_surface_override_material(surface, material)
 		
 		out.append(piece_mesh)
 	
@@ -249,7 +249,7 @@ func scale_piece(piece: Piece, scale: Vector3) -> void:
 # piece: The piece whose centre of mass to adjust.
 # piece_entry: The piece entry of the piece.
 # keep_pos: Should the piece's position stay the same?
-func _adjust_centre_of_mass(piece: RigidBody, piece_entry: Dictionary,
+func _adjust_centre_of_mass(piece: RigidBody3D, piece_entry: Dictionary,
 	keep_pos: bool = false) -> void:
 	
 	if not piece_entry.has("com_adjust"):
@@ -277,7 +277,7 @@ func _adjust_centre_of_mass(piece: RigidBody, piece_entry: Dictionary,
 	# centre of mass of a rigidbody in Godot. See:
 	# https://github.com/godotengine/godot-proposals/issues/945
 	for child in piece.get_children():
-		if child is CollisionShape:
+		if child is CollisionShape3D:
 			child.transform.origin -= centre_of_mass
 	
 	if keep_pos:
@@ -291,30 +291,31 @@ func _adjust_centre_of_mass(piece: RigidBody, piece_entry: Dictionary,
 # collision_mode: The type of collision shape to make - see the enum above for
 # possible values.
 func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
-	transform: Transform, collision_mode: int) -> void:
+	transform: Transform3D, collision_mode: int) -> void:
 	
 	for child in from.get_children():
 		var new_basis = transform.basis
 		var new_origin = transform.origin
 		
-		if from is Spatial:
+		if from is Node3D:
 			new_basis = from.transform.basis * new_basis
 			new_origin = from.transform.origin + new_origin
 		
-		var new_transform = Transform(new_basis, new_origin)
+		var new_transform = Transform3D(new_basis, new_origin)
 		_extract_and_shape_mesh_instances(add_to, child, new_transform,
 				collision_mode)
 	
-	if from is MeshInstance:
+	if from is MeshInstance3D:
 		var parent = from.get_parent()
 		if parent:
+			from.owner = null
 			parent.remove_child(from)
 		
 		# We also want to make sure that the mesh instance has it's own unique
 		# material that isn't shared with the other instances, so when e.g. the
 		# instance is being selected, not all of the instances look like they
 		# are selected (see #20).
-		var num_materials = from.get_surface_material_count()
+		var num_materials = from.get_surface_override_material_count()
 		var num_surfaces  = from.mesh.get_surface_count()
 		if num_materials < num_surfaces:
 			push_warning("Mesh '%s' has %d surfaces, but only %d materials!" %
@@ -335,11 +336,11 @@ func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
 				# There seems to be a bug on OSX where the default cull mode
 				# inverts the normals of the mesh.
 				# See: https://github.com/godotengine/godot/issues/39936
-				if OS.get_name() == "OSX":
-					if material is SpatialMaterial:
-						material.params_cull_mode = SpatialMaterial.CULL_BACK
+				if OS.get_name() == "macOS":
+					if material is StandardMaterial3D:
+						material.cull_mode = StandardMaterial3D.CULL_BACK
 				
-				from.set_surface_material(surface, material)
+				from.set_surface_override_material(surface, material)
 				
 				# Real-time global illumination is coming in Godot 4, so while
 				# we wait we can approximate emissive materials using
@@ -349,9 +350,9 @@ func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
 				# disable them for now - I can always enable them again if there
 				# is enough demand, or if the NVIDIA driver has been updated.
 				"""
-				if material is SpatialMaterial:
+				if material is StandardMaterial3D:
 					if material.emission_enabled:
-						var omnilight = OmniLight.new()
+						var omnilight = OmniLight3D.new()
 						omnilight.light_color = material.emission
 						omnilight.light_energy = material.emission_energy
 						from.add_child(omnilight)
@@ -367,27 +368,27 @@ func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
 				var static_body_index = -1
 				for index in range(from.get_child_count()):
 					var child = from.get_child(index)
-					if child is StaticBody:
+					if child is StaticBody3D:
 						if static_body_index < 0:
 							static_body_index = index
 						else:
-							push_error("Multiple StaticBody children generated!")
+							push_error("Multiple StaticBody3D children generated!")
 							return
 				
 				if static_body_index < 0:
-					push_error("Could not find generated StaticBody!")
+					push_error("Could not find generated StaticBody3D!")
 					return
-				var static_body: StaticBody = from.get_child(static_body_index)
+				var static_body: StaticBody3D = from.get_child(static_body_index)
 				
 				for collision_shape in static_body.get_children():
-					if collision_shape is CollisionShape:
+					if collision_shape is CollisionShape3D:
 						static_body.remove_child(collision_shape)
 						collision_shape_arr.append(collision_shape)
 				
 				from.remove_child(static_body)
 				ResourceManager.free_object(static_body)
 			else:
-				var collision_shape = CollisionShape.new()
+				var collision_shape = CollisionShape3D.new()
 				
 				if collision_mode == COLLISION_CONVEX:
 					collision_shape.shape = from.mesh.create_convex_shape()
@@ -405,7 +406,7 @@ func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
 			collision_transform.basis = from.transform.basis * collision_transform.basis
 			collision_transform.origin = from.transform.origin + collision_transform.origin
 			
-			from.transform = Transform.IDENTITY
+			from.transform = Transform3D.IDENTITY
 			for collision_shape in collision_shape_arr:
 				collision_shape.transform = collision_transform
 				add_to.add_child(collision_shape)
@@ -414,7 +415,7 @@ func _extract_and_shape_mesh_instances(add_to: Node, from: Node,
 				# PieceCache can store this scene in it's entirety if it wants.
 				collision_shape.owner = add_to
 			
-			if not collision_shape_arr.empty():
+			if not collision_shape_arr.is_empty():
 				collision_shape_arr[0].add_child(from)
 				from.owner = add_to
 				

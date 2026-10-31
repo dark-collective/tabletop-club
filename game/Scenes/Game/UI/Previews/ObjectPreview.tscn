@@ -1,15 +1,15 @@
 [gd_scene load_steps=12 format=2]
 
-[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Regular-List.tres" type="DynamicFont" id=1]
+[ext_resource path="res://Fonts/Cabin/Modified/Cabin-Regular-List.tres" type="Font" id=1]
 [ext_resource path="res://Scripts/Game/UI/Previews/ObjectPreview.gd" type="Script" id=2]
-[ext_resource path="res://Images/StackIcon.svg" type="Texture" id=3]
+[ext_resource path="res://Images/StackIcon.svg" type="Texture2D" id=3]
 
 [sub_resource type="Environment" id=1]
 background_mode = 1
 background_color = Color( 0.54902, 0.705882, 0.784314, 1 )
 ambient_light_color = Color( 1, 1, 1, 1 )
 
-[sub_resource type="World" id=2]
+[sub_resource type="World3D" id=2]
 environment = SubResource( 1 )
 
 [sub_resource type="StyleBoxEmpty" id=3]
@@ -30,30 +30,30 @@ HScrollBar/styles/scroll = SubResource( 6 )
 HScrollBar/styles/scroll_focus = SubResource( 7 )
 
 [node name="ObjectPreview" type="VBoxContainer"]
-margin_right = 40.0
-margin_bottom = 40.0
+offset_right = 40.0
+offset_bottom = 40.0
 script = ExtResource( 2 )
 __meta__ = {
 "_editor_description_": "This scene is used to display objects in a 2D environment (even though the object is shown in a 3D viewport)."
 }
 
 [node name="CenterContainer" type="CenterContainer" parent="."]
-margin_right = 100.0
-margin_bottom = 100.0
+offset_right = 100.0
+offset_bottom = 100.0
 mouse_filter = 1
 
-[node name="ViewportContainer" type="ViewportContainer" parent="CenterContainer"]
-margin_right = 100.0
-margin_bottom = 100.0
-rect_min_size = Vector2( 100, 100 )
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CenterContainer"]
+offset_right = 100.0
+offset_bottom = 100.0
+custom_minimum_size = Vector2( 100, 100 )
 mouse_filter = 1
 stretch = true
 
-[node name="Viewport" type="Viewport" parent="CenterContainer/ViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="CenterContainer/SubViewportContainer"]
 physics_interpolation_mode = 1
 size = Vector2( 256, 256 )
-own_world = true
-world = SubResource( 2 )
+own_world_3d = true
+world_3d = SubResource( 2 )
 transparent_bg = true
 handle_input_locally = false
 disable_3d = true
@@ -61,28 +61,29 @@ usage = 3
 render_target_update_mode = 3
 gui_disable_input = true
 
-[node name="Camera" type="Camera" parent="CenterContainer/ViewportContainer/Viewport"]
+[node name="Camera3D" type="Camera3D" parent="CenterContainer/SubViewportContainer/SubViewport"]
 far = 500.0
 
-[node name="StackIcon" type="TextureRect" parent="CenterContainer/ViewportContainer"]
-margin_left = 76.0
-margin_right = 100.0
-margin_bottom = 24.0
-hint_tooltip = "This item is made up of multiple objects."
+[node name="StackIcon" type="TextureRect" parent="CenterContainer/SubViewportContainer"]
+offset_left = 76.0
+offset_right = 100.0
+offset_bottom = 24.0
+tooltip_text = "This item is made up of multiple objects."
 texture = ExtResource( 3 )
 expand = true
 
 [node name="LabelContainer" type="ScrollContainer" parent="."]
-margin_top = 104.0
-margin_right = 100.0
-margin_bottom = 119.0
+offset_top = 104.0
+offset_right = 100.0
+offset_bottom = 119.0
 mouse_filter = 2
 theme = SubResource( 8 )
 scroll_vertical_enabled = false
 
 [node name="Label" type="Label" parent="LabelContainer"]
-margin_right = 100.0
-margin_bottom = 15.0
+offset_right = 100.0
+offset_bottom = 15.0
 size_flags_horizontal = 3
-custom_fonts/font = ExtResource( 1 )
-align = 1
+theme_override_fonts/font = ExtResource( 1 )
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1

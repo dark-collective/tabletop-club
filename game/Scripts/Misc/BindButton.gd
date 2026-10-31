@@ -26,7 +26,7 @@ class_name BindButton
 
 signal rebinding_action(action)
 
-export(String) var action: String
+@export var action: String
 var input_event: InputEvent = null
 
 # Get the input event corresponding to the action this button represents.
@@ -43,7 +43,7 @@ func update_text() -> void:
 	text = BindManager.get_input_event_text(get_button_input_event())
 
 func _ready():
-	connect("pressed", self, "_on_pressed")
+	connect("pressed", Callable(self, "_on_pressed"))
 	
 	update_text()
 

@@ -20,19 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Spatial
+extends Node3D
 
-onready var _area = $Area
-onready var _area_collision_shape = $Area/CollisionShape
-onready var _effect_player = $EffectPlayer
-onready var _mesh_instance = $Area/CollisionShape/MeshInstance
-onready var _name_label = $Viewport/MarginContainer/NameLabel
+@onready var _area = $Area3D
+@onready var _area_collision_shape = $Area3D/CollisionShape3D
+@onready var _effect_player = $EffectPlayer
+@onready var _mesh_instance = $Area3D/CollisionShape3D/MeshInstance3D
+@onready var _name_label = $SubViewport/MarginContainer/NameLabel
 
 const CARD_HEIGHT_DIFF = 0.01
 
 # TODO: export(RandomAudioSample)
 # See: https://github.com/godotengine/godot/pull/44879
-export(Resource) var hand_sounds
+@export var hand_sounds: Resource
 
 var _srv_cards = []
 
@@ -43,8 +43,9 @@ func owner_id() -> int:
 	return int(name)
 
 # Play a random hand sound.
-remotesync func play_hand_sound() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func play_hand_sound() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _effect_player.playing:
@@ -77,8 +78,8 @@ func srv_add_card(card: Card) -> bool:
 		_srv_cards.insert(pos, card)
 		_srv_set_card_positions()
 		
-		card.connect("client_set_hover_position", self, "_on_client_set_card_position")
-		card.connect("card_exiting_tree", self, "_on_card_exiting_tree")
+		card.connect("client_set_hover_position", Callable(self, "_on_client_set_card_position"))
+		card.connect("card_exiting_tree", Callable(self, "_on_card_exiting_tree"))
 		
 		card.rpc("set_collisions_on", false)
 		
@@ -101,11 +102,11 @@ func srv_remove_card(card: Card, play_sound: bool = true) -> void:
 	_srv_cards.erase(card)
 	_srv_set_card_positions()
 	
-	card.disconnect("client_set_hover_position", self, "_on_client_set_card_position")
-	card.disconnect("card_exiting_tree", self, "_on_card_exiting_tree")
+	card.disconnect("client_set_hover_position", Callable(self, "_on_client_set_card_position"))
+	card.disconnect("card_exiting_tree", Callable(self, "_on_card_exiting_tree"))
 	
 	# The card may be removed because the game is exiting!
-	if get_tree().has_network_peer():
+	if Global.has_network_peer():
 		card.rpc("set_collisions_on", true)
 		if play_sound:
 			rpc("play_hand_sound")
@@ -117,22 +118,23 @@ func update_owner_display() -> void:
 	if player.size() == 0:
 		return
 	
-	var material = _mesh_instance.get_surface_material(0)
+	var material = _mesh_instance.get_surface_override_material(0)
 	if material:
 		var a = material.albedo_color.a
 		material.albedo_color = player["color"]
 		material.albedo_color.a = a
 	
-	_name_label.bbcode_text = "[center]" + Lobby.get_name_bb_code(owner_id()) + "[/center]"
+	_name_label.text = "[center]" + Lobby.get_name_bb_code(owner_id()) + "[/center]"
 
 # Update the hand's transform, along with the card's.
-remotesync func update_transform(new_transform: Transform) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func update_transform(new_transform: Transform3D) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	transform = new_transform
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		_srv_set_card_positions()
 		
 		for card in _srv_cards:
@@ -142,11 +144,11 @@ func _ready():
 	# Each hand should have a different material since they will probably have
 	# different albedo colours because of the players ability to pick different
 	# colours.
-	var material = _mesh_instance.get_surface_material(0)
+	var material = _mesh_instance.get_surface_override_material(0)
 	if material:
-		_mesh_instance.set_surface_material(0, material.duplicate())
+		_mesh_instance.set_surface_override_material(0, material.duplicate())
 	
-	Lobby.connect("player_modified", self, "_on_Lobby_player_modified")
+	Lobby.connect("player_modified", Callable(self, "_on_Lobby_player_modified"))
 
 # Get the displacement along the hand's "line" to the point where it is closest
 # to the given card.
@@ -162,9 +164,9 @@ func _right_angle_displacement(card: Card) -> float:
 # body: The node to start from.
 # visible: Whether the front face should be visible or not.
 func _set_front_face_visible_recursive(node: Node, visible: bool) -> void:
-	if node is MeshInstance:
-		var material = node.get_surface_material(0)
-		if material is SpatialMaterial:
+	if node is MeshInstance3D:
+		var material = node.get_surface_override_material(0)
+		if material is StandardMaterial3D:
 			material.uv1_scale = Vector3.ONE if visible else Vector3.ZERO
 	
 	for child in node.get_children():
@@ -172,7 +174,7 @@ func _set_front_face_visible_recursive(node: Node, visible: bool) -> void:
 
 # Set the hover positions of the hand's cards.
 func _srv_set_card_positions() -> void:
-	if _srv_cards.empty() or (not _area.is_inside_tree()):
+	if _srv_cards.is_empty() or (not _area.is_inside_tree()):
 		return
 	
 	var total_width = 0
@@ -209,7 +211,7 @@ func _srv_set_card_rotation(card: Card) -> void:
 	var new_basis = transform.basis
 	if card.transform.basis.y.y < 0:
 		new_basis = new_basis.rotated(transform.basis.z, PI)
-	card.srv_set_hover_rotation(Quat(new_basis))
+	card.srv_set_hover_rotation(Quaternion(new_basis))
 
 # Try and set a node's front face visibility.
 # body: The node to try and set the front face visibility of.
@@ -232,7 +234,7 @@ func _on_Area_body_entered(body: Node):
 	if not this_id in body.over_hands:
 		body.over_hands.append(this_id)
 	
-	var player_id = get_tree().get_network_unique_id()
+	var player_id = multiplayer.get_unique_id()
 	_try_set_front_face_visible(body, player_id in body.over_hands)
 
 func _on_Area_body_exited(body: Node):
@@ -242,8 +244,8 @@ func _on_Area_body_exited(body: Node):
 	body.over_hands.erase(owner_id())
 	
 	var show_face = true
-	if not body.over_hands.empty():
-		show_face = get_tree().get_network_unique_id() in body.over_hands
+	if not body.over_hands.is_empty():
+		show_face = multiplayer.get_unique_id() in body.over_hands
 	_try_set_front_face_visible(body, show_face)
 
 func _on_card_exiting_tree(card: Card):
@@ -253,8 +255,8 @@ func _on_client_set_card_position(card: Card):
 	srv_remove_card(card)
 
 func _on_Hand_tree_exiting():
-	if get_tree().has_network_peer():
-		if get_tree().is_network_server():
+	if Global.has_network_peer():
+		if multiplayer.is_server():
 			for card in _srv_cards:
 				card.rpc_id(1, "request_stop_hovering")
 	

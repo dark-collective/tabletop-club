@@ -20,21 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Area
+extends Area3D
 
 class_name HiddenArea
 
-onready var _mesh_instance = $CollisionShape/MeshInstance
+@onready var _mesh_instance = $CollisionShape3D/MeshInstance3D
 
 var player_id: int = 1
 
 # Update the color of the hidden area to reflect the owner's color.
 func update_player_color() -> void:
 	var player = Lobby.get_player(player_id)
-	if player.empty():
+	if player.is_empty():
 		return
 	
-	var material = _mesh_instance.get_surface_material(0)
+	var material = _mesh_instance.get_surface_override_material(0)
 	if material:
 		var a = material.albedo_color.a
 		material.albedo_color = player["color"]
@@ -44,15 +44,15 @@ func _ready():
 	# Each hidden area should have a different material since they will probably
 	# have different albedo colours because of the players ability to pick
 	# different colours.
-	var material = _mesh_instance.get_surface_material(0)
+	var material = _mesh_instance.get_surface_override_material(0)
 	if material:
-		_mesh_instance.set_surface_material(0, material.duplicate())
+		_mesh_instance.set_surface_override_material(0, material.duplicate())
 	
-	Lobby.connect("player_modified", self, "_on_Lobby_player_modified")
+	Lobby.connect("player_modified", Callable(self, "_on_Lobby_player_modified"))
 
 func _on_HiddenArea_body_entered(body):
 	if body is Piece:
-		if get_tree().get_network_unique_id() != player_id:
+		if multiplayer.get_unique_id() != player_id:
 			body.visible = false
 
 func _on_HiddenArea_body_exited(body):

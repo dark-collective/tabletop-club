@@ -22,13 +22,13 @@
 
 extends Control
 
-onready var _label = $Label
-onready var _texture = $Texture
+@onready var _label = $Label
+@onready var _texture = $Texture2D
 
 var is_metric: bool = true
 var point1: Vector3
 var point2: Vector3
-var scale: float = 1.0
+var measurement_scale: float = 1.0
 
 var _make_label_visible: bool = true
 
@@ -43,9 +43,9 @@ func set_label_visible(is_visible: bool) -> void:
 	_make_label_visible = is_visible
 	_label.visible = is_visible
 
-# Update the position and scale of the ruler on the screen.
+# Update the position and measurement_scale of the ruler on the screen.
 # camera: The camera being used.
-func update_ruler(camera: Camera) -> void:
+func update_ruler(camera: Camera3D) -> void:
 	var line_behind_camera = camera.is_position_behind(point1) or camera.is_position_behind(point2)
 	if _make_label_visible:
 		_label.visible = not line_behind_camera
@@ -56,17 +56,17 @@ func update_ruler(camera: Camera) -> void:
 		var point1_2d = camera.unproject_position(point1)
 		var point2_2d = camera.unproject_position(point2)
 		var line = point2_2d - point1_2d
-		_texture.rect_position = point1_2d
-		_texture.rect_size.x = line.length()
+		_texture.position = point1_2d
+		_texture.size.x = line.length()
 		if line.x != 0:
 			var angle = atan(line.y / line.x)
 			if line.x < 0:
 				angle += PI
-			_texture.rect_rotation = rad2deg(angle)
+			_texture.rotation = rad_to_deg(angle)
 		
 		if _label.visible:
-			_label.rect_position = point2_2d
-			var measure_cm = (point2 - point1).length() * scale
+			_label.position = point2_2d
+			var measure_cm = (point2 - point1).length() * measurement_scale
 			
 			if is_metric:
 				var measure_m = measure_cm / 100.0
@@ -76,4 +76,4 @@ func update_ruler(camera: Camera) -> void:
 				var measure_ft = measure_in / 12.0
 				_label.text = "%.1f in\n%.2f ft" % [measure_in, measure_ft]
 	else:
-		_texture.rect_size.x = 0
+		_texture.size.x = 0

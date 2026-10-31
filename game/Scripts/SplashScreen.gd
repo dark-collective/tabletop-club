@@ -22,7 +22,7 @@
 
 extends Control
 
-onready var _animation_player = $CenterContainer/GodotLogo/AnimationPlayer
+@onready var _animation_player = $CenterContainer/GodotLogo/AnimationPlayer
 
 func _ready():
 	# TODO: Try to load all of the options without needing the OptionsMenu scene
@@ -36,7 +36,7 @@ func _ready():
 		skip_splash_screen = options_file.get_value("general",
 				"skip_splash_screen", false)
 	
-	if locale.empty():
+	if locale.is_empty():
 		locale = Global.system_locale
 	TranslationServer.set_locale(locale)
 	

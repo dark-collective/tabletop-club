@@ -24,7 +24,7 @@ extends Stack
 
 class_name StackSandwich
 
-export(NodePath) var sandwich_path: String
+@export var sandwich_path: NodePath
 
 var _pieces = []
 
@@ -41,9 +41,9 @@ func get_pieces() -> Array:
 
 # Get the sandwich mesh.
 # Return: The sandwich mesh.
-func get_sandwich() -> MeshInstance:
+func get_sandwich() -> MeshInstance3D:
 	var node = get_node(sandwich_path)
-	if node is MeshInstance:
+	if node is MeshInstance3D:
 		return node
 	
 	return null
@@ -51,12 +51,13 @@ func get_sandwich() -> MeshInstance:
 # Called by the server to orient all of the pieces in the stack in a particular
 # direction.
 # up: Should all of the pieces be facing up?
-remotesync func orient_pieces(up: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func orient_pieces(up: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Play sound effects.
-	.orient_pieces(up)
+	super.orient_pieces(up)
 
 	for i in range(get_piece_count()):
 		_pieces[i]["flip_y"] = not up
@@ -65,12 +66,13 @@ remotesync func orient_pieces(up: bool) -> void:
 
 # Called by the server to set the order of pieces in the stack.
 # order: The piece indicies in their new order.
-remotesync func set_piece_order(order: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_piece_order(order: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Play sound effects.
-	.set_piece_order(order)
+	super.set_piece_order(order)
 
 	var new_list = []
 	
@@ -98,9 +100,9 @@ func _add_piece_at_pos(piece_entry: Dictionary, pos: int, flip_y: bool) -> void:
 # pos: The position to remove the piece from.
 func _remove_piece_at_pos(pos: int) -> Dictionary:
 	var out = _pieces[pos]
-	_pieces.remove(pos)
+	_pieces.remove_at(pos)
 	
-	var piece_transform = Transform.IDENTITY
+	var piece_transform = Transform3D.IDENTITY
 	if out["flip_y"]:
 		piece_transform = piece_transform.rotated(Vector3.BACK, PI)
 	out["transform"] = piece_transform
@@ -111,7 +113,7 @@ func _remove_piece_at_pos(pos: int) -> Dictionary:
 
 # Set the size and textures shown at either end of the sandwich.
 func _set_sandwich_display() -> void:
-	if _pieces.empty():
+	if _pieces.is_empty():
 		return
 	
 	var sandwich = get_sandwich()
@@ -125,16 +127,16 @@ func _set_sandwich_display() -> void:
 	if front_flip:
 		front_key += "_1"
 	var front_path: String = front_entry[front_key]
-	var front_texture: Texture
-	if not front_path.empty():
+	var front_texture: Texture2D
+	if not front_path.is_empty():
 		front_texture = ResourceManager.load_res(front_path)
 	else:
 		front_texture = preload("res://Images/BlackTexture.png")
 	
-	var front_material = SpatialMaterial.new()
+	var front_material = StandardMaterial3D.new()
 	front_material.albedo_color = front_entry["color"]
 	front_material.albedo_texture = front_texture
-	sandwich.set_surface_material(0, front_material)
+	sandwich.set_surface_override_material(0, front_material)
 	
 	var back_meta = _pieces[0]
 	var back_entry = back_meta["piece_entry"]
@@ -144,13 +146,13 @@ func _set_sandwich_display() -> void:
 	if not back_flip:
 		back_key += "_1"
 	var back_path: String = back_entry[back_key]
-	var back_texture: Texture
-	if not back_path.empty():
+	var back_texture: Texture2D
+	if not back_path.is_empty():
 		back_texture = ResourceManager.load_res(back_path)
 	else:
 		back_texture = preload("res://Images/BlackTexture.png")
 	
-	var back_material = SpatialMaterial.new()
+	var back_material = StandardMaterial3D.new()
 	back_material.albedo_color = back_entry["color"]
 	back_material.albedo_texture = back_texture
-	sandwich.set_surface_material(1, back_material)
+	sandwich.set_surface_override_material(1, back_material)

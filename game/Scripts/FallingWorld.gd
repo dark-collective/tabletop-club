@@ -20,11 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Spatial
+extends Node3D
 
-onready var _camera = $Camera
-onready var _pieces = $Pieces
-onready var _world_environment = $WorldEnvironment
+@onready var _camera = $Camera3D
+@onready var _pieces = $Pieces
+@onready var _world_environment = $WorldEnvironment
 
 const BALANCE_ASSETS_RATIO = 0.5
 const CAMERA_ROTATION_RATE = 0.05
@@ -39,7 +39,7 @@ var _asset_chances = {}
 var _rng = RandomNumberGenerator.new()
 
 func _ready():
-	_camera_distance = _camera.translation.z
+	_camera_distance = _camera.position.z
 	_rng.randomize()
 	
 	var db = AssetDB.get_db()
@@ -73,7 +73,7 @@ func _ready():
 			pack_meta["/average"] = ceil(float(pack_total) / num_types)
 			_asset_chances[pack] = pack_meta
 	
-	if not _asset_chances.empty():
+	if not _asset_chances.is_empty():
 		var overall_total = 0
 		for pack in _asset_chances:
 			overall_total += _asset_chances[pack]["/total"]
@@ -114,26 +114,28 @@ func _ready():
 	# TODO: Maybe add a method to AssetDB for returning an environment based on
 	# a given skybox entry?
 	var skybox_entry = AssetDB.random_asset("TabletopClub", "skyboxes", true)
-	if not skybox_entry.empty():
-		var skybox = PanoramaSky.new()
+	if not skybox_entry.is_empty():
+		var skybox = Sky.new()
 		
 		if skybox_entry.has("texture_path"):
 			var texture_path = skybox_entry["texture_path"]
-			if not texture_path.empty():
-				var texture: Texture = ResourceManager.load_res(texture_path)
-				skybox.panorama = texture
+			if not texture_path.is_empty():
+				var texture: Texture2D = ResourceManager.load_res(texture_path)
+				var material = PanoramaSkyMaterial.new()
+				material.panorama = texture
+				skybox.sky_material = material
 		
 		var env = _world_environment.environment
-		var radiance = env.background_sky.radiance_size
+		var radiance = env.sky.radiance_size
 		skybox.radiance_size = radiance
-		env.background_sky = skybox
+		env.sky = skybox
 		
-		env.background_sky_rotation_degrees = skybox_entry["rotation"]
-		env.background_energy = skybox_entry["strength"]
+		env.sky_rotation = skybox_entry["rotation"] * PI / 180.0
+		env.background_energy_multiplier = skybox_entry["strength"]
 		
 		_world_environment.environment = env
 	
-	PieceFactory.connect("finished", self, "_on_PieceFactory_finished")
+	PieceFactory.connect("finished", Callable(self, "_on_PieceFactory_finished"))
 
 func _process(delta):
 	_time_in_scene += delta
@@ -147,7 +149,7 @@ func _process(delta):
 	_camera.transform = _camera.transform.looking_at(Vector3.ZERO, Vector3.UP)
 
 func _decide_next_piece() -> Dictionary:
-	if not _asset_chances.empty():
+	if not _asset_chances.is_empty():
 		var pack_total = _asset_chances["/total"]
 		var rand_pack = _rng.randi_range(1, pack_total)
 		
@@ -160,7 +162,7 @@ func _decide_next_piece() -> Dictionary:
 					pack_selected = pack
 					break
 		
-		if not pack_selected.empty():
+		if not pack_selected.is_empty():
 			var type_total = _asset_chances[pack_selected]["/total"]
 			var rand_type = _rng.randi_range(1, type_total)
 			
@@ -173,7 +175,7 @@ func _decide_next_piece() -> Dictionary:
 						type_selected = type
 						break
 			
-			if not type_selected.empty():
+			if not type_selected.is_empty():
 				var possible_objects = _asset_chances[pack_selected][type_selected]["assets"]
 				var random_db_index = possible_objects[_rng.randi() % possible_objects.size()]
 				return AssetDB.get_db()[pack_selected][type_selected][random_db_index]
@@ -207,14 +209,14 @@ func _on_PieceFactory_finished(order: int, piece: Piece):
 
 func _on_SpawnTimer_timeout():
 	var next_piece = _decide_next_piece()
-	if not next_piece.empty():
+	if not next_piece.is_empty():
 		PieceFactory.request(next_piece)
 	
 	# De-spawn any pieces that have fallen off the screen.
 	for piece in _pieces.get_children():
-		if piece.translation.y < DESPAWN_PLANE:
+		if piece.position.y < DESPAWN_PLANE:
 			_pieces.remove_child(piece)
 			ResourceManager.queue_free_object(piece)
 
 func _on_FallingWorld_tree_exiting():
-	PieceFactory.disconnect("finished", self, "_on_PieceFactory_finished")
+	PieceFactory.disconnect("finished", Callable(self, "_on_PieceFactory_finished"))

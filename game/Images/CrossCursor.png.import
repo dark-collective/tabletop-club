@@ -2,12 +2,13 @@
 
 importer="image"
 type="Image"
-path="res://.import/CrossCursor.png-3c7e74a4e0a0b342e7849abd4114a30d.image"
+uid="uid://dp5ws1606o8uc"
+path="res://.godot/imported/CrossCursor.png-3c7e74a4e0a0b342e7849abd4114a30d.image"
 
 [deps]
 
 source_file="res://Images/CrossCursor.png"
-dest_files=[ "res://.import/CrossCursor.png-3c7e74a4e0a0b342e7849abd4114a30d.image" ]
+dest_files=["res://.godot/imported/CrossCursor.png-3c7e74a4e0a0b342e7849abd4114a30d.image"]
 
 [params]
 

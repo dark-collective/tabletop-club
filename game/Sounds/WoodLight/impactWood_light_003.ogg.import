@@ -1,15 +1,19 @@
 [remap]
 
-importer="ogg_vorbis"
-type="AudioStreamOGGVorbis"
-path="res://.import/impactWood_light_003.ogg-17dd2b1cb4ee58e8fe16d07caccfca63.oggstr"
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cqw2ncrciio6"
+path="res://.godot/imported/impactWood_light_003.ogg-17dd2b1cb4ee58e8fe16d07caccfca63.oggvorbisstr"
 
 [deps]
 
 source_file="res://Sounds/WoodLight/impactWood_light_003.ogg"
-dest_files=[ "res://.import/impactWood_light_003.ogg-17dd2b1cb4ee58e8fe16d07caccfca63.oggstr" ]
+dest_files=["res://.godot/imported/impactWood_light_003.ogg-17dd2b1cb4ee58e8fe16d07caccfca63.oggvorbisstr"]
 
 [params]
 
 loop=false
 loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,15 +1,19 @@
 [remap]
 
-importer="ogg_vorbis"
-type="AudioStreamOGGVorbis"
-path="res://.import/impactMetal_light_004.ogg-ce593f94b63dab501d2b965cec2f46be.oggstr"
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bku22xafwee8n"
+path="res://.godot/imported/impactMetal_light_004.ogg-ce593f94b63dab501d2b965cec2f46be.oggvorbisstr"
 
 [deps]
 
 source_file="res://Sounds/MetalLight/impactMetal_light_004.ogg"
-dest_files=[ "res://.import/impactMetal_light_004.ogg-ce593f94b63dab501d2b965cec2f46be.oggstr" ]
+dest_files=["res://.godot/imported/impactMetal_light_004.ogg-ce593f94b63dab501d2b965cec2f46be.oggvorbisstr"]
 
 [params]
 
 loop=false
 loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

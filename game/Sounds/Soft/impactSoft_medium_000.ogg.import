@@ -1,15 +1,19 @@
 [remap]
 
-importer="ogg_vorbis"
-type="AudioStreamOGGVorbis"
-path="res://.import/impactSoft_medium_000.ogg-3d1a4e9b319039310cb3be563efbff80.oggstr"
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bhinf4jkji3ec"
+path="res://.godot/imported/impactSoft_medium_000.ogg-3d1a4e9b319039310cb3be563efbff80.oggvorbisstr"
 
 [deps]
 
 source_file="res://Sounds/Soft/impactSoft_medium_000.ogg"
-dest_files=[ "res://.import/impactSoft_medium_000.ogg-3d1a4e9b319039310cb3be563efbff80.oggstr" ]
+dest_files=["res://.godot/imported/impactSoft_medium_000.ogg-3d1a4e9b319039310cb3be563efbff80.oggvorbisstr"]
 
 [params]
 
 loop=false
 loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

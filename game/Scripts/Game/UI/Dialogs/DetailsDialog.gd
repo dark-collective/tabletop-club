@@ -20,10 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends WindowDialog
+extends Window
 
-onready var _advanced_check_button = $VBox/AdvancedCheckButton
-onready var _details_label = $VBox/DetailsLabel
+@onready var _advanced_check_button = $VBox/AdvancedCheckButton
+@onready var _details_label = $VBox/DetailsLabel
 
 var _text_advanced: String
 var _text_basic: String
@@ -34,10 +34,10 @@ func show_details(piece_arr: Array) -> void:
 	_text_advanced = _generate_advanced_text(piece_arr)
 	_text_basic = _generate_basic_text(piece_arr)
 	
-	if _advanced_check_button.pressed:
-		_details_label.bbcode_text = _text_advanced
+	if _advanced_check_button.button_pressed:
+		_details_label.text = _text_advanced
 	else:
-		_details_label.bbcode_text = _text_basic
+		_details_label.text = _text_basic
 	
 	popup_centered()
 
@@ -48,8 +48,8 @@ func _generate_advanced_text(piece_arr: Array) -> String:
 	var text = ""
 	
 	for piece in piece_arr:
-		text += "[%s] %s\n" % [piece.name,
-				JSON.print(piece.piece_entry, "\t", true)]
+		text += "[%s] %s\n" % [str(piece.name),
+				JSON.stringify(piece.piece_entry, "\t", true)]
 	
 	return text
 
@@ -57,7 +57,7 @@ func _generate_advanced_text(piece_arr: Array) -> String:
 # Returns: The BBCode text to display.
 # piece_arr: An array of piece references that the text is based on.
 func _generate_basic_text(piece_arr: Array) -> String:
-	if piece_arr.empty():
+	if piece_arr.is_empty():
 		return tr("No objects have been selected.")
 	
 	var text = ""
@@ -79,24 +79,24 @@ func _generate_basic_text(piece_arr: Array) -> String:
 		text += "[b][u]%s[/u][/b]\n" % piece_name
 		
 		var piece_desc = "???" if secret else _get_tr_property(piece_entry, "desc")
-		if piece_desc.empty():
+		if piece_desc.is_empty():
 			piece_desc = tr("No description.")
 		text += piece_desc + "\n\n"
 		
 		var author: String = "???" if secret else piece_entry["author"]
-		if not author.empty():
+		if not author.is_empty():
 			text += tr("Author: %s") % author + "\n"
 		
 		var license: String = "???" if secret else piece_entry["license"]
-		if not license.empty():
+		if not license.is_empty():
 			text += tr("License: %s") % license + "\n"
 		
 		var modified_by: String = "???" if secret else piece_entry["modified_by"]
-		if not modified_by.empty():
+		if not modified_by.is_empty():
 			text += tr("Modified by: %s") % modified_by + "\n"
 		
 		var url: String = "???" if secret else piece_entry["url"]
-		if not url.empty():
+		if not url.is_empty():
 			text += tr("URL: %s") % url + "\n"
 	else:
 		text += tr("A total of %d objects were selected:") % piece_arr.size()
@@ -143,13 +143,13 @@ func _get_tr_property(piece_entry: Dictionary, key: String) -> String:
 func _is_piece_secret(piece: Piece) -> bool:
 	if piece is Card:
 		var hand_id_arr = piece.over_hands
-		if not hand_id_arr.empty():
-			return not hand_id_arr.has(get_tree().get_network_unique_id())
+		if not hand_id_arr.is_empty():
+			return not hand_id_arr.has(multiplayer.get_unique_id())
 	
 	return false
 
 func _on_AdvancedCheckButton_toggled(button_pressed: bool):
 	if button_pressed:
-		_details_label.bbcode_text = _text_advanced
+		_details_label.text = _text_advanced
 	else:
-		_details_label.bbcode_text = _text_basic
+		_details_label.text = _text_basic

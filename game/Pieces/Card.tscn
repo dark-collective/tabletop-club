@@ -3,11 +3,11 @@
 [ext_resource path="res://Scripts/Game/Pieces/Card.gd" type="Script" id=1]
 [ext_resource path="res://Scripts/Shapes/Card.gd" type="Script" id=2]
 
-[sub_resource type="BoxShape" id=1]
-extents = Vector3( 0.5, 0.05, 0.5 )
+[sub_resource type="BoxShape3D" id=1]
+size = Vector3(1.0, 0.1, 1.0)
 
-[node name="Card" type="RigidBody"]
-contacts_reported = 1
+[node name="Card" type="RigidBody3D"]
+max_contacts_reported = 1
 contact_monitor = true
 script = ExtResource( 1 )
 __meta__ = {
@@ -15,11 +15,11 @@ __meta__ = {
 
 The length and width are 1, but the height is constant and small."
 }
-mesh_instance_path = NodePath("CollisionShape/MeshInstance")
+mesh_instance_path = NodePath("CollisionShape3D/MeshInstance3D")
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource( 1 )
 
-[node name="MeshInstance" type="MeshInstance" parent="CollisionShape"]
-transform = Transform( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0 )
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
+transform = Transform3D( 1, 0, 0, 0, 0.01, 0, 0, 0, 1, 0, 0, 0 )
 script = ExtResource( 2 )

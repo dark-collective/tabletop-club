@@ -36,19 +36,19 @@ enum {
 	FLIP_YES
 }
 
-export(NodePath) var collision_shape_path: String
-export(NodePath) var outline_mesh_path: String
+@export var collision_shape_path: NodePath
+@export var outline_mesh_path: NodePath
 
 # TODO: export(RandomAudioSample)
 # See: https://github.com/godotengine/godot/pull/44879
-export(Resource) var card_add_sounds
-export(Resource) var card_orient_sounds
-export(Resource) var card_remove_sounds
-export(Resource) var card_shuffle_sounds
-export(Resource) var chip_add_sounds
-export(Resource) var chip_orient_sounds
-export(Resource) var chip_remove_sounds
-export(Resource) var chip_shuffle_sounds
+@export var card_add_sounds: Resource
+@export var card_orient_sounds: Resource
+@export var card_remove_sounds: Resource
+@export var card_shuffle_sounds: Resource
+@export var chip_add_sounds: Resource
+@export var chip_orient_sounds: Resource
+@export var chip_remove_sounds: Resource
+@export var chip_shuffle_sounds: Resource
 
 # This should only be useful for stacks of cards.
 var over_hands: Array = []
@@ -61,7 +61,7 @@ var _mesh_unit_height = 0
 # piece_transform: The transform of the piece.
 # on: Where to put the piece in the stack.
 # flip: If the piece should be flipped when entering the stack.
-func add_piece(piece_entry: Dictionary, piece_transform: Transform,
+func add_piece(piece_entry: Dictionary, piece_transform: Transform3D,
 	on: int = STACK_AUTO, flip: int = FLIP_AUTO) -> void:
 	
 	var on_top = false
@@ -93,10 +93,10 @@ func add_piece(piece_entry: Dictionary, piece_transform: Transform,
 			return
 	
 	var collision_shape = get_collision_shape()
-	if empty():
+	if is_empty():
 		self.piece_entry = piece_entry
 		
-		var new_shape: Shape = null
+		var new_shape: Shape3D = null
 		var piece_instance = PieceBuilder.build_piece(piece_entry, false)
 		
 		var piece_collision_shapes = piece_instance.get_collision_shapes()
@@ -111,14 +111,14 @@ func add_piece(piece_entry: Dictionary, piece_transform: Transform,
 			return
 		var piece_mesh_instance = piece_mesh_instances[0]
 		
-		if piece_collision_shape.shape is BoxShape:
-			new_shape = BoxShape.new()
-			new_shape.extents = piece_collision_shape.shape.extents
-			new_shape.extents.y *= piece_collision_shape.scale.y
+		if piece_collision_shape.shape is BoxShape3D:
+			new_shape = BoxShape3D.new()
+			new_shape.size = piece_collision_shape.shape.size
+			new_shape.size.y *= piece_collision_shape.scale.y
 			
-			_collision_unit_height = new_shape.extents.y * 2
-		elif piece_collision_shape.shape is CylinderShape:
-			new_shape = CylinderShape.new()
+			_collision_unit_height = new_shape.size.y
+		elif piece_collision_shape.shape is CylinderShape3D:
+			new_shape = CylinderShape3D.new()
 			new_shape.height = piece_collision_shape.shape.height
 			new_shape.height *= piece_collision_shape.scale.y
 			new_shape.radius = piece_collision_shape.shape.radius
@@ -136,11 +136,11 @@ func add_piece(piece_entry: Dictionary, piece_transform: Transform,
 			_mesh_unit_height = piece_collision_shape.scale.y * piece_mesh_instance.scale.y
 			
 			var outline_mesh_instance = get_outline_mesh_instance()
-			if new_shape is BoxShape:
-				var cube_mesh = CubeMesh.new()
+			if new_shape is BoxShape3D:
+				var cube_mesh = BoxMesh.new()
 				cube_mesh.size = Vector3.ONE
 				outline_mesh_instance.mesh = cube_mesh
-			elif new_shape is CylinderShape:
+			elif new_shape is CylinderShape3D:
 				var cylinder_mesh = CylinderMesh.new()
 				cylinder_mesh.bottom_radius = 0.5
 				cylinder_mesh.top_radius = 0.5
@@ -154,15 +154,15 @@ func add_piece(piece_entry: Dictionary, piece_transform: Transform,
 			outline_mesh_instance.scale.y = piece_collision_shape.scale.y
 			setup_outline_material()
 		
-		piece_instance.free()
+		ResourceManager.free_object(piece_instance)
 	else:
 		var current_height = get_total_height()
 		var new_height = _mesh_unit_height * get_piece_count()
 		var extra_height = max(new_height - current_height, 0)
 		
-		if collision_shape.shape is BoxShape:
-			collision_shape.shape.extents.y += (extra_height / 2)
-		elif collision_shape.shape is CylinderShape:
+		if collision_shape.shape is BoxShape3D:
+			collision_shape.shape.size.y += extra_height
+		elif collision_shape.shape is CylinderShape3D:
 			collision_shape.shape.height += extra_height
 		
 		get_outline_mesh_instance().scale.y = new_height + 0.001
@@ -183,23 +183,23 @@ func add_piece(piece_entry: Dictionary, piece_transform: Transform,
 
 # Check if the stack is empty.
 # Returns: If the stack is empty.
-func empty() -> bool:
+func is_empty() -> bool:
 	return get_piece_count() == 0
 
 # Get the collision shape of the stack.
 # Returns: The stack's collision shape.
-func get_collision_shape() -> CollisionShape:
+func get_collision_shape() -> CollisionShape3D:
 	var node = get_node(collision_shape_path)
-	if node is CollisionShape:
+	if node is CollisionShape3D:
 		return node
 	
 	return null
 
 # Get the outline mesh instance of the stack.
 # Returns: The stack's outline mesh instance.
-func get_outline_mesh_instance() -> MeshInstance:
+func get_outline_mesh_instance() -> MeshInstance3D:
 	var node = get_node(outline_mesh_path)
-	if node is MeshInstance:
+	if node is MeshInstance3D:
 		return node
 	
 	return null
@@ -226,9 +226,9 @@ func get_size() -> Vector3:
 func get_total_height() -> float:
 	var shape = get_collision_shape().shape
 	
-	if shape is BoxShape:
-		return 2.0 * shape.extents.y
-	elif shape is CylinderShape:
+	if shape is BoxShape3D:
+		return shape.size.y
+	elif shape is CylinderShape3D:
 		return shape.height
 	
 	return 0.0
@@ -250,14 +250,15 @@ func is_card_stack() -> bool:
 # Is the piece's orientation flipped relative to the stack's orientation?
 # Returns: If the piece's orientation is flipped.
 # piece_transform: The piece transform to query.
-func is_piece_flipped(piece_transform: Transform) -> bool:
+func is_piece_flipped(piece_transform: Transform3D) -> bool:
 	return transform.basis.y.dot(piece_transform.basis.y) < 0.0
 
 # Called by the server to orient all of the pieces in the stack in a particular
 # direction.
 # up: Should all of the pieces be facing up?
-remotesync func orient_pieces(_up: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func orient_pieces(_up: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if is_card_stack():
@@ -300,8 +301,9 @@ func pop_index(from: int = STACK_AUTO) -> int:
 # Returns: A dictionary containing "piece_entry" and "transform" elements,
 # an empty dictionary if the stack is empty.
 # index: The index of the piece to remove.
-puppet func remove_piece(index: int) -> Dictionary:
-	if not (get_tree().is_network_server() or get_tree().get_rpc_sender_id() == 1):
+@rpc("authority", "call_remote", "reliable")
+func remove_piece(index: int) -> Dictionary:
+	if not (multiplayer.is_server() or Global.get_sender_id(self) == 1):
 		return {}
 	
 	if index < 0 or index >= get_piece_count():
@@ -314,9 +316,9 @@ puppet func remove_piece(index: int) -> Dictionary:
 	var height_lost = max(current_height - new_height, 0)
 	
 	var collision_shape = get_collision_shape()
-	if collision_shape.shape is BoxShape:
-		collision_shape.shape.extents.y -= (height_lost / 2)
-	elif collision_shape.shape is CylinderShape:
+	if collision_shape.shape is BoxShape3D:
+		collision_shape.shape.size.y -= height_lost
+	elif collision_shape.shape is CylinderShape3D:
 		collision_shape.shape.height -= height_lost
 	else:
 		push_error("Stack has an unsupported collision shape!")
@@ -342,7 +344,10 @@ puppet func remove_piece(index: int) -> Dictionary:
 # Request the server to orient all of the pieces in the stack in a particular
 # direction.
 # up: Should all of the pieces be facing up?
-master func request_orient_pieces(up: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_orient_pieces(up: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	# If the stack is upside down, orient the opposite direction.
 	if transform.basis.y.y < 0:
 		up = !up
@@ -350,7 +355,10 @@ master func request_orient_pieces(up: bool) -> void:
 	rpc("orient_pieces", up)
 
 # Request the server to shuffle the stack.
-master func request_shuffle() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_shuffle() -> void:
+	if not is_multiplayer_authority():
+		return
 	var order = []
 	for i in range(get_piece_count()):
 		order.append(i)
@@ -362,7 +370,10 @@ master func request_shuffle() -> void:
 
 # Request the server to sort the stack by a given key in the item's entries.
 # key: The key whose values to sort.
-master func request_sort(key: String) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_sort(key: String) -> void:
+	if not is_multiplayer_authority():
+		return
 	var index = 0
 	var items = []
 	var num_numbers = 0
@@ -411,8 +422,9 @@ master func request_sort(key: String) -> void:
 
 # Called by the server to set the order of pieces in the stack.
 # order: The piece indicies in their new order.
-remotesync func set_piece_order(_order: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_piece_order(_order: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if is_card_stack():
@@ -424,13 +436,13 @@ remotesync func set_piece_order(_order: Array) -> void:
 
 # Add the outline material to the outline mesh instance.
 func setup_outline_material():
-	var outline_shader = preload("res://Shaders/OutlineShader.shader")
+	var outline_shader = preload("res://Shaders/OutlineShader.gdshader")
 	
 	_outline_material = ShaderMaterial.new()
 	_outline_material.shader = outline_shader
-	_outline_material.set_shader_param("OutlineColor", Color.transparent)
+	_outline_material.set_shader_parameter("OutlineColor", Color.TRANSPARENT)
 	
-	get_outline_mesh_instance().set_surface_material(0, _outline_material)
+	get_outline_mesh_instance().set_surface_override_material(0, _outline_material)
 
 func _ready():
 	_expose_albedo_color = false
@@ -438,7 +450,7 @@ func _ready():
 func _physics_process(_delta):
 	# If the stack is being shaken, then get the server to send a list of
 	# shuffled names to each client (including itself).
-	if get_tree().is_network_server() and is_being_shaked():
+	if multiplayer.is_server() and is_being_shaked():
 		request_shuffle()
 
 # Add a piece to the stack at a given position.

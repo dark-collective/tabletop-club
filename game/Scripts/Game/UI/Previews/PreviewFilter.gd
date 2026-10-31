@@ -24,14 +24,14 @@ extends VBoxContainer
 
 signal preview_clicked(preview, event)
 
-onready var _pack_button = $HBoxContainer/PackButton
-onready var _type_button = $HBoxContainer/TypeButton
-onready var _search_edit = $HBoxContainer/SearchEdit
+@onready var _pack_button = $HBoxContainer/PackButton
+@onready var _type_button = $HBoxContainer/TypeButton
+@onready var _search_edit = $HBoxContainer/SearchEdit
 
-onready var _object_preview_grid = $ScrollContainer/VBoxContainer/ObjectPreviewGrid
-onready var _generic_preview_grid = $ScrollContainer/VBoxContainer/GenericPreviewGrid
+@onready var _object_preview_grid = $ScrollContainer/VBoxContainer/ObjectPreviewGrid
+@onready var _generic_preview_grid = $ScrollContainer/VBoxContainer/GenericPreviewGrid
 
-export(Dictionary) var db_types = {} setget set_db_types
+@export var db_types: Dictionary = {}: set = set_db_types
 
 const DEFAULT_ASSET_PACK = "TabletopClub"
 const ALL_PACKS_METADATA = "@ALL_PACKS_DISPLAY"
@@ -144,7 +144,7 @@ func _check_pack_type_exists(pack: String, type: String) -> bool:
 	var asset_db = AssetDB.get_db()
 	if asset_db.has(pack):
 		if asset_db[pack].has(type):
-			if not asset_db[pack][type].empty():
+			if not asset_db[pack][type].is_empty():
 				return true
 	
 	return false
@@ -219,7 +219,7 @@ func _filter_previews(from_filtered: bool) -> void:
 		_preview_entries_filtered = _preview_entries.duplicate()
 	
 	var query = _search_edit.text.capitalize()
-	if not query.empty():
+	if not query.is_empty():
 		for i in range(_preview_entries_filtered.size() - 1, -1, -1):
 			var entry = _preview_entries_filtered[i]
 			var name_key = "name_%s" % TranslationServer.get_locale()
@@ -229,7 +229,7 @@ func _filter_previews(from_filtered: bool) -> void:
 			entry_name = entry_name.capitalize()
 			
 			if not query in entry_name:
-				_preview_entries_filtered.remove(i)
+				_preview_entries_filtered.remove_at(i)
 	
 	var current_hash = _preview_entries_filtered.hash()
 	if current_hash != _last_filtered_hash:
@@ -321,10 +321,10 @@ func _update_preview_gui() -> void:
 		var target_children = _preview_entries_filtered.size()
 		
 		while current_children < target_children:
-			var preview = preload("res://Scenes/Game/UI/Previews/GenericPreview.tscn").instance()
+			var preview = preload("res://Scenes/Game/UI/Previews/GenericPreview.tscn").instantiate()
 			preview.size_flags_horizontal = SIZE_EXPAND_FILL
 			preview.size_flags_vertical = SIZE_EXPAND_FILL
-			preview.connect("clicked", self, "_on_generic_preview_clicked")
+			preview.connect("clicked", Callable(self, "_on_generic_preview_clicked"))
 			_generic_preview_grid.add_child(preview)
 			
 			current_children += 1

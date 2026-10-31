@@ -51,17 +51,17 @@ var LOCALES = [
 
 const OPTIONS_FILE_PATH = "user://options.cfg"
 
-onready var _back_button = $MarginContainer/VBoxContainer/HBoxContainer/BackButton
-onready var _binding_background = $BindingBackground
-onready var _keep_video_confirm = $KeepVideoConfirm
-onready var _key_bindings_parent = $"MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"
-onready var _language_button = $MarginContainer/VBoxContainer/TabContainer/General/GridContainer/LanguageButton
-onready var _open_assets_button = $MarginContainer/VBoxContainer/TabContainer/General/GridContainer/OpenAssetsButton
-onready var _reimport_confirm = $ReimportConfirm
-onready var _reset_bindings_confirm = $ResetBindingsConfirm
-onready var _restart_required_dialog = $RestartRequiredDialog
-onready var _tab_container = $MarginContainer/VBoxContainer/TabContainer
-onready var _window_mode_button = $MarginContainer/VBoxContainer/TabContainer/Video/GridContainer/WindowModeButton
+@onready var _back_button = $MarginContainer/VBoxContainer/HBoxContainer/BackButton
+@onready var _binding_background = $BindingBackground
+@onready var _keep_video_confirm = $KeepVideoConfirm
+@onready var _key_bindings_parent = $"MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"
+@onready var _language_button = $MarginContainer/VBoxContainer/TabContainer/General/GridContainer/LanguageButton
+@onready var _open_assets_button = $MarginContainer/VBoxContainer/TabContainer/General/GridContainer/OpenAssetsButton
+@onready var _reimport_confirm = $ReimportConfirm
+@onready var _reset_bindings_confirm = $ResetBindingsConfirm
+@onready var _restart_required_dialog = $RestartRequiredDialog
+@onready var _tab_container = $MarginContainer/VBoxContainer/TabContainer
+@onready var _window_mode_button = $MarginContainer/VBoxContainer/TabContainer/Video/GridContainer/WindowModeButton
 
 var _action_to_bind = ""
 var _bind_ignore_next_enter = false
@@ -113,15 +113,15 @@ func _ready():
 	# Hook up the signal for rebinding an action from all of the BindButtons.
 	for node in _key_bindings_parent.get_children():
 		if node is BindButton:
-			node.connect("rebinding_action", self, "_on_rebinding_action")
+			node.connect("rebinding_action", Callable(self, "_on_rebinding_action"))
 	
 	# Connect the "pressed" signal for these buttons, so we can perform actions
 	# before the dialog is hidden.
-	_keep_video_confirm.get_ok().connect("pressed", self, "_on_KeepVideoConfirm_ok_pressed")
-	_keep_video_confirm.get_cancel().connect("pressed", self, "_on_KeepVideoConfirm_cancel_pressed")
-	_keep_video_confirm.get_close_button().connect("pressed", self, "_on_KeepVideoConfirm_close_button_pressed")
+	_keep_video_confirm.get_ok_button().connect("pressed", Callable(self, "_on_KeepVideoConfirm_ok_pressed"))
+	_keep_video_confirm.get_cancel_button().connect("pressed", Callable(self, "_on_KeepVideoConfirm_cancel_pressed"))
+	_keep_video_confirm.connect("close_requested", Callable(self, "_on_KeepVideoConfirm_close_button_pressed"))
 	
-	if OS.get_name() == "OSX":
+	if OS.get_name() == "macOS":
 		# Both borderless fullscreen and fullscreen don't work as intended on
 		# OSX, so disable the button - the player can always maximize the
 		# window, to get the same affect as making it fullscreen.
@@ -134,7 +134,7 @@ func _ready():
 		if tab is OptionsTab:
 			var grid = tab.get_node("GridContainer")
 			if not grid:
-				push_error("Options tab %s does not have a grid container child!" % tab.name)
+				push_error("Options tab %s does not have a grid container child!" % str(tab.name))
 				continue
 			
 			var old_child: Control = null
@@ -143,24 +143,24 @@ func _ready():
 				if new_child is Control:
 					if new_child.focus_mode == Control.FOCUS_ALL:
 						if old_child != null:
-							old_child.focus_neighbour_bottom = new_child.get_path()
-							new_child.focus_neighbour_top = old_child.get_path()
+							old_child.focus_neighbor_bottom = new_child.get_path()
+							new_child.focus_neighbor_top = old_child.get_path()
 						else:
 							# Going up from the first control should take the
 							# focus back to the tabs.
-							new_child.focus_neighbour_top = _tab_container.get_path()
+							new_child.focus_neighbor_top = _tab_container.get_path()
 						
 						old_child = new_child
 			
 			# Going down from the last element should take the focus to the
 			# back button.
 			if old_child != null:
-				old_child.focus_neighbour_bottom = _back_button.get_path()
+				old_child.focus_neighbor_bottom = _back_button.get_path()
 
 func _unhandled_input(event):
 	if visible and not _binding_background.visible and event.is_action_pressed("ui_cancel"):
 		visible = false
-		get_tree().set_input_as_handled()
+		get_viewport().set_input_as_handled()
 
 # Apply the changes made and save them in the options file.
 func _apply_changes() -> void:
@@ -233,11 +233,11 @@ func _apply_config(config: ConfigFile) -> void:
 	
 	# As stated above, just let the player maximize the window if they want the
 	# game to be fullscreen on OSX.
-	if OS.get_name() != "OSX":
+	if OS.get_name() != "macOS":
 		var window_mode_id = config.get_value("video", "window_mode")
 		var borderless = false
 		var fullscreen = false
-		var maximized = OS.window_maximized
+		var maximized = (get_window().mode == Window.MODE_MAXIMIZED)
 		
 		if window_mode_id >= 1:
 			borderless = true
@@ -246,26 +246,26 @@ func _apply_config(config: ConfigFile) -> void:
 			elif window_mode_id == 2:
 				fullscreen = true
 		
-		OS.window_fullscreen = fullscreen
-		OS.window_borderless = borderless
-		OS.window_maximized = maximized
+		get_window().mode = Window.MODE_EXCLUSIVE_FULLSCREEN if (fullscreen) else Window.MODE_WINDOWED
+		get_window().borderless = borderless
+		get_window().mode = Window.MODE_MAXIMIZED if (maximized) else Window.MODE_WINDOWED
 	
-	OS.vsync_enabled = config.get_value("video", "vsync")
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if (config.get_value("video", "vsync")) else DisplayServer.VSYNC_DISABLED)
 	
-	var msaa = Viewport.MSAA_DISABLED
+	var msaa = SubViewport.MSAA_DISABLED
 	var msaa_id = config.get_value("video", "msaa")
 	
 	match msaa_id:
 		1:
-			msaa = Viewport.MSAA_2X
+			msaa = SubViewport.MSAA_2X
 		2:
-			msaa = Viewport.MSAA_4X
+			msaa = SubViewport.MSAA_4X
 		3:
-			msaa = Viewport.MSAA_8X
+			msaa = SubViewport.MSAA_8X
 		4:
-			msaa = Viewport.MSAA_16X
+			msaa = Viewport.MSAA_8X
 	
-	get_viewport().msaa = msaa
+	get_viewport().msaa_3d = msaa
 
 # Apply the audio options in the given config. We need to be able to do this
 # separately to the rest of the options, as the volume sliders should affect
@@ -294,7 +294,7 @@ func _create_config_from_current() -> ConfigFile:
 			var grid = tab.get_node("GridContainer")
 			
 			if not grid:
-				push_error("Tab " + tab.name + " has no GridContainer child!")
+				push_error("Tab " + str(tab.name) + " has no GridContainer child!")
 				continue
 			
 			for i in range(0, grid.get_child_count(), 2):
@@ -305,7 +305,7 @@ func _create_config_from_current() -> ConfigFile:
 				var key: Label = grid.get_child(i)
 				var value: Control = grid.get_child(i + 1)
 				
-				var key_name = _keyify_string(key.name)
+				var key_name = _keyify_string(str(key.name))
 				var key_value = null
 				
 				if value is BindButton:
@@ -315,7 +315,7 @@ func _create_config_from_current() -> ConfigFile:
 					key_name = value.action
 					key_value = value.get_button_input_event()
 				elif value is CheckBox:
-					key_value = value.pressed
+					key_value = value.button_pressed
 				elif value is ColorPicker:
 					key_value = value.color
 				elif value is ColorPickerButton:
@@ -333,7 +333,7 @@ func _create_config_from_current() -> ConfigFile:
 				elif value is SpinBox:
 					key_value = value.value
 				else:
-					push_error(value.name + " is an unknown type!")
+					push_error(str(value.name) + " is an unknown type!")
 				
 				config.set_value(section_name, key_name, key_value)
 	
@@ -365,8 +365,8 @@ func _keyify_string(string: String) -> String:
 # Load the options from the options file to the given config file.
 # config: The config to overwrite.
 func _load_file(config: ConfigFile) -> void:
-	var check = File.new()
-	if not check.file_exists(OPTIONS_FILE_PATH):
+	var check: FileAccess
+	if not FileAccess.file_exists(OPTIONS_FILE_PATH):
 		return
 	
 	var file = ConfigFile.new()
@@ -432,7 +432,7 @@ func _set_current_with_config(config: ConfigFile) -> void:
 			var grid = tab.get_node("GridContainer")
 			
 			if not grid:
-				push_error("Tab " + tab.name + " has no GridContainer child!")
+				push_error("Tab " + str(tab.name) + " has no GridContainer child!")
 				continue
 			
 			for i in range(0, grid.get_child_count(), 2):
@@ -443,7 +443,7 @@ func _set_current_with_config(config: ConfigFile) -> void:
 				var key: Label = grid.get_child(i)
 				var value: Control = grid.get_child(i + 1)
 				
-				var key_name = _keyify_string(key.name)
+				var key_name = _keyify_string(str(key.name))
 				# Special case for key bindings: the key is the name of the
 				# action that is being bound, not the label.
 				if section_name == "key_bindings" and value is BindButton:
@@ -455,7 +455,7 @@ func _set_current_with_config(config: ConfigFile) -> void:
 						value.input_event = key_value
 						value.update_text()
 					elif value is CheckBox:
-						value.pressed = key_value
+						value.button_pressed = key_value
 					elif value is ColorPicker:
 						value.color = key_value
 					elif value is ColorPickerButton:
@@ -480,7 +480,7 @@ func _set_current_with_config(config: ConfigFile) -> void:
 					elif value is SpinBox:
 						value.value = key_value
 					else:
-						push_error(value.name + " is an unknown type!")
+						push_error(str(value.name) + " is an unknown type!")
 
 # Show the restart required popup if it hasn't already been shown to the user.
 func _show_restart_popup() -> void:
@@ -512,10 +512,10 @@ func _on_BackButton_pressed():
 	visible = false
 
 func _on_BindingBackground_unhandled_input(event: InputEvent):
-	if not _action_to_bind.empty():
+	if not _action_to_bind.is_empty():
 		var valid = false
 		if event is InputEventKey:
-			var key_is_select = (event.scancode == KEY_ENTER or event.scancode == KEY_SPACE)
+			var key_is_select = (event.keycode == KEY_ENTER or event.keycode == KEY_SPACE)
 			if _bind_ignore_next_enter and key_is_select:
 				_bind_ignore_next_enter = false
 			else:
@@ -524,7 +524,7 @@ func _on_BindingBackground_unhandled_input(event: InputEvent):
 			valid = true
 		
 		if valid:
-			get_tree().set_input_as_handled()
+			get_viewport().set_input_as_handled()
 			
 			for node in _key_bindings_parent.get_children():
 				if node is BindButton:
@@ -562,7 +562,7 @@ func _on_KeepVideoConfirm_ok_pressed():
 
 func _on_KeepVideoConfirm_visibility_changed():
 	if _keep_video_confirm.visible:
-		_keep_video_confirm.get_cancel().grab_focus()
+		_keep_video_confirm.get_cancel_button().grab_focus()
 	else:
 		emit_signal("keep_video_dialog_hide")
 		
@@ -571,7 +571,7 @@ func _on_KeepVideoConfirm_visibility_changed():
 
 func _on_LanguageButton_item_selected(index: int):
 	var locale = LOCALES[index]["locale"]
-	if locale.empty():
+	if locale.is_empty():
 		locale = Global.system_locale
 	TranslationServer.set_locale(locale)
 	
@@ -587,7 +587,7 @@ func _on_OpenAssetsButton_pressed():
 	var asset_dir_paths = AssetDB.get_asset_paths()
 	asset_dir_paths.invert() # From most convenient to access, to least.
 	
-	var dir = Directory.new()
+	var dir = DirAccess.open("user://")
 	for dir_path in asset_dir_paths:
 		if dir.dir_exists(dir_path):
 			OS.shell_open("file://" + dir_path)
@@ -602,7 +602,7 @@ func _on_OptionsMenu_visibility_changed():
 		#_tab_container.grab_focus()
 		
 		# Prevents focus from going back to the main menu.
-		_back_button.focus_neighbour_left = NodePath(".")
+		_back_button.focus_neighbor_left = NodePath(".")
 
 func _on_ReimportButton_pressed():
 	_reimport_confirm.popup_centered()
@@ -610,10 +610,11 @@ func _on_ReimportButton_pressed():
 func _on_ReimportConfirm_confirmed():
 	AssetDB.clear_db()
 	
-	var dir = Directory.new()
-	var err = dir.open("user://.import")
+	var dir = DirAccess.open("user://")
+	dir = DirAccess.open("user://.import")
+	var err = DirAccess.get_open_error()
 	if err == OK:
-		dir.list_dir_begin(true, true)
+		dir.list_dir_begin()
 		
 		var file = dir.get_next()
 		while file:
@@ -624,24 +625,27 @@ func _on_ReimportConfirm_confirmed():
 	else:
 		print("Failed to open the import cache directory (error ", err, ")")
 	
-	err = dir.open("user://assets")
+	dir = DirAccess.open("user://assets")
+	err = DirAccess.get_open_error()
 	if err == OK:
-		dir.list_dir_begin(true, true)
+		dir.list_dir_begin()
 		
 		var pack_name = dir.get_next()
 		while pack_name:
 			if dir.dir_exists(pack_name):
-				var pack_dir = Directory.new()
-				err = pack_dir.open("user://assets/" + pack_name)
+				var pack_dir = DirAccess.open("user://")
+				pack_dir = DirAccess.open("user://assets/" + pack_name)
+				err = DirAccess.get_open_error()
 				
 				if err == OK:
 					for subfolder in AssetDB.ASSET_PACK_SUBFOLDERS:
 						if pack_dir.dir_exists(subfolder):
-							var sub_dir = Directory.new()
-							err = sub_dir.open("user://assets/" + pack_name + "/" + subfolder)
+							var sub_dir = DirAccess.open("user://")
+							sub_dir = DirAccess.open("user://assets/" + pack_name + "/" + subfolder)
+							err = DirAccess.get_open_error()
 							
 							if err == OK:
-								sub_dir.list_dir_begin(true, true)
+								sub_dir.list_dir_begin()
 								
 								var file = sub_dir.get_next()
 								while file:
@@ -669,7 +673,7 @@ func _on_ResetBindingsConfirm_confirmed():
 			if project_setting:
 				var events = project_setting.events
 				var event = null
-				if not events.empty():
+				if not events.is_empty():
 					event = events[0]
 				node.input_event = event
 				node.update_text()

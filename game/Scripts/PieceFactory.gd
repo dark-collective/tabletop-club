@@ -41,8 +41,8 @@ var _finished_list_mutex = Mutex.new()
 var _neglected_list = []
 var _neglected_list_mutex = Mutex.new()
 
-# The thread that builds the pieces.
-var _build_thread = Thread.new()
+# Build previews on the main thread, one piece per frame.
+var _building = false
 var _stop_flag = false
 var _stop_flag_mutex = Mutex.new()
 
@@ -68,7 +68,7 @@ func cancel(order: int) -> void:
 		var order_item: Dictionary = _order_list[index]
 		var current_order: int = order_item["order"]
 		if order == current_order:
-			_order_list.remove(index)
+			_order_list.remove_at(index)
 	_order_list_mutex.unlock()
 
 # Make a request to the factory to build a piece.
@@ -86,19 +86,18 @@ func request(piece_entry: Dictionary) -> int:
 	})
 	_order_list_mutex.unlock()
 	
-	if not _build_thread.is_alive():
-		if _build_thread.is_active():
-			_build_thread.wait_to_finish()
-		_build_thread.start(self, "_build")
+	if not _building:
+		_building = true
+		call_deferred("_build")
 	
 	return order_id
 
 func _ready():
-	connect("tree_exiting", self, "_on_tree_exiting")
+	connect("tree_exiting", Callable(self, "_on_tree_exiting"))
 
 func _process(_delta):
 	_finished_list_mutex.lock()
-	while not _finished_list.empty():
+	while not _finished_list.is_empty():
 		var finished_item: Dictionary = _finished_list.pop_front()
 		var order: int = finished_item["order"]
 		var piece: Piece = finished_item["piece"]
@@ -108,21 +107,20 @@ func _process(_delta):
 		# If the piece has not been accepted by whoever ordered it, then free
 		# it from memory when everything else in the queue has been processed.
 		if _last_accepted_order != order:
-			_neglected_list_mutex.lock()
-			_neglected_list.push_back(piece)
-			_neglected_list_mutex.unlock()
+			ResourceManager.queue_free_object(piece)
+
 	_finished_list_mutex.unlock()
 
-# The function the build thread runs.
-func _build(_userdata) -> void:
+# Drain the preview construction queue.
+func _build() -> void:
 	# Take the first item out of the list.
 	var order_item = {}
 	_order_list_mutex.lock()
-	if not _order_list.empty():
+	if not _order_list.is_empty():
 		order_item = _order_list.pop_front()
 	_order_list_mutex.unlock()
 	
-	while not order_item.empty():
+	while not order_item.is_empty():
 		_stop_flag_mutex.lock()
 		var stop = _stop_flag
 		_stop_flag_mutex.unlock()
@@ -135,12 +133,12 @@ func _build(_userdata) -> void:
 		
 		var piece: Piece = null
 		
-		# This section of code is why this function is running in a thread.
+		# Build or load the preview without touching nodes from a worker thread.
 		if piece_entry.has("entry_names"):
 			if piece_entry["scene_path"] == "res://Pieces/Card.tscn":
-				piece = preload("res://Pieces/StackSandwich.tscn").instance()
+				piece = preload("res://Pieces/StackSandwich.tscn").instantiate()
 			else:
-				piece = preload("res://Pieces/StackLasagne.tscn").instance()
+				piece = preload("res://Pieces/StackLasagne.tscn").instantiate()
 			PieceBuilder.fill_stack(piece, piece_entry)
 		elif PieceCache.should_cache(piece_entry):
 			var thumbnail_cache = PieceCache.new(piece_entry["entry_path"], true)
@@ -163,14 +161,20 @@ func _build(_userdata) -> void:
 			})
 			_finished_list_mutex.unlock()
 		
+		await get_tree().process_frame
+		if _stop_flag:
+			break
+
 		# Take the first item out of the list.
 		order_item = {}
 		_order_list_mutex.lock()
-		if not _order_list.empty():
+		if not _order_list.is_empty():
 			order_item = _order_list.pop_front()
 		_order_list_mutex.unlock()
 	
-	# After the thread is done building everything in the queue, take any items
+	_building = false
+
+	# After building everything in the queue, take any items
 	# that were neglected (not accepted after they were requested)... and
 	# throw them in the nearest available bin.
 	_neglected_list_mutex.lock()
@@ -184,11 +188,9 @@ func _on_tree_exiting():
 	_stop_flag = true
 	_stop_flag_mutex.unlock()
 	
-	if _build_thread.is_active():
-		_build_thread.wait_to_finish()
 	
 	_finished_list_mutex.lock()
-	while not _finished_list.empty():
+	while not _finished_list.is_empty():
 		var finished_item: Dictionary = _finished_list.pop_back()
 		var piece: Piece = finished_item["piece"]
 		ResourceManager.free_object(piece)

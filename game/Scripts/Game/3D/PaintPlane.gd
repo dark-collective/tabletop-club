@@ -20,11 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Spatial
+extends Node3D
 
-onready var _mesh_instance = $MeshInstance
-onready var _texture_rect = $Viewport/TextureRect
-onready var _viewport = $Viewport
+@onready var _mesh_instance = $MeshInstance3D
+@onready var _texture_rect = $SubViewport/TextureRect
+@onready var _viewport = $SubViewport
 
 const PAINT_FORMAT = Image.FORMAT_RGBA8
 
@@ -35,8 +35,8 @@ var _painted_last_frame = false
 func clear_paint() -> void:
 	var image = Image.new()
 	var image_size = get_paint_size()
-	image.create(image_size.x, image_size.y, false, PAINT_FORMAT)
-	image.fill(Color.transparent)
+	image = Image.create(image_size.x, image_size.y, false, PAINT_FORMAT)
+	image.fill(Color.TRANSPARENT)
 	set_paint(image)
 	
 	_paint_queue.clear()
@@ -44,7 +44,7 @@ func clear_paint() -> void:
 # Get the current paint texture image.
 # Returns: The current image.
 func get_paint() -> Image:
-	return _texture_rect.texture.get_data()
+	return _texture_rect.texture.get_image()
 
 # Get the paint image size.
 # Returns: The paint image size.
@@ -58,8 +58,8 @@ func get_paint_size() -> Vector2:
 func set_filtering_enabled(filtering_enabled: bool) -> void:
 	if _mesh_instance == null:
 		return
-	var mesh_material = _mesh_instance.get_surface_material(0)
-	mesh_material.set_shader_param("FilteringEnabled", filtering_enabled)
+	var mesh_material = _mesh_instance.get_surface_override_material(0)
+	mesh_material.set_shader_parameter("FilteringEnabled", filtering_enabled)
 
 # Set the current paint texture from the given image.
 # image: The image to set as the new paint texture.
@@ -68,7 +68,7 @@ func set_paint(image: Image) -> void:
 		return
 	
 	var texture = ImageTexture.new()
-	texture.create_from_image(image)
+	texture = ImageTexture.create_from_image(image)
 	_texture_rect.texture = texture
 
 # Push a paint command to the paint queue.
@@ -76,8 +76,9 @@ func set_paint(image: Image) -> void:
 # pos2: The final global position to paint to.
 # color: The color to paint.
 # size: The size of the paint.
-remotesync func push_paint_queue(pos1: Vector3, pos2: Vector3, color: Color, size: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "unreliable")
+func push_paint_queue(pos1: Vector3, pos2: Vector3, color: Color, size: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var uv1_x = pos1.x / scale.x + 0.5
@@ -97,12 +98,16 @@ remotesync func push_paint_queue(pos1: Vector3, pos2: Vector3, color: Color, siz
 	})
 
 # Request the server to clear the paint.
-master func request_clear_paint() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_clear_paint() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("clear_paint_rpc")
 
 # Called by the server to clear the paint.
-remotesync func clear_paint_rpc() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func clear_paint_rpc() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	clear_paint()
@@ -112,17 +117,20 @@ remotesync func clear_paint_rpc() -> void:
 # pos2: The final global position to paint to.
 # color: The color to paint.
 # size: The size of the paint.
-master func request_push_paint_queue(pos1: Vector3, pos2: Vector3, color: Color, size: float) -> void:
-	rpc_unreliable("push_paint_queue", pos1, pos2, color, size)
+@rpc("any_peer", "call_local", "unreliable")
+func request_push_paint_queue(pos1: Vector3, pos2: Vector3, color: Color, size: float) -> void:
+	if not is_multiplayer_authority():
+		return
+	rpc("push_paint_queue", pos1, pos2, color, size)
 
 func _ready():
 	var image_size = get_paint_size()
-	_texture_rect.rect_size = image_size
+	_texture_rect.size = image_size
 	
 	var inverse_aspect_ratio = scale.z / scale.x
 	var pixel_size = Vector2(inverse_aspect_ratio / image_size.x, 1.0 / image_size.y)
-	var mesh_material = _mesh_instance.get_surface_material(0)
-	mesh_material.set_shader_param("TexturePixelSize", pixel_size)
+	var mesh_material = _mesh_instance.get_surface_override_material(0)
+	mesh_material.set_shader_parameter("TexturePixelSize", pixel_size)
 	
 	clear_paint()
 
@@ -132,28 +140,28 @@ func _process(_delta):
 		# image potentially every frame? Would it actually be faster to draw
 		# on the image on the CPU side? (CanvasItem?)
 		_save_viewport_texture()
-		_texture_rect.material.set_shader_param("BrushEnabled", false)
+		_texture_rect.material.set_shader_parameter("BrushEnabled", false)
 	_painted_last_frame = false
 	
-	if not _paint_queue.empty():
+	if not _paint_queue.is_empty():
 		var command = _paint_queue.pop_front()
 		
 		if scale.x == 0.0 or scale.z == 0.0:
 			return
 		
 		var aspect_ratio = scale.x / scale.z
-		_texture_rect.material.set_shader_param("AspectRatio", aspect_ratio)
+		_texture_rect.material.set_shader_parameter("AspectRatio", aspect_ratio)
 		
 		var color: Color = command["color"]
-		_texture_rect.material.set_shader_param("BrushColor", color)
-		_texture_rect.material.set_shader_param("BrushEnabled", true)
+		_texture_rect.material.set_shader_parameter("BrushColor", color)
+		_texture_rect.material.set_shader_parameter("BrushEnabled", true)
 		
 		var pos1: Vector2 = command["pos1"]
 		var pos2: Vector2 = command["pos2"]
-		_texture_rect.material.set_shader_param("BrushPosition", pos2)
+		_texture_rect.material.set_shader_parameter("BrushPosition", pos2)
 		
 		var size: float = command["size"]
-		_texture_rect.material.set_shader_param("BrushSize", size)
+		_texture_rect.material.set_shader_parameter("BrushSize", size)
 		
 		# Perform some calculations on the CPU side to save time on the GPU.
 		# These calculations are consistent for every pixel.
@@ -175,13 +183,13 @@ func _process(_delta):
 			inverse_col_1 = (1.0 / det) * Vector2(ad.y, -ab.y)
 			inverse_col_2 = (1.0 / det) * Vector2(-ad.x, ab.x)
 		
-		_texture_rect.material.set_shader_param("InverseQuadCol1", inverse_col_1)
-		_texture_rect.material.set_shader_param("InverseQuadCol2", inverse_col_2)
-		_texture_rect.material.set_shader_param("QuadCorner", a)
+		_texture_rect.material.set_shader_parameter("InverseQuadCol1", inverse_col_1)
+		_texture_rect.material.set_shader_parameter("InverseQuadCol2", inverse_col_2)
+		_texture_rect.material.set_shader_parameter("QuadCorner", a)
 		
 		_painted_last_frame = true
 
 # Save the current viewport texture as the new paint texture.
 func _save_viewport_texture() -> void:
-	var image = _viewport.get_texture().get_data()
+	var image = _viewport.get_texture().get_image()
 	set_paint(image)

@@ -22,7 +22,7 @@
 
 extends Control
 
-onready var _progress_bar = $MarginContainer/VBoxContainer/ProgressBar
+@onready var _progress_bar = $MarginContainer/VBoxContainer/ProgressBar
 
 # Set the progress displayed in the progress bar.
 # progress: A value between 0 and 1.

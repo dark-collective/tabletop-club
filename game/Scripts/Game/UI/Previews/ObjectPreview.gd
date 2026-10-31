@@ -24,11 +24,11 @@ extends Preview
 
 class_name ObjectPreview
 
-onready var _camera = $CenterContainer/ViewportContainer/Viewport/Camera
-onready var _label = $LabelContainer/Label
-onready var _label_container = $LabelContainer
-onready var _stack_icon = $CenterContainer/ViewportContainer/StackIcon
-onready var _viewport = $CenterContainer/ViewportContainer/Viewport
+@onready var _camera = $CenterContainer/SubViewportContainer/SubViewport/Camera3D
+@onready var _label = $LabelContainer/Label
+@onready var _label_container = $LabelContainer
+@onready var _stack_icon = $CenterContainer/SubViewportContainer/StackIcon
+@onready var _viewport = $CenterContainer/SubViewportContainer/SubViewport
 
 const LABEL_WAIT_TIME = 3.0
 const LABEL_MOVE_DELAY = 0.0625
@@ -49,7 +49,7 @@ var _piece_to_add: Piece = null
 # Returns: The name of the piece node, an empty string if displaying nothing.
 func get_piece_name() -> String:
 	if _piece != null:
-		return _piece.name
+		return str(_piece.name)
 	
 	return ""
 
@@ -77,29 +77,29 @@ func set_piece_details(piece_entry: Dictionary) -> void:
 	var desc_locale = "desc_%s" % locale
 	if piece_entry.has(desc_locale):
 		tooltip_text += "\n" + _truncate_string(piece_entry[desc_locale])
-	elif not piece_entry["desc"].empty():
+	elif not piece_entry["desc"].is_empty():
 		tooltip_text += "\n" + _truncate_string(piece_entry["desc"])
 	
 	if piece_entry.has("author"):
-		if not piece_entry["author"].empty():
+		if not piece_entry["author"].is_empty():
 			tooltip_text += "\n" + tr("Author: %s") % _truncate_string(piece_entry["author"])
 	
 	if piece_entry.has("license"):
-		if not piece_entry["license"].empty():
+		if not piece_entry["license"].is_empty():
 			tooltip_text += "\n" + tr("License: %s") % _truncate_string(piece_entry["license"])
 	
 	if piece_entry.has("modified_by"):
-		if not piece_entry["modified_by"].empty():
+		if not piece_entry["modified_by"].is_empty():
 			tooltip_text += "\n" + tr("Modified by: %s") % _truncate_string(piece_entry["modified_by"])
 	
 	if piece_entry.has("url"):
-		if not piece_entry["url"].empty():
+		if not piece_entry["url"].is_empty():
 			tooltip_text += "\n" + tr("URL: %s") % _truncate_string(piece_entry["url"])
 	
-	hint_tooltip = tooltip_text
+	self.tooltip_text = tooltip_text
 	
 	_label.text = display_name
-	_label_container.scroll_horizontal_enabled = true
+	_label_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_label_direction_moving = 1
 	_label_time_since_move = 0.0
 	_label_time_waiting = LABEL_WAIT_TIME
@@ -117,13 +117,13 @@ func _ready():
 	# We connect the signal here because we don't want the editor to connect
 	# the signal when this is inside an ObjectPreviewGrid (which is an editor
 	# script).
-	connect("tree_exiting", self, "_on_tree_exiting")
+	connect("tree_exiting", Callable(self, "_on_tree_exiting"))
 	
-	PieceFactory.connect("finished", self, "_on_PieceFactory_finished")
+	PieceFactory.connect("finished", Callable(self, "_on_PieceFactory_finished"))
 
 func _process(delta):
 	# Only add a piece to the display if we're not waiting to remove a piece.
-	if _piece_to_add and not VisualServer.is_connected("frame_post_draw", self, "_on_frame_post_draw"):
+	if _piece_to_add and not RenderingServer.is_connected("frame_post_draw", Callable(self, "_on_frame_post_draw")):
 		# If the previous piece has been fully removed, we're safe to add the
 		# next one in!
 		if _piece == null:
@@ -132,7 +132,7 @@ func _process(delta):
 			
 			# Disable physics-related properties, there won't be any physicsing here!
 			_piece.contact_monitor = false
-			_piece.mode = RigidBody.MODE_STATIC
+			_piece.freeze = true
 			
 			_piece.transform.origin = Vector3.ZERO
 			# Make sure the piece is orientated upwards.
@@ -159,9 +159,9 @@ func _process(delta):
 			var display_height = 2 * piece_radius * x_sin + piece_height * x_cos
 			var display_radius = piece_radius * x_cos + 0.5 * piece_height * x_sin
 			
-			var theta = deg2rad(_camera.fov)
+			var theta = deg_to_rad(_camera.fov)
 			var dist = 1 + display_radius + (display_height / (2 * tan(theta / 2)))
-			_camera.translation.z = dist
+			_camera.position.z = dist
 			
 			_viewport.disable_3d = false
 		
@@ -175,7 +175,7 @@ func _process(delta):
 		var delta_theta = 2 * PI * REVOLUTIONS_PER_SECOND * delta
 		_piece.rotate_object_local(Vector3.UP, delta_theta)
 	
-	if not _label.text.empty() and _label_container.scroll_horizontal_enabled:
+	if not _label.text.is_empty() and (_label_container.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED):
 		if _label_time_waiting > 0.0:
 			_label_time_waiting = max(_label_time_waiting - delta, 0.0)
 		else:
@@ -188,7 +188,7 @@ func _process(delta):
 				if _label_container.scroll_horizontal == old_scroll:
 					# The scroll has reached an endpoint.
 					if _label_direction_moving == 1 and old_scroll == 0:
-						_label_container.scroll_horizontal_enabled = false
+						_label_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 					_label_direction_moving = -_label_direction_moving
 					_label_time_since_move = 0.0
 					_label_time_waiting = LABEL_WAIT_TIME
@@ -200,7 +200,7 @@ func _clear_gui(details: bool = true) -> void:
 	_viewport.disable_3d = true
 	
 	if details:
-		hint_tooltip = ""
+		tooltip_text = ""
 		_label.text = ""
 		_stack_icon.visible = false
 	
@@ -213,8 +213,8 @@ func _clear_gui(details: bool = true) -> void:
 	# We've set the viewport to disable 3D, but it won't actually take effect
 	# until the end of the next render pass.
 	if _piece:
-		if not VisualServer.is_connected("frame_post_draw", self, "_on_frame_post_draw"):
-			VisualServer.connect("frame_post_draw", self, "_on_frame_post_draw")
+		if not RenderingServer.is_connected("frame_post_draw", Callable(self, "_on_frame_post_draw")):
+			RenderingServer.connect("frame_post_draw", Callable(self, "_on_frame_post_draw"))
 
 # Remove the piece from the scene tree.
 func _remove_piece() -> void:
@@ -222,7 +222,7 @@ func _remove_piece() -> void:
 	# use a reference to one piece, _piece, remove all child pieces just in
 	# case one escapes the _piece reference.
 	for child in _viewport.get_children():
-		if child is RigidBody:
+		if child is RigidBody3D:
 			# Removing the piece from the scene tree early sometimes causes
 			# errors when the _physics_process notification fires, and it is
 			# still expecting the piece to be in the scene tree.
@@ -274,7 +274,7 @@ func _truncate_string(string: String) -> String:
 
 func _on_frame_post_draw():
 	_remove_piece()
-	VisualServer.disconnect("frame_post_draw", self, "_on_frame_post_draw")
+	RenderingServer.disconnect("frame_post_draw", Callable(self, "_on_frame_post_draw"))
 
 func _on_PieceFactory_finished(order: int, piece: Piece):
 	if order == _piece_factory_order:
@@ -284,7 +284,9 @@ func _on_PieceFactory_finished(order: int, piece: Piece):
 		_piece_factory_order = -1
 
 func _on_tree_exiting():
-	PieceFactory.disconnect("finished", self, "_on_PieceFactory_finished")
+	if _piece_factory_order >= 0:
+		PieceFactory.cancel(_piece_factory_order)
+	PieceFactory.disconnect("finished", Callable(self, "_on_PieceFactory_finished"))
 	
 	if _piece_to_add != null:
 		ResourceManager.free_object(_piece_to_add)

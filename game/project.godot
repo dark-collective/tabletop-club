@@ -1,3 +1,4 @@
+; Project was converted by built-in tool to Godot 4
 ; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
 ; since the parameters that go here are not all obvious.
@@ -6,157 +7,11 @@
 ;   [section] ; section goes between []
 ;   param=value ; assign values to parameters
 
-config_version=4
-
-_global_script_classes=[ {
-"base": "Resource",
-"class": "ActualTextFile",
-"language": "GDScript",
-"path": "res://Scripts/Misc/ActualTextFile.gd"
-}, {
-"base": "Button",
-"class": "BindButton",
-"language": "GDScript",
-"path": "res://Scripts/Misc/BindButton.gd"
-}, {
-"base": "StackablePiece",
-"class": "Card",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/Card.gd"
-}, {
-"base": "Piece",
-"class": "Dice",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/Dice.gd"
-}, {
-"base": "Preview",
-"class": "GenericPreview",
-"language": "GDScript",
-"path": "res://Scripts/Game/UI/Previews/GenericPreview.gd"
-}, {
-"base": "Area",
-"class": "HiddenArea",
-"language": "GDScript",
-"path": "res://Scripts/Game/3D/HiddenArea.gd"
-}, {
-"base": "Preview",
-"class": "ObjectPreview",
-"language": "GDScript",
-"path": "res://Scripts/Game/UI/Previews/ObjectPreview.gd"
-}, {
-"base": "VBoxContainer",
-"class": "ObjectPreviewGrid",
-"language": "GDScript",
-"path": "res://Scripts/Game/UI/Previews/ObjectPreviewGrid.gd"
-}, {
-"base": "Control",
-"class": "OptionsTab",
-"language": "GDScript",
-"path": "res://Scripts/OptionsTab.gd"
-}, {
-"base": "ColorRect",
-"class": "OutlineColorRect",
-"language": "GDScript",
-"path": "res://Scripts/Misc/OutlineColorRect.gd"
-}, {
-"base": "RigidBody",
-"class": "Piece",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/Piece.gd"
-}, {
-"base": "Reference",
-"class": "PieceCache",
-"language": "GDScript",
-"path": "res://Scripts/PieceCache.gd"
-}, {
-"base": "Piece",
-"class": "PieceContainer",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/PieceContainer.gd"
-}, {
-"base": "Control",
-"class": "Preview",
-"language": "GDScript",
-"path": "res://Scripts/Game/UI/Previews/Preview.gd"
-}, {
-"base": "Resource",
-"class": "RandomAudioStream",
-"language": "GDScript",
-"path": "res://Scripts/Misc/RandomAudioStream.gd"
-}, {
-"base": "WindowDialog",
-"class": "SaveDialog",
-"language": "GDScript",
-"path": "res://Scripts/Game/UI/Dialogs/SaveDialog.gd"
-}, {
-"base": "Piece",
-"class": "SpeakerPiece",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/SpeakerPiece.gd"
-}, {
-"base": "HBoxContainer",
-"class": "SpinBoxButton",
-"language": "GDScript",
-"path": "res://Scripts/Misc/SpinBoxButton.gd"
-}, {
-"base": "StackablePiece",
-"class": "Stack",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/Stack.gd"
-}, {
-"base": "Stack",
-"class": "StackLasagne",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/StackLasagne.gd"
-}, {
-"base": "Stack",
-"class": "StackSandwich",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/StackSandwich.gd"
-}, {
-"base": "Piece",
-"class": "StackablePiece",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/StackablePiece.gd"
-}, {
-"base": "HBoxContainer",
-"class": "TimeEdit",
-"language": "GDScript",
-"path": "res://Scripts/Misc/TimeEdit.gd"
-}, {
-"base": "SpeakerPiece",
-"class": "TimerPiece",
-"language": "GDScript",
-"path": "res://Scripts/Game/Pieces/TimerPiece.gd"
-} ]
-_global_script_class_icons={
-"ActualTextFile": "",
-"BindButton": "",
-"Card": "",
-"Dice": "",
-"GenericPreview": "",
-"HiddenArea": "",
-"ObjectPreview": "",
-"ObjectPreviewGrid": "",
-"OptionsTab": "",
-"OutlineColorRect": "",
-"Piece": "",
-"PieceCache": "",
-"PieceContainer": "",
-"Preview": "",
-"RandomAudioStream": "",
-"SaveDialog": "",
-"SpeakerPiece": "",
-"SpinBoxButton": "",
-"Stack": "",
-"StackLasagne": "",
-"StackSandwich": "",
-"StackablePiece": "",
-"TimeEdit": "",
-"TimerPiece": ""
-}
+config_version=5
 
 [application]
+
+config/features=PackedStringArray("4.7", "GL Compatibility")
 
 config/name="Tabletop Club"
 config/description="Copyright (c) 2020-2026 Benjamin 'drwhut' Beddows.
@@ -165,13 +20,14 @@ Copyright (c) 2021-2026 Tabletop Club contributors (see credits).
 An open-source platform for playing tabletop games in a 3D environment, made with the Godot Engine!"
 run/main_scene="res://Scenes/SplashScreen.tscn"
 config/use_custom_user_dir=true
+config/custom_user_dir_name="Tabletop Club Godot 4"
 config/project_settings_override="user://override.cfg"
 boot_splash/image="res://Images/BlackTexture.png"
 boot_splash/use_filter=false
 boot_splash/bg_color=Color( 0, 0, 0, 1 )
 config/icon="res://tabletop_club_icon.png"
 config/windows_native_icon="res://tabletop_club_icon.ico"
-config/version="master"
+config/version="godot4-port"
 
 [autoload]
 
@@ -190,17 +46,15 @@ gdscript/warnings/integer_division=false
 
 [display]
 
-window/stretch/mode="2d"
+window/subwindows/embed_subwindows=true
+
+window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
 [editor]
 
-main_run_args="--base-asset-dir .."
+run/main_run_args="-- --base-asset-dir .."
 script_templates_search_path="res://Scripts/Templates"
-
-[gdnative]
-
-singletons=[ "res://addons/webrtc_native/webrtc_native.tres" ]
 
 [gui]
 
@@ -210,107 +64,107 @@ theme/custom_font="res://Fonts/Cabin/Cabin-Medium.tres"
 
 game_left={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":65,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":65,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_right={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":68,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":68,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_up={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":87,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":87,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_down={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":83,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":83,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_rotate={
 "deadzone": 0.5,
-"events": [ Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"button_mask":0,"position":Vector2( 0, 0 ),"global_position":Vector2( 0, 0 ),"factor":1.0,"button_index":2,"canceled":false,"pressed":false,"doubleclick":false,"script":null)
+"events": [ Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"button_mask":0,"position":Vector2( 0, 0 ),"global_position":Vector2( 0, 0 ),"factor":1.0,"button_index":2,"canceled":false,"pressed":false,"double_click":false,"script":null)
  ]
 }
 game_reset_camera={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":48,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":48,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_flip_piece={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":70,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":70,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_reset_piece={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":82,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":82,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_lock_piece={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":76,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":76,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_delete_piece={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777224,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194312,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_toggle_ui={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777252,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194340,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_take_screenshot={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777255,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194343,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_toggle_debug_info={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777246,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194334,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_quicksave={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777248,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194336,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_quickload={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777250,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":4194338,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_zoom_in={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":44,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":44,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_zoom_out={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":46,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":46,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_rotate_piece={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":84,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":84,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 game_shuffle_stack={
 "deadzone": 0.5,
-"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":90,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"command":false,"pressed":false,"keycode":90,"physical_keycode":0,"unicode":0,"echo":false,"script":null)
  ]
 }
 
 [locale]
 
-translations=PoolStringArray( "res://Translations/fr.po", "res://Translations/de.po", "res://Translations/nl.po", "res://Translations/ru.po", "res://Translations/pt.po", "res://Translations/eo.po", "res://Translations/it.po", "res://Translations/es.po", "res://Translations/nb_NO.po", "res://Translations/id.po", "res://Translations/pl.po", "res://Translations/zh_Hans.po", "res://Translations/pt_BR.po", "res://Translations/bg.po", "res://Translations/hu.po", "res://Translations/ko.po", "res://Translations/ta.po" )
+translations=PackedStringArray( "res://Translations/fr.po", "res://Translations/de.po", "res://Translations/nl.po", "res://Translations/ru.po", "res://Translations/pt.po", "res://Translations/eo.po", "res://Translations/it.po", "res://Translations/es.po", "res://Translations/nb_NO.po", "res://Translations/id.po", "res://Translations/pl.po", "res://Translations/zh_Hans.po", "res://Translations/pt_BR.po", "res://Translations/bg.po", "res://Translations/hu.po", "res://Translations/ko.po", "res://Translations/ta.po" )
 
 [network]
 
-ssl/certificates="res://master_server.crt"
+tls/certificate_bundle_override="res://master_server.crt"
 
 [physics]
 
@@ -319,6 +173,9 @@ common/physics_interpolation=true
 
 [rendering]
 
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+
 vram_compression/import_etc=true
-vram_compression/import_etc2=false
-environment/default_environment="res://default_env.tres"
+textures/vram_compression/import_etc2_astc=false
+environment/defaults/default_environment="res://default_env.tres"

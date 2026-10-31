@@ -18,111 +18,111 @@ The scene creates a ConfigFile full of values based on the nodes in the scene, a
 [node name="MarginContainer" type="MarginContainer" parent="."]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 20.0
-margin_top = 20.0
-margin_right = -20.0
-margin_bottom = -20.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-margin_right = 984.0
-margin_bottom = 560.0
+offset_right = 984.0
+offset_bottom = 560.0
 
 [node name="TabContainer" type="TabContainer" parent="MarginContainer/VBoxContainer"]
-margin_right = 984.0
-margin_bottom = 530.0
+offset_right = 984.0
+offset_bottom = 530.0
 size_flags_vertical = 3
 
 [node name="Audio" type="ScrollContainer" parent="MarginContainer/VBoxContainer/TabContainer"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "audio"
 text = "Audio"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/Audio"]
-margin_right = 976.0
-margin_bottom = 488.0
+offset_right = 976.0
+offset_bottom = 488.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="MasterVolume" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_right = 486.0
-margin_bottom = 20.0
+offset_right = 486.0
+offset_bottom = 20.0
 size_flags_horizontal = 3
 text = "Master Volume"
-align = 2
+horizontal_alignment = 2
 
 [node name="MasterVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_left = 490.0
-margin_right = 976.0
-margin_bottom = 16.0
-hint_tooltip = "Sets the overall volume of all sources of sound in the game."
+offset_left = 490.0
+offset_right = 976.0
+offset_bottom = 16.0
+tooltip_text = "Sets the overall volume of all sources of sound in the game."
 size_flags_horizontal = 3
 max_value = 1.0
 step = 0.01
 value = 0.5
 
 [node name="MusicVolume" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_top = 24.0
-margin_right = 486.0
-margin_bottom = 44.0
+offset_top = 24.0
+offset_right = 486.0
+offset_bottom = 44.0
 size_flags_horizontal = 3
 text = "Music Volume"
-align = 2
+horizontal_alignment = 2
 
 [node name="MusicVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_left = 490.0
-margin_top = 24.0
-margin_right = 976.0
-margin_bottom = 40.0
-hint_tooltip = "Sets the volume of all music sources in the game."
+offset_left = 490.0
+offset_top = 24.0
+offset_right = 976.0
+offset_bottom = 40.0
+tooltip_text = "Sets the volume of all music sources in the game."
 size_flags_horizontal = 3
 max_value = 1.0
 step = 0.01
 value = 1.0
 
 [node name="SoundsVolume" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_top = 48.0
-margin_right = 486.0
-margin_bottom = 68.0
+offset_top = 48.0
+offset_right = 486.0
+offset_bottom = 68.0
 size_flags_horizontal = 3
 text = "Sounds Volume"
-align = 2
+horizontal_alignment = 2
 
 [node name="SoundsVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_left = 490.0
-margin_top = 48.0
-margin_right = 976.0
-margin_bottom = 64.0
-hint_tooltip = "Sets the volume of sound sources played manually throughout the game, for example, from speakers."
+offset_left = 490.0
+offset_top = 48.0
+offset_right = 976.0
+offset_bottom = 64.0
+tooltip_text = "Sets the volume of sound sources played manually throughout the game, for example, from speakers."
 size_flags_horizontal = 3
 max_value = 1.0
 step = 0.01
 value = 1.0
 
 [node name="EffectsVolume" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_top = 72.0
-margin_right = 486.0
-margin_bottom = 92.0
+offset_top = 72.0
+offset_right = 486.0
+offset_bottom = 92.0
 size_flags_horizontal = 3
 text = "Effects Volume"
-align = 2
+horizontal_alignment = 2
 
 [node name="EffectsVolumeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Audio/GridContainer"]
-margin_left = 490.0
-margin_top = 72.0
-margin_right = 976.0
-margin_bottom = 88.0
-hint_tooltip = "Sets the volume of sound effects played automatically throughout the game, for example, pieces falling on the table. "
+offset_left = 490.0
+offset_top = 72.0
+offset_right = 976.0
+offset_bottom = 88.0
+tooltip_text = "Sets the volume of sound effects played automatically throughout the game, for example, pieces falling on the table. "
 size_flags_horizontal = 3
 max_value = 1.0
 step = 0.01
@@ -132,34 +132,34 @@ value = 1.0
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "controls"
 text = "Controls"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/Controls"]
-margin_right = 976.0
-margin_bottom = 488.0
+offset_right = 976.0
+offset_bottom = 488.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="MouseHorizontalSensitivity" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_right = 486.0
-margin_bottom = 20.0
+offset_right = 486.0
+offset_bottom = 20.0
 size_flags_horizontal = 3
 text = "Mouse Horizontal Sensitivity"
-align = 2
+horizontal_alignment = 2
 
 [node name="MouseHorizontalSensitivitySlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_right = 976.0
-margin_bottom = 16.0
-hint_tooltip = "Sets the horizontal sensitivity of the rotation of the camera."
+offset_left = 490.0
+offset_right = 976.0
+offset_bottom = 16.0
+tooltip_text = "Sets the horizontal sensitivity of the rotation of the camera."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -167,19 +167,19 @@ step = 0.01
 value = 0.05
 
 [node name="MouseVerticalSensitivity" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 24.0
-margin_right = 486.0
-margin_bottom = 44.0
+offset_top = 24.0
+offset_right = 486.0
+offset_bottom = 44.0
 size_flags_horizontal = 3
 text = "Mouse Vertical Sensitivity"
-align = 2
+horizontal_alignment = 2
 
 [node name="MouseVerticalSensitivitySlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 24.0
-margin_right = 976.0
-margin_bottom = 40.0
-hint_tooltip = "Sets the vertical sensitivity of the rotation of the camera."
+offset_left = 490.0
+offset_top = 24.0
+offset_right = 976.0
+offset_bottom = 40.0
+tooltip_text = "Sets the vertical sensitivity of the rotation of the camera."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -187,49 +187,49 @@ step = 0.01
 value = 0.05
 
 [node name="MouseHorizontalInvert" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 52.0
-margin_right = 486.0
-margin_bottom = 72.0
+offset_top = 52.0
+offset_right = 486.0
+offset_bottom = 72.0
 size_flags_horizontal = 3
 text = "Mouse Horizontal Invert"
-align = 2
+horizontal_alignment = 2
 
 [node name="MouseHorizontalInvertCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 48.0
-margin_right = 976.0
-margin_bottom = 76.0
-hint_tooltip = "Used to invert the rotation of the camera horizontally."
+offset_left = 490.0
+offset_top = 48.0
+offset_right = 976.0
+offset_bottom = 76.0
+tooltip_text = "Used to invert the rotation of the camera horizontally."
 
 [node name="MouseVerticalInvert" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 84.0
-margin_right = 486.0
-margin_bottom = 104.0
+offset_top = 84.0
+offset_right = 486.0
+offset_bottom = 104.0
 size_flags_horizontal = 3
 text = "Mouse Vertical Invert"
-align = 2
+horizontal_alignment = 2
 
 [node name="MouseVerticalInvertCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 80.0
-margin_right = 976.0
-margin_bottom = 108.0
-hint_tooltip = "Used to invert the rotation of the camera vertically."
+offset_left = 490.0
+offset_top = 80.0
+offset_right = 976.0
+offset_bottom = 108.0
+tooltip_text = "Used to invert the rotation of the camera vertically."
 
 [node name="CameraMovementSpeed" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 112.0
-margin_right = 486.0
-margin_bottom = 132.0
+offset_top = 112.0
+offset_right = 486.0
+offset_bottom = 132.0
 size_flags_horizontal = 3
-text = "Camera Movement Speed"
-align = 2
+text = "Camera3D Movement Speed"
+horizontal_alignment = 2
 
 [node name="CameraMovementSpeedSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 112.0
-margin_right = 976.0
-margin_bottom = 128.0
-hint_tooltip = "Used to set how fast the camera moves across the table."
+offset_left = 490.0
+offset_top = 112.0
+offset_right = 976.0
+offset_bottom = 128.0
+tooltip_text = "Used to set how fast the camera moves across the table."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -237,34 +237,34 @@ step = 0.01
 value = 0.25
 
 [node name="LeftClickToMove" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 140.0
-margin_right = 486.0
-margin_bottom = 160.0
+offset_top = 140.0
+offset_right = 486.0
+offset_bottom = 160.0
 size_flags_horizontal = 3
-text = "Hold Left Click to Move Camera"
-align = 2
+text = "Hold Left Click to Move Camera3D"
+horizontal_alignment = 2
 
 [node name="LeftClickToMoveCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 136.0
-margin_right = 976.0
-margin_bottom = 164.0
-hint_tooltip = "Used to allow the player to move the camera by dragging the mouse across the table."
+offset_left = 490.0
+offset_top = 136.0
+offset_right = 976.0
+offset_bottom = 164.0
+tooltip_text = "Used to allow the player to move the camera by dragging the mouse across the table."
 
 [node name="ZoomSensitivity" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 168.0
-margin_right = 486.0
-margin_bottom = 188.0
+offset_top = 168.0
+offset_right = 486.0
+offset_bottom = 188.0
 size_flags_horizontal = 3
 text = "Zoom Sensitivity"
-align = 2
+horizontal_alignment = 2
 
 [node name="ZoomSensitivitySlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 168.0
-margin_right = 976.0
-margin_bottom = 184.0
-hint_tooltip = "Sets how fast the camera zooms in and out of the table when using the scroll wheel."
+offset_left = 490.0
+offset_top = 168.0
+offset_right = 976.0
+offset_bottom = 184.0
+tooltip_text = "Sets how fast the camera zooms in and out of the table when using the scroll wheel."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -272,34 +272,34 @@ step = 0.01
 value = 0.25
 
 [node name="ZoomInvert" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 196.0
-margin_right = 486.0
-margin_bottom = 216.0
+offset_top = 196.0
+offset_right = 486.0
+offset_bottom = 216.0
 size_flags_horizontal = 3
 text = "Zoom Invert"
-align = 2
+horizontal_alignment = 2
 
 [node name="ZoomInvertCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 192.0
-margin_right = 976.0
-margin_bottom = 220.0
-hint_tooltip = "Used to invert the direction of zooming when using the scroll wheel."
+offset_left = 490.0
+offset_top = 192.0
+offset_right = 976.0
+offset_bottom = 220.0
+tooltip_text = "Used to invert the direction of zooming when using the scroll wheel."
 
 [node name="PieceLiftSensitivity" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 224.0
-margin_right = 486.0
-margin_bottom = 244.0
+offset_top = 224.0
+offset_right = 486.0
+offset_bottom = 244.0
 size_flags_horizontal = 3
 text = "Piece Lift Sensitivity"
-align = 2
+horizontal_alignment = 2
 
 [node name="PieceLiftSensitivitySlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 224.0
-margin_right = 976.0
-margin_bottom = 240.0
-hint_tooltip = "Sets how fast a piece will move when lifting it off the table."
+offset_left = 490.0
+offset_top = 224.0
+offset_right = 976.0
+offset_bottom = 240.0
+tooltip_text = "Sets how fast a piece will move when lifting it off the table."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -307,65 +307,65 @@ step = 0.01
 value = 0.15
 
 [node name="PieceLiftInvert" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 252.0
-margin_right = 486.0
-margin_bottom = 272.0
+offset_top = 252.0
+offset_right = 486.0
+offset_bottom = 272.0
 size_flags_horizontal = 3
 text = "Piece Lift Invert"
-align = 2
+horizontal_alignment = 2
 
 [node name="PieceLiftInvertCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 248.0
-margin_right = 976.0
-margin_bottom = 276.0
-hint_tooltip = "Used to invert the direction a piece will go when lifting it off the table."
+offset_left = 490.0
+offset_top = 248.0
+offset_right = 976.0
+offset_bottom = 276.0
+tooltip_text = "Used to invert the direction a piece will go when lifting it off the table."
 
 [node name="PieceRotationInvert" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 284.0
-margin_right = 486.0
-margin_bottom = 304.0
+offset_top = 284.0
+offset_right = 486.0
+offset_bottom = 304.0
 size_flags_horizontal = 3
 text = "Piece Rotation Invert"
-align = 2
+horizontal_alignment = 2
 
 [node name="PieceRotationInvertCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 280.0
-margin_right = 976.0
-margin_bottom = 308.0
-hint_tooltip = "Used to invert the direction a piece will rotate."
+offset_left = 490.0
+offset_top = 280.0
+offset_right = 976.0
+offset_bottom = 308.0
+tooltip_text = "Used to invert the direction a piece will rotate."
 
 [node name="HandPreviewEnabled" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 316.0
-margin_right = 486.0
-margin_bottom = 336.0
+offset_top = 316.0
+offset_right = 486.0
+offset_bottom = 336.0
 size_flags_horizontal = 3
 text = "Hand Preview Enabled"
-align = 2
+horizontal_alignment = 2
 
 [node name="HandPreviewEnabledCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 312.0
-margin_right = 976.0
-margin_bottom = 340.0
-hint_tooltip = "When set, hovering over a card in your hand will display an enhanced preview of the card after a short period of time."
+offset_left = 490.0
+offset_top = 312.0
+offset_right = 976.0
+offset_bottom = 340.0
+tooltip_text = "When set, hovering over a card in your hand will display an enhanced preview of the card after a short period of time."
 pressed = true
 
 [node name="HandPreviewDelay" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 344.0
-margin_right = 486.0
-margin_bottom = 364.0
+offset_top = 344.0
+offset_right = 486.0
+offset_bottom = 364.0
 size_flags_horizontal = 3
 text = "Hand Preview Delay"
-align = 2
+horizontal_alignment = 2
 
 [node name="HandPreviewDelaySlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 344.0
-margin_right = 976.0
-margin_bottom = 360.0
-hint_tooltip = "Used to set how long the mouse needs to be kept still before a preview of a card is displayed from the hand."
+offset_left = 490.0
+offset_top = 344.0
+offset_right = 976.0
+offset_bottom = 360.0
+tooltip_text = "Used to set how long the mouse needs to be kept still before a preview of a card is displayed from the hand."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -373,19 +373,19 @@ step = 0.01
 value = 0.5
 
 [node name="HandPreviewSize" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 368.0
-margin_right = 486.0
-margin_bottom = 388.0
+offset_top = 368.0
+offset_right = 486.0
+offset_bottom = 388.0
 size_flags_horizontal = 3
 text = "Hand Preview Size"
-align = 2
+horizontal_alignment = 2
 
 [node name="HandPreviewSizeSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 368.0
-margin_right = 976.0
-margin_bottom = 384.0
-hint_tooltip = "Used to control how large the card preview is."
+offset_left = 490.0
+offset_top = 368.0
+offset_right = 976.0
+offset_bottom = 384.0
+tooltip_text = "Used to control how large the card preview is."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -393,53 +393,53 @@ step = 0.01
 value = 0.5
 
 [node name="HideControlHints" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_top = 396.0
-margin_right = 486.0
-margin_bottom = 416.0
+offset_top = 396.0
+offset_right = 486.0
+offset_bottom = 416.0
 size_flags_horizontal = 3
 text = "Hide Control Hints"
-align = 2
+horizontal_alignment = 2
 
 [node name="HideControlHintsCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Controls/GridContainer"]
-margin_left = 490.0
-margin_top = 392.0
-margin_right = 976.0
-margin_bottom = 420.0
-hint_tooltip = "Used to hide the dynamic text displaying how to control the game."
+offset_left = 490.0
+offset_top = 392.0
+offset_right = 976.0
+offset_bottom = 420.0
+tooltip_text = "Used to hide the dynamic text displaying how to control the game."
 
 [node name="General" type="ScrollContainer" parent="MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "general"
 text = "General"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/General"]
-margin_right = 976.0
-margin_bottom = 488.0
+offset_right = 976.0
+offset_bottom = 488.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="Language" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 3.0
-margin_right = 486.0
-margin_bottom = 23.0
+offset_top = 3.0
+offset_right = 486.0
+offset_bottom = 23.0
 size_flags_horizontal = 3
 text = "Language"
-align = 2
+horizontal_alignment = 2
 
 [node name="LanguageButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_right = 976.0
-margin_bottom = 26.0
-hint_tooltip = "Used to set the language of the game.
+offset_left = 490.0
+offset_right = 976.0
+offset_bottom = 26.0
+tooltip_text = "Used to set the language of the game.
 
 Note that not all of the text in the game may be translated.
 If your language is not fully supported, or it is not included in the game at all,
@@ -448,132 +448,144 @@ https://hosted.weblate.org/engage/tabletop-club/"
 size_flags_horizontal = 3
 
 [node name="AutosaveInterval" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 33.0
-margin_right = 486.0
-margin_bottom = 53.0
+offset_top = 33.0
+offset_right = 486.0
+offset_bottom = 53.0
 size_flags_horizontal = 3
 text = "Autosave Interval"
-align = 2
+horizontal_alignment = 2
 
 [node name="AutosaveIntervalButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 30.0
-margin_right = 976.0
-margin_bottom = 56.0
-hint_tooltip = "Used to set how often autosaves are created."
+offset_left = 490.0
+offset_top = 30.0
+offset_right = 976.0
+offset_bottom = 56.0
+tooltip_text = "Used to set how often autosaves are created."
 size_flags_horizontal = 3
 text = "5 minutes"
-items = [ "Never", null, false, 0, null, "30 seconds", null, false, 1, null, "1 minute", null, false, 2, null, "5 minutes", null, false, 3, null, "10 minutes", null, false, 4, null, "30 minutes", null, false, 5, null ]
+item_count = 6
+popup/item_0/text = "Never"
+popup/item_0/id = 0
+popup/item_1/text = "30 seconds"
+popup/item_1/id = 1
+popup/item_2/text = "1 minute"
+popup/item_2/id = 2
+popup/item_3/text = "5 minutes"
+popup/item_3/id = 3
+popup/item_4/text = "10 minutes"
+popup/item_4/id = 4
+popup/item_5/text = "30 minutes"
+popup/item_5/id = 5
 selected = 3
 
 [node name="AutosaveFileCount" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 65.0
-margin_right = 486.0
-margin_bottom = 85.0
+offset_top = 65.0
+offset_right = 486.0
+offset_bottom = 85.0
 size_flags_horizontal = 3
 text = "Autosave File Count"
-align = 2
+horizontal_alignment = 2
 
 [node name="AutosaveFileCountSpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 60.0
-margin_right = 976.0
-margin_bottom = 90.0
-hint_tooltip = "Used to set the maximum number of autosave files that are made."
+offset_left = 490.0
+offset_top = 60.0
+offset_right = 976.0
+offset_bottom = 90.0
+tooltip_text = "Used to set the maximum number of autosave files that are made."
 size_flags_horizontal = 3
 min_value = 1.0
 value = 10.0
 
 [node name="SkipSplashScreen" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 98.0
-margin_right = 486.0
-margin_bottom = 118.0
+offset_top = 98.0
+offset_right = 486.0
+offset_bottom = 118.0
 size_flags_horizontal = 3
 text = "Skip Splash Screen"
-align = 2
+horizontal_alignment = 2
 
 [node name="SkipSplashScreenCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 94.0
-margin_right = 976.0
-margin_bottom = 122.0
-hint_tooltip = "Skips the Godot Engine splash screen when the game starts."
+offset_left = 490.0
+offset_top = 94.0
+offset_right = 976.0
+offset_bottom = 122.0
+tooltip_text = "Skips the Godot Engine splash screen when the game starts."
 size_flags_horizontal = 3
 
 [node name="ShowWarnings" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 130.0
-margin_right = 486.0
-margin_bottom = 150.0
+offset_top = 130.0
+offset_right = 486.0
+offset_bottom = 150.0
 size_flags_horizontal = 3
 text = "Show System Warnings"
-align = 2
+horizontal_alignment = 2
 
 [node name="ShowWarningsCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 126.0
-margin_right = 976.0
-margin_bottom = 154.0
-hint_tooltip = "Displays system warnings in the chat box."
+offset_left = 490.0
+offset_top = 126.0
+offset_right = 976.0
+offset_bottom = 154.0
+tooltip_text = "Displays system warnings in the chat box."
 size_flags_horizontal = 3
 pressed = true
 
 [node name="ShowErrors" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 162.0
-margin_right = 486.0
-margin_bottom = 182.0
+offset_top = 162.0
+offset_right = 486.0
+offset_bottom = 182.0
 size_flags_horizontal = 3
 text = "Show System Errors"
-align = 2
+horizontal_alignment = 2
 
 [node name="ShowErrorsCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 158.0
-margin_right = 976.0
-margin_bottom = 186.0
-hint_tooltip = "Displays system errors in the chat box."
+offset_left = 490.0
+offset_top = 158.0
+offset_right = 976.0
+offset_bottom = 186.0
+tooltip_text = "Displays system errors in the chat box."
 size_flags_horizontal = 3
 pressed = true
 
 [node name="DividerLeft" type="Control" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 190.0
-margin_right = 486.0
-margin_bottom = 190.0
+offset_top = 190.0
+offset_right = 486.0
+offset_bottom = 190.0
 size_flags_horizontal = 3
 
 [node name="DividerRight" type="Control" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 190.0
-margin_right = 976.0
-margin_bottom = 190.0
+offset_left = 490.0
+offset_top = 190.0
+offset_right = 976.0
+offset_bottom = 190.0
 size_flags_horizontal = 3
 
 [node name="OpenAssetsSpace" type="Control" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 194.0
-margin_right = 486.0
-margin_bottom = 220.0
+offset_top = 194.0
+offset_right = 486.0
+offset_bottom = 220.0
 size_flags_horizontal = 3
 
 [node name="OpenAssetsButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 194.0
-margin_right = 976.0
-margin_bottom = 220.0
-hint_tooltip = "Opens the assets folder in your file explorer."
+offset_left = 490.0
+offset_top = 194.0
+offset_right = 976.0
+offset_bottom = 220.0
+tooltip_text = "Opens the assets folder in your file explorer."
 size_flags_horizontal = 3
 text = "Open Assets Folder"
 
 [node name="ReimportSpace" type="Control" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_top = 224.0
-margin_right = 486.0
-margin_bottom = 250.0
+offset_top = 224.0
+offset_right = 486.0
+offset_bottom = 250.0
 size_flags_horizontal = 3
 
 [node name="ReimportButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/General/GridContainer"]
-margin_left = 490.0
-margin_top = 224.0
-margin_right = 976.0
-margin_bottom = 250.0
-hint_tooltip = "Re-imports all assets as if you have started playing for the first time.
+offset_left = 490.0
+offset_top = 224.0
+offset_right = 976.0
+offset_bottom = 250.0
+tooltip_text = "Re-imports all assets as if you have started playing for the first time.
 Use this if an asset is not working as intended, or an asset has just been added."
 size_flags_horizontal = 3
 text = "Reimport Assets"
@@ -582,480 +594,486 @@ text = "Reimport Assets"
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "key_bindings"
 text = "Key Bindings"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings"]
-margin_right = 976.0
-margin_bottom = 596.0
+offset_right = 976.0
+offset_bottom = 596.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="MoveForward" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 3.0
-margin_right = 480.0
-margin_bottom = 23.0
+offset_top = 3.0
+offset_right = 480.0
+offset_bottom = 23.0
 size_flags_horizontal = 3
 text = "Move Forward"
-align = 2
+horizontal_alignment = 2
 
 [node name="MoveForwardButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_right = 964.0
-margin_bottom = 26.0
-hint_tooltip = "Moves the camera forward."
+offset_left = 484.0
+offset_right = 964.0
+offset_bottom = 26.0
+tooltip_text = "Moves the camera forward."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_up"
 
 [node name="MoveBack" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 33.0
-margin_right = 480.0
-margin_bottom = 53.0
+offset_top = 33.0
+offset_right = 480.0
+offset_bottom = 53.0
 size_flags_horizontal = 3
 text = "Move Back"
-align = 2
+horizontal_alignment = 2
 
 [node name="MoveBackButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 30.0
-margin_right = 964.0
-margin_bottom = 56.0
-hint_tooltip = "Moves the camera backwards."
+offset_left = 484.0
+offset_top = 30.0
+offset_right = 964.0
+offset_bottom = 56.0
+tooltip_text = "Moves the camera backwards."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_down"
 
 [node name="MoveLeft" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 63.0
-margin_right = 480.0
-margin_bottom = 83.0
+offset_top = 63.0
+offset_right = 480.0
+offset_bottom = 83.0
 size_flags_horizontal = 3
 text = "Move Left"
-align = 2
+horizontal_alignment = 2
 
 [node name="MoveLeftButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 60.0
-margin_right = 964.0
-margin_bottom = 86.0
-hint_tooltip = "Moves the camera left."
+offset_left = 484.0
+offset_top = 60.0
+offset_right = 964.0
+offset_bottom = 86.0
+tooltip_text = "Moves the camera left."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_left"
 
 [node name="MoveRight" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 93.0
-margin_right = 480.0
-margin_bottom = 113.0
+offset_top = 93.0
+offset_right = 480.0
+offset_bottom = 113.0
 size_flags_horizontal = 3
 text = "Move Right"
-align = 2
+horizontal_alignment = 2
 
 [node name="MoveRightButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 90.0
-margin_right = 964.0
-margin_bottom = 116.0
-hint_tooltip = "Moves the camera right."
+offset_left = 484.0
+offset_top = 90.0
+offset_right = 964.0
+offset_bottom = 116.0
+tooltip_text = "Moves the camera right."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_right"
 
 [node name="RotateCamera" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 123.0
-margin_right = 480.0
-margin_bottom = 143.0
+offset_top = 123.0
+offset_right = 480.0
+offset_bottom = 143.0
 size_flags_horizontal = 3
-text = "Rotate Camera"
-align = 2
+text = "Rotate Camera3D"
+horizontal_alignment = 2
 
 [node name="RotateCameraButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 120.0
-margin_right = 964.0
-margin_bottom = 146.0
-hint_tooltip = "Enable rotation of the camera when moving the mouse."
+offset_left = 484.0
+offset_top = 120.0
+offset_right = 964.0
+offset_bottom = 146.0
+tooltip_text = "Enable rotation of the camera when moving the mouse."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_rotate"
 
 [node name="ResetCamera" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 153.0
-margin_right = 480.0
-margin_bottom = 173.0
+offset_top = 153.0
+offset_right = 480.0
+offset_bottom = 173.0
 size_flags_horizontal = 3
-text = "Reset Camera"
-align = 2
+text = "Reset Camera3D"
+horizontal_alignment = 2
 
 [node name="ResetCameraButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 150.0
-margin_right = 964.0
-margin_bottom = 176.0
-hint_tooltip = "Resets the camera to the default position."
+offset_left = 484.0
+offset_top = 150.0
+offset_right = 964.0
+offset_bottom = 176.0
+tooltip_text = "Resets the camera to the default position."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_reset_camera"
 
 [node name="ZoomCameraIn" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 183.0
-margin_right = 480.0
-margin_bottom = 203.0
+offset_top = 183.0
+offset_right = 480.0
+offset_bottom = 203.0
 size_flags_horizontal = 3
 text = "Zoom In / Lift Piece Down"
-align = 2
+horizontal_alignment = 2
 
 [node name="ZoomCameraInButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 180.0
-margin_right = 964.0
-margin_bottom = 206.0
-hint_tooltip = "Zoom the camera towards the table, or lift a piece down onto the table."
+offset_left = 484.0
+offset_top = 180.0
+offset_right = 964.0
+offset_bottom = 206.0
+tooltip_text = "Zoom the camera towards the table, or lift a piece down onto the table."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_zoom_in"
 
 [node name="ZoomCameraOut" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 213.0
-margin_right = 480.0
-margin_bottom = 233.0
+offset_top = 213.0
+offset_right = 480.0
+offset_bottom = 233.0
 size_flags_horizontal = 3
 text = "Zoom Out / Lift Piece Up"
-align = 2
+horizontal_alignment = 2
 
 [node name="ZoomCameraOutButton2" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 210.0
-margin_right = 964.0
-margin_bottom = 236.0
-hint_tooltip = "Zoom the camera away from the table, or lift a piece up from the table."
+offset_left = 484.0
+offset_top = 210.0
+offset_right = 964.0
+offset_bottom = 236.0
+tooltip_text = "Zoom the camera away from the table, or lift a piece up from the table."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_zoom_out"
 
 [node name="FlipPiece" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 243.0
-margin_right = 480.0
-margin_bottom = 263.0
+offset_top = 243.0
+offset_right = 480.0
+offset_bottom = 263.0
 size_flags_horizontal = 3
 text = "Flip Piece Orientation"
-align = 2
+horizontal_alignment = 2
 
 [node name="FlipPieceButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 240.0
-margin_right = 964.0
-margin_bottom = 266.0
-hint_tooltip = "Flip the selected piece or the piece the mouse is over on the horizontal axis."
+offset_left = 484.0
+offset_top = 240.0
+offset_right = 964.0
+offset_bottom = 266.0
+tooltip_text = "Flip the selected piece or the piece the mouse is over on the horizontal axis."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_flip_piece"
 
 [node name="ResetPiece" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 273.0
-margin_right = 480.0
-margin_bottom = 293.0
+offset_top = 273.0
+offset_right = 480.0
+offset_bottom = 293.0
 size_flags_horizontal = 3
 text = "Reset Piece Orientation"
-align = 2
+horizontal_alignment = 2
 
 [node name="ResetPieceButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 270.0
-margin_right = 964.0
-margin_bottom = 296.0
-hint_tooltip = "Resets the selected piece or the piece the mouse is over to its default orientation."
+offset_left = 484.0
+offset_top = 270.0
+offset_right = 964.0
+offset_bottom = 296.0
+tooltip_text = "Resets the selected piece or the piece the mouse is over to its default orientation."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_reset_piece"
 
 [node name="RotatePiece" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 303.0
-margin_right = 480.0
-margin_bottom = 323.0
+offset_top = 303.0
+offset_right = 480.0
+offset_bottom = 323.0
 size_flags_horizontal = 3
 text = "Rotate Piece"
-align = 2
+horizontal_alignment = 2
 
 [node name="RotatePieceButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 300.0
-margin_right = 964.0
-margin_bottom = 326.0
-hint_tooltip = "Rotates the the piece that is selected, or that the mouse is over."
+offset_left = 484.0
+offset_top = 300.0
+offset_right = 964.0
+offset_bottom = 326.0
+tooltip_text = "Rotates the the piece that is selected, or that the mouse is over."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_rotate_piece"
 
 [node name="Shuffle" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 333.0
-margin_right = 480.0
-margin_bottom = 353.0
+offset_top = 333.0
+offset_right = 480.0
+offset_bottom = 353.0
 size_flags_horizontal = 3
 text = "Shuffle"
-align = 2
+horizontal_alignment = 2
 
 [node name="ShuffleButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 330.0
-margin_right = 964.0
-margin_bottom = 356.0
-hint_tooltip = "Shuffle stacks of cards or tokens that are selected, or that the mouse is over."
+offset_left = 484.0
+offset_top = 330.0
+offset_right = 964.0
+offset_bottom = 356.0
+tooltip_text = "Shuffle stacks of cards or tokens that are selected, or that the mouse is over."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_shuffle_stack"
 
 [node name="LockPiece" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 363.0
-margin_right = 480.0
-margin_bottom = 383.0
+offset_top = 363.0
+offset_right = 480.0
+offset_bottom = 383.0
 size_flags_horizontal = 3
 text = "Lock/Unlock Piece"
-align = 2
+horizontal_alignment = 2
 
 [node name="LockPieceButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 360.0
-margin_right = 964.0
-margin_bottom = 386.0
-hint_tooltip = "Toggles the lock on the selected piece, fixing its position and rotation."
+offset_left = 484.0
+offset_top = 360.0
+offset_right = 964.0
+offset_bottom = 386.0
+tooltip_text = "Toggles the lock on the selected piece, fixing its position and rotation."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_lock_piece"
 
 [node name="DeletePiece" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 393.0
-margin_right = 480.0
-margin_bottom = 413.0
+offset_top = 393.0
+offset_right = 480.0
+offset_bottom = 413.0
 size_flags_horizontal = 3
 text = "Delete Piece"
-align = 2
+horizontal_alignment = 2
 
 [node name="DeletePieceButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 390.0
-margin_right = 964.0
-margin_bottom = 416.0
-hint_tooltip = "Deletes the currently selected piece."
+offset_left = 484.0
+offset_top = 390.0
+offset_right = 964.0
+offset_bottom = 416.0
+tooltip_text = "Deletes the currently selected piece."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_delete_piece"
 
 [node name="ToggleDebugInfo" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 423.0
-margin_right = 480.0
-margin_bottom = 443.0
+offset_top = 423.0
+offset_right = 480.0
+offset_bottom = 443.0
 size_flags_horizontal = 3
 text = "Toggle Debug Info"
-align = 2
+horizontal_alignment = 2
 
 [node name="ToggleDebugInfoButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 420.0
-margin_right = 964.0
-margin_bottom = 446.0
-hint_tooltip = "Toggles whether debug information is displayed."
+offset_left = 484.0
+offset_top = 420.0
+offset_right = 964.0
+offset_bottom = 446.0
+tooltip_text = "Toggles whether debug information is displayed."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_toggle_debug_info"
 
 [node name="Quicksave" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 453.0
-margin_right = 480.0
-margin_bottom = 473.0
+offset_top = 453.0
+offset_right = 480.0
+offset_bottom = 473.0
 size_flags_horizontal = 3
 text = "Quicksave"
-align = 2
+horizontal_alignment = 2
 
 [node name="QuicksaveButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 450.0
-margin_right = 964.0
-margin_bottom = 476.0
-hint_tooltip = "Creates a quicksave file."
+offset_left = 484.0
+offset_top = 450.0
+offset_right = 964.0
+offset_bottom = 476.0
+tooltip_text = "Creates a quicksave file."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_quicksave"
 
 [node name="Quickload" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 483.0
-margin_right = 480.0
-margin_bottom = 503.0
+offset_top = 483.0
+offset_right = 480.0
+offset_bottom = 503.0
 size_flags_horizontal = 3
 text = "Quickload"
-align = 2
+horizontal_alignment = 2
 
 [node name="QuickloadButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 480.0
-margin_right = 964.0
-margin_bottom = 506.0
-hint_tooltip = "Loads the latest quicksave file."
+offset_left = 484.0
+offset_top = 480.0
+offset_right = 964.0
+offset_bottom = 506.0
+tooltip_text = "Loads the latest quicksave file."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_quickload"
 
 [node name="ToggleUI" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 513.0
-margin_right = 480.0
-margin_bottom = 533.0
+offset_top = 513.0
+offset_right = 480.0
+offset_bottom = 533.0
 size_flags_horizontal = 3
 text = "Toggle UI"
-align = 2
+horizontal_alignment = 2
 
 [node name="ToggleUIButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 510.0
-margin_right = 964.0
-margin_bottom = 536.0
-hint_tooltip = "Toggles whether the entire UI is displayed."
+offset_left = 484.0
+offset_top = 510.0
+offset_right = 964.0
+offset_bottom = 536.0
+tooltip_text = "Toggles whether the entire UI is displayed."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_toggle_ui"
 
 [node name="TakeScreenshot" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 543.0
-margin_right = 480.0
-margin_bottom = 563.0
+offset_top = 543.0
+offset_right = 480.0
+offset_bottom = 563.0
 size_flags_horizontal = 3
 text = "Take Screenshot"
-align = 2
+horizontal_alignment = 2
 
 [node name="TakeScreenshotButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 540.0
-margin_right = 964.0
-margin_bottom = 566.0
-hint_tooltip = "Takes a screenshot of the game in its current state."
+offset_left = 484.0
+offset_top = 540.0
+offset_right = 964.0
+offset_bottom = 566.0
+tooltip_text = "Takes a screenshot of the game in its current state."
 size_flags_horizontal = 3
 script = ExtResource( 2 )
 action = "game_take_screenshot"
 
 [node name="ResetBindingsSpace" type="Control" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_top = 570.0
-margin_right = 480.0
-margin_bottom = 596.0
+offset_top = 570.0
+offset_right = 480.0
+offset_bottom = 596.0
 
 [node name="ResetBindingsButton" type="Button" parent="MarginContainer/VBoxContainer/TabContainer/Key Bindings/GridContainer"]
-margin_left = 484.0
-margin_top = 570.0
-margin_right = 964.0
-margin_bottom = 596.0
-hint_tooltip = "Used to reset the key bindings to their default values."
+offset_left = 484.0
+offset_top = 570.0
+offset_right = 964.0
+offset_bottom = 596.0
+tooltip_text = "Used to reset the key bindings to their default values."
 text = "Reset Bindings"
 
 [node name="Multiplayer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/TabContainer"]
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "multiplayer"
 text = "Multiplayer"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer"]
-margin_right = 976.0
-margin_bottom = 488.0
+offset_right = 976.0
+offset_bottom = 488.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="Name" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_top = 5.0
-margin_right = 486.0
-margin_bottom = 25.0
+offset_top = 5.0
+offset_right = 486.0
+offset_bottom = 25.0
 size_flags_horizontal = 3
 text = "Name"
-align = 2
+horizontal_alignment = 2
 
 [node name="NameEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_left = 490.0
-margin_right = 976.0
-margin_bottom = 30.0
-hint_tooltip = "The player's displayed name in multiplayer lobbies."
+offset_left = 490.0
+offset_right = 976.0
+offset_bottom = 30.0
+tooltip_text = "The player's displayed name in multiplayer lobbies."
 size_flags_horizontal = 3
 text = "Player"
 max_length = 100
 
 [node name="Color" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_top = 37.0
-margin_right = 486.0
-margin_bottom = 57.0
+offset_top = 37.0
+offset_right = 486.0
+offset_bottom = 57.0
 size_flags_horizontal = 3
 text = "Color"
-align = 2
+horizontal_alignment = 2
 
 [node name="ColorPicker" type="ColorPickerButton" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_left = 490.0
-margin_top = 34.0
-margin_right = 976.0
-margin_bottom = 60.0
-hint_tooltip = "The player's displayed colour in multiplayer lobbies."
+offset_left = 490.0
+offset_top = 34.0
+offset_right = 976.0
+offset_bottom = 60.0
+tooltip_text = "The player's displayed colour in multiplayer lobbies."
 size_flags_horizontal = 3
 color = Color( 1, 1, 1, 1 )
 edit_alpha = false
 
 [node name="ChatFontSize" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_top = 67.0
-margin_right = 486.0
-margin_bottom = 87.0
+offset_top = 67.0
+offset_right = 486.0
+offset_bottom = 87.0
 size_flags_horizontal = 3
 text = "Chat Font Size"
-align = 2
+horizontal_alignment = 2
 
 [node name="ChatFontSizeButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_left = 490.0
-margin_top = 64.0
-margin_right = 976.0
-margin_bottom = 90.0
-hint_tooltip = "Changes the size of the text in the chat box."
+offset_left = 490.0
+offset_top = 64.0
+offset_right = 976.0
+offset_bottom = 90.0
+tooltip_text = "Changes the size of the text in the chat box."
 size_flags_horizontal = 3
 text = "Medium"
-items = [ "Small", null, false, 0, null, "Medium", null, false, 1, null, "Large", null, false, 2, null ]
+item_count = 3
+popup/item_0/text = "Small"
+popup/item_0/id = 0
+popup/item_1/text = "Medium"
+popup/item_1/id = 1
+popup/item_2/text = "Large"
+popup/item_2/id = 2
 selected = 1
 
 [node name="HideCursors" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_top = 98.0
-margin_right = 486.0
-margin_bottom = 118.0
+offset_top = 98.0
+offset_right = 486.0
+offset_bottom = 118.0
 size_flags_horizontal = 3
 text = "Hide Player Cursors"
-align = 2
+horizontal_alignment = 2
 
 [node name="HideCursorsCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_left = 490.0
-margin_top = 94.0
-margin_right = 976.0
-margin_bottom = 122.0
-hint_tooltip = "Used to stop showing other player's cursors when in multiplayer lobbies."
+offset_left = 490.0
+offset_top = 94.0
+offset_right = 976.0
+offset_bottom = 122.0
+tooltip_text = "Used to stop showing other player's cursors when in multiplayer lobbies."
 size_flags_horizontal = 3
 
 [node name="CensorProfanity" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_top = 130.0
-margin_right = 486.0
-margin_bottom = 150.0
+offset_top = 130.0
+offset_right = 486.0
+offset_bottom = 150.0
 size_flags_horizontal = 3
 text = "Censor Profanity"
-align = 2
+horizontal_alignment = 2
 
 [node name="CensorProfanityCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Multiplayer/GridContainer"]
-margin_left = 490.0
-margin_top = 126.0
-margin_right = 976.0
-margin_bottom = 154.0
-hint_tooltip = "Used to censor potentially offensive words in the chat window when in multiplayer lobbies."
+offset_left = 490.0
+offset_top = 126.0
+offset_right = 976.0
+offset_bottom = 154.0
+tooltip_text = "Used to censor potentially offensive words in the chat window when in multiplayer lobbies."
 size_flags_horizontal = 3
 pressed = true
 
@@ -1063,54 +1081,60 @@ pressed = true
 visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 4.0
-margin_top = 38.0
-margin_right = -4.0
-margin_bottom = -4.0
+offset_left = 4.0
+offset_top = 38.0
+offset_right = -4.0
+offset_bottom = -4.0
 follow_focus = true
 script = ExtResource( 4 )
 section_name = "video"
 text = "Video"
 
 [node name="GridContainer" type="GridContainer" parent="MarginContainer/VBoxContainer/TabContainer/Video"]
-margin_right = 976.0
-margin_bottom = 488.0
+offset_right = 976.0
+offset_bottom = 488.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 columns = 2
 
 [node name="WindowMode" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 3.0
-margin_right = 486.0
-margin_bottom = 23.0
+offset_top = 3.0
+offset_right = 486.0
+offset_bottom = 23.0
 size_flags_horizontal = 3
 text = "Window Mode"
-align = 2
+horizontal_alignment = 2
 
 [node name="WindowModeButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_right = 976.0
-margin_bottom = 26.0
-hint_tooltip = "Sets the mode in which the game window is displayed."
+offset_left = 490.0
+offset_right = 976.0
+offset_bottom = 26.0
+tooltip_text = "Sets the mode in which the game window is displayed."
 size_flags_horizontal = 3
 text = "Windowed"
-items = [ "Windowed", null, false, 0, null, "Borderless Fullscreen", null, false, 1, null, "Fullscreen", null, false, 2, null ]
+item_count = 3
+popup/item_0/text = "Windowed"
+popup/item_0/id = 0
+popup/item_1/text = "Borderless Fullscreen"
+popup/item_1/id = 1
+popup/item_2/text = "Fullscreen"
+popup/item_2/id = 2
 selected = 0
 
 [node name="FOV" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 35.0
-margin_right = 486.0
-margin_bottom = 55.0
+offset_top = 35.0
+offset_right = 486.0
+offset_bottom = 55.0
 size_flags_horizontal = 3
 text = "Field of View"
-align = 2
+horizontal_alignment = 2
 
 [node name="FOVSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 30.0
-margin_right = 976.0
-margin_bottom = 60.0
-hint_tooltip = "Sets the field of view of the in-game camera."
+offset_left = 490.0
+offset_top = 30.0
+offset_right = 976.0
+offset_bottom = 60.0
+tooltip_text = "Sets the field of view of the in-game camera."
 size_flags_horizontal = 3
 min_value = 50.0
 max_value = 130.0
@@ -1119,142 +1143,186 @@ value = 70.0
 suffix = "º"
 
 [node name="VSync" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 68.0
-margin_right = 486.0
-margin_bottom = 88.0
+offset_top = 68.0
+offset_right = 486.0
+offset_bottom = 88.0
 size_flags_horizontal = 3
 text = "VSync"
-align = 2
+horizontal_alignment = 2
 
 [node name="VSyncCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 64.0
-margin_right = 976.0
-margin_bottom = 92.0
-hint_tooltip = "Used to enable vertical synchronization.
+offset_left = 490.0
+offset_top = 64.0
+offset_right = 976.0
+offset_bottom = 92.0
+tooltip_text = "Used to enable vertical synchronization.
 This forces the game to render at the same framerate as the monitor,
 and is used to prevent screen tearing."
 size_flags_horizontal = 3
 pressed = true
 
 [node name="ShadowDetail" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 99.0
-margin_right = 486.0
-margin_bottom = 119.0
+offset_top = 99.0
+offset_right = 486.0
+offset_bottom = 119.0
 size_flags_horizontal = 3
 text = "Shadow Detail"
-align = 2
+horizontal_alignment = 2
 
 [node name="ShadowDetailButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 96.0
-margin_right = 976.0
-margin_bottom = 122.0
-hint_tooltip = "Sets the quality of shadows cast in the game.
+offset_left = 490.0
+offset_top = 96.0
+offset_right = 976.0
+offset_bottom = 122.0
+tooltip_text = "Sets the quality of shadows cast in the game.
 The higher the quality, the worse the performance gets."
 size_flags_horizontal = 3
 text = "Medium"
-items = [ "Low", null, false, 0, null, "Medium", null, false, 1, null, "High", null, false, 2, null, "Very High", null, false, 3, null ]
+item_count = 4
+popup/item_0/text = "Low"
+popup/item_0/id = 0
+popup/item_1/text = "Medium"
+popup/item_1/id = 1
+popup/item_2/text = "High"
+popup/item_2/id = 2
+popup/item_3/text = "Very High"
+popup/item_3/id = 3
 selected = 1
 
 [node name="MSAA" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 129.0
-margin_right = 486.0
-margin_bottom = 149.0
+offset_top = 129.0
+offset_right = 486.0
+offset_bottom = 149.0
 size_flags_horizontal = 3
 text = "Multisample Anti-Aliasing (MSAA)"
-align = 2
+horizontal_alignment = 2
 
 [node name="MSAAButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 126.0
-margin_right = 976.0
-margin_bottom = 152.0
-hint_tooltip = "Used to set the number of samples of anti-aliasing.
+offset_left = 490.0
+offset_top = 126.0
+offset_right = 976.0
+offset_bottom = 152.0
+tooltip_text = "Used to set the number of samples of anti-aliasing.
 Anti-aliasing is a technique used to remove jagged edges on the screen.
 The more samples that are used, the better the result, but at the expense of performance."
 size_flags_horizontal = 3
 text = "None"
-items = [ "None", null, false, 0, null, "2X", null, false, 1, null, "4X", null, false, 2, null, "8X", null, false, 3, null, "16X", null, false, 4, null ]
+item_count = 5
+popup/item_0/text = "None"
+popup/item_0/id = 0
+popup/item_1/text = "2X"
+popup/item_1/id = 1
+popup/item_2/text = "4X"
+popup/item_2/id = 2
+popup/item_3/text = "8X"
+popup/item_3/id = 3
+popup/item_4/text = "16X"
+popup/item_4/id = 4
 selected = 0
 
 [node name="SSAO" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 159.0
-margin_right = 486.0
-margin_bottom = 179.0
+offset_top = 159.0
+offset_right = 486.0
+offset_bottom = 179.0
 size_flags_horizontal = 3
 text = "Screen Space Ambient Occlusion (SSAO)"
-align = 2
+horizontal_alignment = 2
 
 [node name="SSAOButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 156.0
-margin_right = 976.0
-margin_bottom = 182.0
-hint_tooltip = "Used to set the quality of ambient occlusion.
+offset_left = 490.0
+offset_top = 156.0
+offset_right = 976.0
+offset_bottom = 182.0
+tooltip_text = "Used to set the quality of ambient occlusion.
 Ambient occlusion is a technique used to predict how exposed certain
 faces are to ambient lighting, to try and create more realistic lighting.
 The higher the quality, the worse the performance gets."
 size_flags_horizontal = 3
 text = "None"
-items = [ "None", null, false, 0, null, "Low", null, false, 1, null, "Medium", null, false, 2, null, "High", null, false, 3, null ]
+item_count = 4
+popup/item_0/text = "None"
+popup/item_0/id = 0
+popup/item_1/text = "Low"
+popup/item_1/id = 1
+popup/item_2/text = "Medium"
+popup/item_2/id = 2
+popup/item_3/text = "High"
+popup/item_3/id = 3
 selected = 0
 
 [node name="SkyboxRadianceDetail" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 189.0
-margin_right = 486.0
-margin_bottom = 209.0
+offset_top = 189.0
+offset_right = 486.0
+offset_bottom = 209.0
 size_flags_horizontal = 3
 text = "Skybox Radiance Detail"
-align = 2
+horizontal_alignment = 2
 
 [node name="SkyboxRadianceDetailButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 186.0
-margin_right = 976.0
-margin_bottom = 212.0
-hint_tooltip = "Used to set the quality of light radiating from the skybox.
+offset_left = 490.0
+offset_top = 186.0
+offset_right = 976.0
+offset_bottom = 212.0
+tooltip_text = "Used to set the quality of light radiating from the skybox.
 The higher the value, the worse the performance gets."
 size_flags_horizontal = 3
 text = "Low"
-items = [ "Low", null, false, 0, null, "Medium", null, false, 1, null, "High", null, false, 2, null, "Very High", null, false, 3, null, "Ultra", null, false, 4, null ]
+item_count = 5
+popup/item_0/text = "Low"
+popup/item_0/id = 0
+popup/item_1/text = "Medium"
+popup/item_1/id = 1
+popup/item_2/text = "High"
+popup/item_2/id = 2
+popup/item_3/text = "Very High"
+popup/item_3/id = 3
+popup/item_4/text = "Ultra"
+popup/item_4/id = 4
 selected = 0
 
 [node name="DepthOfField" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 219.0
-margin_right = 486.0
-margin_bottom = 239.0
+offset_top = 219.0
+offset_right = 486.0
+offset_bottom = 239.0
 size_flags_horizontal = 3
 text = "Depth of Field"
-align = 2
+horizontal_alignment = 2
 
 [node name="DepthOfFieldButton" type="OptionButton" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 216.0
-margin_right = 976.0
-margin_bottom = 242.0
-hint_tooltip = "Used to determine the quality of depth of field.
+offset_left = 490.0
+offset_top = 216.0
+offset_right = 976.0
+offset_bottom = 242.0
+tooltip_text = "Used to determine the quality of depth of field.
 Depth of field is used to blur objects that are not in focus.
 The higher the qualty, the worse the performance gets."
 size_flags_horizontal = 3
 text = "None"
-items = [ "None", null, false, 0, null, "Low", null, false, 1, null, "Medium", null, false, 2, null, "High", null, false, 3, null ]
+item_count = 4
+popup/item_0/text = "None"
+popup/item_0/id = 0
+popup/item_1/text = "Low"
+popup/item_1/id = 1
+popup/item_2/text = "Medium"
+popup/item_2/id = 2
+popup/item_3/text = "High"
+popup/item_3/id = 3
 selected = 0
 
 [node name="DepthOfFieldAmount" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 246.0
-margin_right = 486.0
-margin_bottom = 266.0
+offset_top = 246.0
+offset_right = 486.0
+offset_bottom = 266.0
 size_flags_horizontal = 3
 text = "Depth of Field Amount"
-align = 2
+horizontal_alignment = 2
 
 [node name="DepthOfFieldAmountSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 246.0
-margin_right = 976.0
-margin_bottom = 262.0
-hint_tooltip = "Used to determine how much the background is blurred when using depth of field."
+offset_left = 490.0
+offset_top = 246.0
+offset_right = 976.0
+offset_bottom = 262.0
+tooltip_text = "Used to determine how much the background is blurred when using depth of field."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -1262,19 +1330,19 @@ step = 0.01
 value = 0.5
 
 [node name="DepthOfFieldDistance" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 270.0
-margin_right = 486.0
-margin_bottom = 290.0
+offset_top = 270.0
+offset_right = 486.0
+offset_bottom = 290.0
 size_flags_horizontal = 3
 text = "Depth of Field Distance"
-align = 2
+horizontal_alignment = 2
 
 [node name="DepthOfFieldDistanceSlider" type="HSlider" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 270.0
-margin_right = 976.0
-margin_bottom = 286.0
-hint_tooltip = "Used to set the threshold of what is considered the background when using depth of field."
+offset_left = 490.0
+offset_top = 270.0
+offset_right = 976.0
+offset_bottom = 286.0
+tooltip_text = "Used to set the threshold of what is considered the background when using depth of field."
 size_flags_horizontal = 3
 min_value = 0.01
 max_value = 1.0
@@ -1282,45 +1350,45 @@ step = 0.01
 value = 0.5
 
 [node name="TablePaintFiltering" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_top = 298.0
-margin_right = 486.0
-margin_bottom = 318.0
+offset_top = 298.0
+offset_right = 486.0
+offset_bottom = 318.0
 size_flags_horizontal = 3
 text = "Table Paint Filtering"
-align = 2
+horizontal_alignment = 2
 
 [node name="TablePaintFilteringCheckbox" type="CheckBox" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]
-margin_left = 490.0
-margin_top = 294.0
-margin_right = 976.0
-margin_bottom = 322.0
-hint_tooltip = "Used to blur the paint on the table.
+offset_left = 490.0
+offset_top = 294.0
+offset_right = 976.0
+offset_bottom = 322.0
+tooltip_text = "Used to blur the paint on the table.
 This prevents the paint from looking pixelated."
 size_flags_horizontal = 3
 pressed = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-margin_top = 534.0
-margin_right = 984.0
-margin_bottom = 560.0
+offset_top = 534.0
+offset_right = 984.0
+offset_bottom = 560.0
 alignment = 2
 
 [node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-margin_left = 847.0
-margin_right = 891.0
-margin_bottom = 26.0
+offset_left = 847.0
+offset_right = 891.0
+offset_bottom = 26.0
 text = "Back"
 
 [node name="ApplyButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-margin_left = 895.0
-margin_right = 947.0
-margin_bottom = 26.0
+offset_left = 895.0
+offset_right = 947.0
+offset_bottom = 26.0
 text = "Apply"
 
 [node name="OKButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
-margin_left = 951.0
-margin_right = 984.0
-margin_bottom = 26.0
+offset_left = 951.0
+offset_right = 984.0
+offset_bottom = 26.0
 focus_next = NodePath("../../TabContainer")
 text = "OK"
 
@@ -1337,10 +1405,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-margin_left = -140.0
-margin_top = -45.0
-margin_right = 140.0
-margin_bottom = 45.0
+offset_left = -140.0
+offset_top = -45.0
+offset_right = 140.0
+offset_bottom = 45.0
 mouse_filter = 1
 __meta__ = {
 "_edit_use_anchors_": false
@@ -1349,67 +1417,67 @@ __meta__ = {
 [node name="MarginContainer" type="MarginContainer" parent="BindingBackground/Panel"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 5.0
-margin_top = 5.0
-margin_right = -5.0
-margin_bottom = -5.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="VBoxContainer" type="VBoxContainer" parent="BindingBackground/Panel/MarginContainer"]
-margin_right = 270.0
-margin_bottom = 80.0
+offset_right = 270.0
+offset_bottom = 80.0
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="PressKeyLabel" type="Label" parent="BindingBackground/Panel/MarginContainer/VBoxContainer"]
-margin_right = 270.0
-margin_bottom = 20.0
+offset_right = 270.0
+offset_bottom = 20.0
 text = "Please press a key or button to bind it..."
-align = 1
+horizontal_alignment = 1
 autowrap = true
 
 [node name="Space" type="Control" parent="BindingBackground/Panel/MarginContainer/VBoxContainer"]
-margin_top = 24.0
-margin_right = 270.0
-margin_bottom = 50.0
+offset_top = 24.0
+offset_right = 270.0
+offset_bottom = 50.0
 size_flags_vertical = 3
 
 [node name="HBoxContainer" type="HBoxContainer" parent="BindingBackground/Panel/MarginContainer/VBoxContainer"]
-margin_top = 54.0
-margin_right = 270.0
-margin_bottom = 80.0
+offset_top = 54.0
+offset_right = 270.0
+offset_bottom = 80.0
 alignment = 1
 
 [node name="CancelBindButton" type="Button" parent="BindingBackground/Panel/MarginContainer/VBoxContainer/HBoxContainer"]
-margin_left = 106.0
-margin_right = 164.0
-margin_bottom = 26.0
+offset_left = 106.0
+offset_right = 164.0
+offset_bottom = 26.0
 text = "Cancel"
 
 [node name="KeepVideoConfirm" type="ConfirmationDialog" parent="."]
-margin_right = 320.0
-margin_bottom = 130.0
-rect_min_size = Vector2( 320, 130 )
-popup_exclusive = true
+offset_right = 320.0
+offset_bottom = 130.0
+custom_minimum_size = Vector2( 320, 130 )
+exclusive = true
 window_title = "Keep video settings?"
 dialog_text = "The new video settings have been applied. Do you wish to keep these settings?"
 dialog_autowrap = true
 
 [node name="ReimportConfirm" type="ConfirmationDialog" parent="."]
-margin_right = 350.0
-margin_bottom = 130.0
-rect_min_size = Vector2( 350, 130 )
+offset_right = 350.0
+offset_bottom = 130.0
+custom_minimum_size = Vector2( 350, 130 )
 window_title = "Reimporting Assets"
 dialog_text = "Reimporting your assets will delete your import cache (not the original files) and restart the game. Are you sure you want to continue?"
 dialog_autowrap = true
 
 [node name="ResetBindingsConfirm" type="ConfirmationDialog" parent="."]
-margin_right = 300.0
-margin_bottom = 115.0
-rect_min_size = Vector2( 300, 120 )
+offset_right = 300.0
+offset_bottom = 115.0
+custom_minimum_size = Vector2( 300, 120 )
 window_title = "Reset Bindings"
 dialog_text = "Are you sure you want to reset your key bindings to their default value?"
 dialog_autowrap = true
@@ -1418,8 +1486,8 @@ __meta__ = {
 }
 
 [node name="RestartRequiredDialog" type="AcceptDialog" parent="."]
-margin_right = 280.0
-margin_bottom = 100.0
+offset_right = 280.0
+offset_bottom = 100.0
 window_title = "Warning!"
 dialog_text = "Restarting the game is required in order for these changes to take effect."
 dialog_autowrap = true

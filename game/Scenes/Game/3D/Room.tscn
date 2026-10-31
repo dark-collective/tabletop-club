@@ -5,13 +5,13 @@
 [ext_resource path="res://Scripts/Game/3D/Room.gd" type="Script" id=3]
 [ext_resource path="res://Scenes/Game/3D/FastCircle.tscn" type="PackedScene" id=4]
 
-[sub_resource type="ProceduralSky" id=1]
+[sub_resource type="Sky" id=1]
 
 [sub_resource type="Environment" id=2]
 background_mode = 2
-background_sky = SubResource( 1 )
+sky = SubResource( 1 )
 
-[node name="Room" type="Spatial"]
+[node name="Room" type="Node3D"]
 script = ExtResource( 3 )
 __meta__ = {
 "_editor_description_": "The room handles all of the 3D elements of the game, including the camera and the pieces in the game."
@@ -20,34 +20,34 @@ __meta__ = {
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource( 2 )
 
-[node name="Table" type="Spatial" parent="."]
+[node name="Table" type="Node3D" parent="."]
 
-[node name="HandPositions" type="Spatial" parent="Table"]
+[node name="HandPositions" type="Node3D" parent="Table"]
 
-[node name="SunLight" type="DirectionalLight" parent="."]
-transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 50, 0 )
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 50, 0 )
 shadow_enabled = true
 directional_shadow_normal_bias = 3.0
 directional_shadow_max_distance = 250.0
 
-[node name="SpotLight" type="SpotLight" parent="."]
-transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 50, 0 )
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 50, 0 )
 visible = false
 shadow_enabled = true
 spot_range = 99.9685
 spot_angle = 60.0
 
 [node name="CameraController" parent="." instance=ExtResource( 1 )]
-transform = Transform( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0 )
+transform = Transform3D( 1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0 )
 
-[node name="Pieces" type="Spatial" parent="."]
+[node name="Pieces" type="Node3D" parent="."]
 __meta__ = {
 "_editor_description_": "Pieces that are spawned are put as children of this node, and are given a unique name."
 }
 
-[node name="Hands" type="Spatial" parent="."]
+[node name="Hands" type="Node3D" parent="."]
 
-[node name="HiddenAreas" type="Spatial" parent="."]
+[node name="HiddenAreas" type="Node3D" parent="."]
 
 [node name="HiddenAreaPreview" parent="." instance=ExtResource( 2 )]
 visible = false

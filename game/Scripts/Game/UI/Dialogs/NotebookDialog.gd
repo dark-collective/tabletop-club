@@ -20,22 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends WindowDialog
+extends Window
 
-onready var _confirm_delete_dialog = $ConfirmDeleteDialog
-onready var _delete_button = $HBoxContainer/PageContainer/ModifyContainer/DeleteButton
-onready var _image_container = $HBoxContainer/PageContainer/ImageContainer
-onready var _image_rect = $HBoxContainer/PageContainer/ImageContainer/ImageRect
-onready var _modify_container = $HBoxContainer/PageContainer/ModifyContainer
-onready var _move_down_button = $HBoxContainer/PageContainer/ModifyContainer/MoveDownButton
-onready var _move_up_button = $HBoxContainer/PageContainer/ModifyContainer/MoveUpButton
-onready var _new_page_button = $HBoxContainer/ScrollContainer/PageListContainer/NewPageButton
-onready var _page_list = $HBoxContainer/ScrollContainer/PageListContainer/PageList
-onready var _public_check_box = $HBoxContainer/PageContainer/TitleContainer/PublicCheckBox
-onready var _template_dialog = $TemplateDialog
-onready var _text_edit = $HBoxContainer/PageContainer/TextEdit
-onready var _title_edit = $HBoxContainer/PageContainer/TitleContainer/TitleEdit
-onready var _zoom_label = $HBoxContainer/PageContainer/ZoomContainer/ZoomLabel
+@onready var _confirm_delete_dialog = $ConfirmDeleteDialog
+@onready var _delete_button = $HBoxContainer/PageContainer/ModifyContainer/DeleteButton
+@onready var _image_container = $HBoxContainer/PageContainer/ImageContainer
+@onready var _image_rect = $HBoxContainer/PageContainer/ImageContainer/ImageRect
+@onready var _modify_container = $HBoxContainer/PageContainer/ModifyContainer
+@onready var _move_down_button = $HBoxContainer/PageContainer/ModifyContainer/MoveDownButton
+@onready var _move_up_button = $HBoxContainer/PageContainer/ModifyContainer/MoveUpButton
+@onready var _new_page_button = $HBoxContainer/ScrollContainer/PageListContainer/NewPageButton
+@onready var _page_list = $HBoxContainer/ScrollContainer/PageListContainer/PageList
+@onready var _public_check_box = $HBoxContainer/PageContainer/TitleContainer/PublicCheckBox
+@onready var _template_dialog = $TemplateDialog
+@onready var _text_edit = $HBoxContainer/PageContainer/TextEdit
+@onready var _title_edit = $HBoxContainer/PageContainer/TitleContainer/TitleEdit
+@onready var _zoom_label = $HBoxContainer/PageContainer/ZoomContainer/ZoomLabel
 
 const NOTEBOOK_FILE_PATH = "user://notebook.cfg"
 
@@ -75,13 +75,13 @@ func popup_edit_mode() -> void:
 		previous_page_on_display = 0
 		current_page_array = _load_page_array_from_file()
 	
-	_set_window_title_with_name(get_tree().get_network_unique_id())
-	_set_read_only(current_page_array.empty())
+	_set_title_with_name(multiplayer.get_unique_id())
+	_set_read_only(current_page_array.is_empty())
 	_new_page_button.visible = true
 	_modify_container.visible = true
 	
 	_display_page_list()
-	if current_page_array.empty():
+	if current_page_array.is_empty():
 		_display_help_text()
 		_page_on_display = -1
 	else:
@@ -95,7 +95,7 @@ func popup_edit_mode() -> void:
 # Popup the notebook window in view mode.
 # client_id: The ID of the client whose notebook to view.
 func popup_view_mode(client_id: int) -> void:
-	if client_id == get_tree().get_network_unique_id():
+	if client_id == multiplayer.get_unique_id():
 		push_warning("Cannot use notebook in view mode for self, ignoring.")
 		return
 	
@@ -116,8 +116,9 @@ func popup_view_mode(client_id: int) -> void:
 # Called by the server when the client has sent their page array over.
 # client_id: The ID of the client that the page array belongs to.
 # client_page_array: The page array from the client we requested it from.
-remotesync func receive_client_page_array(client_id: int, client_page_array: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func receive_client_page_array(client_id: int, client_page_array: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if not _client_page_array_expecting_from_server.has(client_id):
@@ -127,7 +128,7 @@ remotesync func receive_client_page_array(client_id: int, client_page_array: Arr
 	_client_page_array_expecting_from_server.erase(client_id)
 	
 	# Set the window to view mode.
-	_set_window_title_with_name(client_id)
+	_set_title_with_name(client_id)
 	_set_read_only(true)
 	_new_page_button.visible = false
 	_modify_container.visible = false
@@ -136,7 +137,7 @@ remotesync func receive_client_page_array(client_id: int, client_page_array: Arr
 	current_page_array = client_page_array
 	
 	_display_page_list()
-	if current_page_array.empty():
+	if current_page_array.is_empty():
 		_display_help_text()
 		_page_on_display = -1
 	else:
@@ -147,12 +148,15 @@ remotesync func receive_client_page_array(client_id: int, client_page_array: Arr
 
 # Request the server to retrieve another client's page array.
 # client_id: The id of the client whose page array we want.
-master func request_client_page_array(client_id: int) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_client_page_array(client_id: int) -> void:
+	if not is_multiplayer_authority():
+		return
 	if not Lobby.player_exists(client_id):
 		push_error("Cannot retrieve page array of player %d, player does not exist!" % client_id)
 		return
 	
-	var send_id = get_tree().get_rpc_sender_id()
+	var send_id = Global.get_sender_id(self)
 	if send_id == client_id:
 		push_warning("Client attempting to retrieve their own page array, ignoring.")
 		return
@@ -161,24 +165,25 @@ master func request_client_page_array(client_id: int) -> void:
 		var sending_to: Dictionary = _server_sending_arrays_to[client_id]
 		if sending_to.has(send_id):
 			var last_request_time: int = sending_to[send_id]
-			var time_since_last_request_ms = OS.get_ticks_msec() - last_request_time
+			var time_since_last_request_ms = Time.get_ticks_msec() - last_request_time
 			if time_since_last_request_ms > REQUEST_PAGE_ARRAY_TIMEOUT_MS:
 				# Client did not respond in time, refresh the timer and try again.
-				_server_sending_arrays_to[client_id][send_id] = OS.get_ticks_msec()
+				_server_sending_arrays_to[client_id][send_id] = Time.get_ticks_msec()
 			else:
 				# Client has yet to send us their page array, keep waiting.
 				return
 		else:
 			# Keep track of when the request was made.
-			_server_sending_arrays_to[client_id][send_id] = OS.get_ticks_msec()
+			_server_sending_arrays_to[client_id][send_id] = Time.get_ticks_msec()
 	else:
-		_server_sending_arrays_to[client_id] = { send_id: OS.get_ticks_msec() }
+		_server_sending_arrays_to[client_id] = { send_id: Time.get_ticks_msec() }
 	
 	rpc_id(client_id, "send_page_array_to_server")
 
 # Called by the server when a client has requested our page array.
-remotesync func send_page_array_to_server() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func send_page_array_to_server() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var page_array_to_use: Array = current_page_array
@@ -211,18 +216,21 @@ remotesync func send_page_array_to_server() -> void:
 # Send the client's page array to the server, who will then send it to whoever
 # requested it.
 # client_page_array: The client's page array.
-master func send_response_to_requester(client_page_array: Array) -> void:
-	var client_id = get_tree().get_rpc_sender_id()
+@rpc("any_peer", "call_local", "reliable")
+func send_response_to_requester(client_page_array: Array) -> void:
+	if not is_multiplayer_authority():
+		return
+	var client_id = Global.get_sender_id(self)
 	
 	var expected_response = false
 	if _server_sending_arrays_to.has(client_id):
 		var potential_requesters: Dictionary = _server_sending_arrays_to[client_id]
-		expected_response = not potential_requesters.empty()
+		expected_response = not potential_requesters.is_empty()
 		
 		var send_to: int = -1
 		for requester_id in potential_requesters.keys():
 			var time_of_request: int = potential_requesters[requester_id]
-			var time_since_request_ms = OS.get_ticks_msec() - time_of_request
+			var time_since_request_ms = Time.get_ticks_msec() - time_of_request
 			if time_since_request_ms <= REQUEST_PAGE_ARRAY_TIMEOUT_MS:
 				send_to = requester_id
 			else:
@@ -284,40 +292,40 @@ func _display_page_contents(index: int) -> void:
 	var image_path: String = ""
 	var textbox_dict: Dictionary = {}
 	var template_entry_path: String = page["template"]
-	if not template_entry_path.empty():
+	if not template_entry_path.is_empty():
 		var template_entry = AssetDB.search_path(template_entry_path)
-		if not template_entry.empty():
+		if not template_entry.is_empty():
 			var template_path: String = template_entry["template_path"]
 			if template_path.get_extension() != "txt":
 				image_path = template_path
 				textbox_dict = template_entry["textboxes"]
 	
-	if image_path.empty():
+	if image_path.is_empty():
 		_text_edit.text = page["text"]
 		
 		_text_edit.visible = true
 		_image_container.visible = false
 	else:
-		var texture: Texture = ResourceManager.load_res(image_path)
+		var texture: Texture2D = ResourceManager.load_res(image_path)
 		_image_rect.texture = texture
 		
 		if texture.get_width() > 0:
 			# By default, the full width of the image should be shown.
-			_base_image_scale = _image_container.rect_size.x / texture.get_width()
+			_base_image_scale = _image_container.size.x / texture.get_width()
 		else:
 			_base_image_scale = 1.0
 		
 		var textbox_id_arr = textbox_dict.keys()
-		for index in range(textbox_dict.size()):
-			var textbox_id: String = textbox_id_arr[index]
+		for textbox_index in range(textbox_dict.size()):
+			var textbox_id: String = textbox_id_arr[textbox_index]
 			var textbox_meta: Dictionary = textbox_dict[textbox_id]
 			
 			var num_lines: int = textbox_meta["lines"]
 			var is_multiline: bool = (num_lines > 1)
 			
 			var need_new_node: bool = true
-			if index < _image_rect.get_child_count():
-				var node = _image_rect.get_child(index)
+			if textbox_index < _image_rect.get_child_count():
+				var node = _image_rect.get_child(textbox_index)
 				
 				if node is LineEdit and (not is_multiline):
 					need_new_node = false
@@ -326,32 +334,32 @@ func _display_page_contents(index: int) -> void:
 			
 			var textbox_edit: Control = null
 			if need_new_node:
-				if index < _image_rect.get_child_count():
+				if textbox_index < _image_rect.get_child_count():
 					# There is a node here we need to... dispose of.
-					var node: Node = _image_rect.get_child(index)
+					var node: Node = _image_rect.get_child(textbox_index)
 					if node is TextEdit:
-						node.disconnect("text_changed", self, "_on_TextEdit_text_changed")
+						node.disconnect("text_changed", Callable(self, "_on_TextEdit_text_changed"))
 					elif node is LineEdit:
-						node.disconnect("text_changed", self, "_on_LineEdit_text_changed")
+						node.disconnect("text_changed", Callable(self, "_on_LineEdit_text_changed"))
 					_image_rect.remove_child(node)
 					node.queue_free()
 				
 				if is_multiline:
 					textbox_edit = TextEdit.new()
 					textbox_edit.wrap_enabled = true
-					textbox_edit.connect("text_changed", self, "_on_TextEdit_text_changed")
+					textbox_edit.connect("text_changed", Callable(self, "_on_TextEdit_text_changed"))
 				else:
 					textbox_edit = LineEdit.new()
-					textbox_edit.connect("text_changed", self, "_on_LineEdit_text_changed")
+					textbox_edit.connect("text_changed", Callable(self, "_on_LineEdit_text_changed"))
 				
-				var font: DynamicFont = preload("res://Fonts/Cabin/Cabin-Regular.tres")
+				var font: Font = preload("res://Fonts/Cabin/Cabin-Regular.tres")
 				font = font.duplicate() # Allows for varying font sizes.
-				textbox_edit.add_font_override("font", font)
+				textbox_edit.add_theme_font_override("font", font)
 				
 				_image_rect.add_child(textbox_edit)
-				_image_rect.move_child(textbox_edit, index)
+				_image_rect.move_child(textbox_edit, textbox_index)
 			else:
-				textbox_edit = _image_rect.get_child(index)
+				textbox_edit = _image_rect.get_child(textbox_index)
 			
 			textbox_edit.name = textbox_id
 			textbox_edit.set_meta("textbox", textbox_meta)
@@ -364,12 +372,12 @@ func _display_page_contents(index: int) -> void:
 				textbox_edit.text = text
 				textbox_edit.editable = not _is_read_only()
 		
-		for index in range(_image_rect.get_child_count()-1, textbox_dict.size()-1, -1):
-			var to_remove: Node = _image_rect.get_child(index)
+		for textbox_index in range(_image_rect.get_child_count()-1, textbox_dict.size()-1, -1):
+			var to_remove: Node = _image_rect.get_child(textbox_index)
 			if to_remove is TextEdit:
-				to_remove.disconnect("text_changed", self, "_on_TextEdit_text_changed")
+				to_remove.disconnect("text_changed", Callable(self, "_on_TextEdit_text_changed"))
 			elif to_remove is LineEdit:
-				to_remove.disconnect("text_changed", self, "_on_LineEdit_text_changed")
+				to_remove.disconnect("text_changed", Callable(self, "_on_LineEdit_text_changed"))
 			_image_rect.remove_child(to_remove)
 			to_remove.queue_free()
 		
@@ -425,9 +433,9 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 	var is_image_template: bool = false
 	
 	# Allow for blank page template entries for backwards-compatibility.
-	if not page_template.empty():
+	if not page_template.is_empty():
 		template_entry = AssetDB.search_path(page_template)
-		if template_entry.empty():
+		if template_entry.is_empty():
 			push_warning("Missing template '%s' for page '%s'." % [
 					page_template, page_title])
 		else:
@@ -451,7 +459,9 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 				var default_val: String = textbox_dict[id]["text"]
 				new_text[id] = default_val
 			
-			var json: JSONParseResult = JSON.parse(page_text)
+			var test_json_conv = JSON.new()
+			test_json_conv.parse(page_text)
+			var json = test_json_conv.get_data()
 			if json.error == OK and json.result is Dictionary:
 				for id in textbox_dict:
 					if not json.result.has(id):
@@ -463,7 +473,7 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 					
 					new_text[id] = value
 			
-			elif not textbox_dict.empty():
+			elif not textbox_dict.is_empty():
 				var first_id: String = textbox_dict.keys()[0]
 				new_text[first_id] = page_text
 			
@@ -494,14 +504,14 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 			# For this, we can convert the dictionary into a JSON string, and
 			# hope that in the future the template will be restored so the JSON
 			# can be parsed back into a dictionary.
-			page_entry["text"] = JSON.print(page_text)
+			page_entry["text"] = JSON.stringify(page_text)
 	else:
 		push_error("Page text in page array is neither a string or dictionary!")
 		return false
 	
 	if page_entry.has("zoom"):
 		var zoom = page_entry["zoom"]
-		if typeof(zoom) != TYPE_REAL:
+		if typeof(zoom) != TYPE_FLOAT:
 			push_error("Zoom in the page array is not a float!")
 			return false
 		
@@ -521,8 +531,8 @@ func _is_read_only() -> bool:
 # Load the contents of the notebook.cfg file into a page array.
 # Returns: The page array from the file.
 func _load_page_array_from_file() -> Array:
-	var check_file = File.new()
-	if not check_file.file_exists(NOTEBOOK_FILE_PATH):
+	var check_file: FileAccess
+	if not FileAccess.file_exists(NOTEBOOK_FILE_PATH):
 		return []
 	
 	var notebook_file = ConfigFile.new()
@@ -551,7 +561,7 @@ func _parse_page_array(page_array: Array) -> void:
 				page_valid = true
 		
 		if not page_valid:
-			page_array.remove(index)
+			page_array.remove_at(index)
 
 # Save the current page array to the notebook.cfg file.
 # page_array: The page array to save to disk.
@@ -577,9 +587,9 @@ func _save_text_to_current_array(index: int) -> void:
 	
 	var is_image_page: bool = false
 	var template_entry_path: String = current_page_array[index]["template"]
-	if not template_entry_path.empty():
+	if not template_entry_path.is_empty():
 		var template_entry = AssetDB.search_path(template_entry_path)
-		if not template_entry.empty():
+		if not template_entry.is_empty():
 			var template_path: String = template_entry["template_path"]
 			is_image_page = (template_path.get_extension() != "txt")
 	
@@ -587,7 +597,7 @@ func _save_text_to_current_array(index: int) -> void:
 		var text_dict = {}
 		for text_edit in _image_rect.get_children():
 			if text_edit is LineEdit or text_edit is TextEdit:
-				text_dict[text_edit.name] = text_edit.text
+				text_dict[str(text_edit.name)] = text_edit.text
 		current_page_array[index]["text"] = text_dict
 	else:
 		current_page_array[index]["text"] = _text_edit.text
@@ -595,31 +605,31 @@ func _save_text_to_current_array(index: int) -> void:
 # Set the scale of the image and it's children text nodes.
 # scale: The new scale relative to the original scale.
 func _set_image_scale(scale: float) -> void:
-	var texture: Texture = _image_rect.texture
+	var texture: Texture2D = _image_rect.texture
 	var new_size: Vector2 = scale * texture.get_size()
-	_image_rect.rect_min_size = new_size
-	_image_rect.rect_size = new_size
+	_image_rect.custom_minimum_size = new_size
+	_image_rect.size = new_size
 	
 	for index in range(_image_rect.get_child_count()):
 		var textbox_edit: Control = _image_rect.get_child(index)
 		
 		if not textbox_edit.has_meta("textbox"):
-			push_error("Textbox %s has no metadata assigned!" % textbox_edit.name)
+			push_error("Textbox %s has no metadata assigned!" % str(textbox_edit.name))
 			continue
 		var textbox_meta: Dictionary = textbox_edit.get_meta("textbox")
 		
-		var font: DynamicFont = textbox_edit.get_font("font")
-		var style: StyleBox = textbox_edit.get_stylebox("normal")
+		var font: Font = textbox_edit.get_theme_font("font")
+		var style: StyleBox = textbox_edit.get_theme_stylebox("normal")
 		var box_min_size: Vector2 = style.get_minimum_size()
 		
 		var rot_deg: float = textbox_meta["rot"]
-		textbox_edit.rect_rotation = rot_deg
+		textbox_edit.rotation_degrees = rot_deg
 		
 		# Vast majority of textboxes will not be rotated, so we can try to skip
 		# some calculations.
 		var rot_transform: Transform2D = Transform2D.IDENTITY
 		if not is_zero_approx(rot_deg):
-			rot_transform = Transform2D(deg2rad(rot_deg), Vector2.ZERO)
+			rot_transform = Transform2D(deg_to_rad(rot_deg), Vector2.ZERO)
 		
 		var max_pos = new_size - box_min_size
 		var x = max(0.0, min(scale * textbox_meta["x"], max_pos.x))
@@ -662,11 +672,11 @@ func _set_image_scale(scale: float) -> void:
 		var num_lines: int = textbox_meta["lines"]
 		var font_height = float(scaled_size.y - box_min_size.y) / num_lines
 		if textbox_edit is TextEdit:
-			font_height -= textbox_edit.get_constant("line_spacing")
-		font.size = int(max(1.0, ceil(0.65 * font_height)))
+			font_height -= textbox_edit.get_theme_constant("line_spacing")
+		textbox_edit.add_theme_font_size_override("font_size", int(max(1.0, ceil(0.65 * font_height))))
 		
-		textbox_edit.rect_position = pos
-		textbox_edit.rect_size = scaled_size
+		textbox_edit.position = pos
+		textbox_edit.size = scaled_size
 
 # Set the modifier buttons to be enabled or not depending on the given index.
 # index: The current page index. If negative, all buttons are disabled.
@@ -698,19 +708,19 @@ func _set_read_only(read_only: bool) -> void:
 
 # Set the window title based on the client's name.
 # client_id: The ID of the client whose name will be in the title.
-func _set_window_title_with_name(client_id: int) -> void:
+func _set_title_with_name(client_id: int) -> void:
 	var client_name: String = tr("<Unknown>")
 	if Lobby.player_exists(client_id):
 		var player_meta: Dictionary = Lobby.get_player(client_id)
 		
 		# From Lobby.get_name_bb_code, but just for the name.
 		client_name = player_meta["name"].strip_edges().strip_escapes()
-		if client_name.empty():
+		if client_name.is_empty():
 			client_name = tr("<No Name>")
 		elif Global.censoring_profanity:
 			client_name = Global.censor_profanity(client_name)
 	
-	window_title = tr("%s's Notebook") % client_name
+	title = tr("%s's Notebook") % client_name
 
 # Set the window's zoom scale.
 # new_zoom: The new zoom scale, e.g. 1.0 is the default view.
@@ -719,8 +729,8 @@ func _set_zoom(new_zoom: float) -> void:
 	_zoom_label.text = "%d%%" % int(round(100.0 * new_zoom))
 	
 	if _text_edit.visible:
-		var font: DynamicFont = _text_edit.get_font("font")
-		font.size = int(DEFAULT_FONT_SIZE * new_zoom)
+		var font: Font = _text_edit.get_theme_font("font")
+		_text_edit.add_theme_font_size_override("font_size", int(DEFAULT_FONT_SIZE * new_zoom))
 		_text_edit.text = _text_edit.text # Force word wrap.
 	else:
 		_set_image_scale(_base_image_scale * new_zoom)
@@ -730,10 +740,10 @@ func _on_ConfirmDeleteDialog_confirmed():
 		push_error("_page_on_display value (%d) is invalid!" % _page_on_display)
 		return
 	
-	current_page_array.remove(_page_on_display)
+	current_page_array.remove_at(_page_on_display)
 	_page_list.remove_item(_page_on_display)
 	
-	var no_pages_left = current_page_array.empty()
+	var no_pages_left = current_page_array.is_empty()
 	_set_read_only(no_pages_left)
 	
 	if no_pages_left:
@@ -760,15 +770,15 @@ func _on_DeleteButton_pressed():
 
 func _on_ImageContainer_gui_input(event: InputEvent):
 	if event is InputEventMouseButton:
-		var ctrl = event.command if OS.get_name() == "OSX" else event.control
+		var ctrl = event.meta if OS.get_name() == "macOS" else event.ctrl_pressed
 		if ctrl and event.pressed:
 			# Make sure the scroll container does not scroll the contents if we
 			# want to zoom in and out.
 			_image_container.set_enable_v_scroll(false)
 			
-			if event.button_index == BUTTON_WHEEL_UP:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 				_on_ZoomInButton_pressed()
-			elif event.button_index == BUTTON_WHEEL_DOWN:
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				_on_ZoomOutButton_pressed()
 			
 			_image_container.call_deferred("set_enable_v_scroll", true)
@@ -807,6 +817,8 @@ func _on_NewPageButton_pressed():
 	_template_dialog.popup_centered()
 
 func _on_NotebookDialog_popup_hide():
+	if visible:
+		return
 	if _is_current_array_from_self():
 		_attempt_save_page_array_to_file()
 
@@ -834,7 +846,7 @@ func _on_TemplateDialog_entry_requested(_pack: String, _type: String, entry: Dic
 	_template_dialog.visible = false
 	
 	# Save the text on the previous page.
-	if not current_page_array.empty():
+	if not current_page_array.is_empty():
 		_attempt_save_page_array_to_file()
 	
 	var template_entry_path: String = entry["entry_path"]
@@ -857,16 +869,17 @@ func _on_TemplateDialog_entry_requested(_pack: String, _type: String, entry: Dic
 	}
 	
 	if template_file_path.get_extension() == "txt":
-		var template_file = File.new()
-		if template_file.file_exists(template_file_path):
-			var err = template_file.open(template_file_path, File.READ)
+		var template_file: FileAccess
+		if FileAccess.file_exists(template_file_path):
+			template_file = FileAccess.open(template_file_path, FileAccess.READ)
+			var err = FileAccess.get_open_error()
 			if err == OK:
 				var default_text: String = template_file.get_as_text()
 				template_file.close()
 				
 				# Check for invalid characters!
 				for i in range(default_text.length() - 1, -1, -1):
-					if default_text.ord_at(i) == 0:
+					if default_text.unicode_at(i) == 0:
 						default_text.erase(i, 1)
 				
 				page_entry["text"] = default_text

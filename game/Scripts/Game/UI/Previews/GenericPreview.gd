@@ -24,12 +24,12 @@ extends Preview
 
 class_name GenericPreview
 
-onready var _description = $VBoxContainer/HBoxContainer/ScrollContainer/Description
-onready var _name = $VBoxContainer/Name
-onready var _selected_rect = $SelectedRect
-onready var _texture = $VBoxContainer/HBoxContainer/Texture
+@onready var _description = $VBoxContainer/HBoxContainer/ScrollContainer/Description
+@onready var _name = $VBoxContainer/Name
+@onready var _selected_rect = $SelectedRect
+@onready var _texture = $VBoxContainer/HBoxContainer/Texture2D
 
-export(bool) var imported_texture: bool = true
+@export var imported_texture: bool = true
 
 # Called when the preview is cleared.
 func _clear_gui() -> void:
@@ -48,26 +48,26 @@ func _set_entry_gui(entry: Dictionary) -> void:
 		_description.text = entry["desc"]
 	
 	if entry.has("author"):
-		if not entry["author"].empty():
-			if not _description.text.empty():
+		if not entry["author"].is_empty():
+			if not _description.text.is_empty():
 				_description.text += "\n"
 			_description.text += tr("Author: %s") % entry["author"]
 	
 	if entry.has("license"):
-		if not entry["license"].empty():
-			if not _description.text.empty():
+		if not entry["license"].is_empty():
+			if not _description.text.is_empty():
 				_description.text += "\n"
 			_description.text += tr("License: %s") % entry["license"]
 	
 	if entry.has("modified_by"):
-		if not entry["modified_by"].empty():
-			if not _description.text.empty():
+		if not entry["modified_by"].is_empty():
+			if not _description.text.is_empty():
 				_description.text += "\n"
 			_description.text += tr("Modified by: %s") % entry["modified_by"]
 	
 	if entry.has("url"):
-		if not entry["url"].empty():
-			if not _description.text.empty():
+		if not entry["url"].is_empty():
+			if not _description.text.is_empty():
 				_description.text += "\n"
 			_description.text += tr("URL: %s") % entry["url"]
 	
@@ -79,34 +79,35 @@ func _set_entry_gui(entry: Dictionary) -> void:
 	
 	_texture.visible = false
 	if entry.has("texture_path"):
-		if not entry["texture_path"].empty():
+		if not entry["texture_path"].is_empty():
 			_set_image(entry["texture_path"])
 	elif entry.has("template_path"):
-		if not entry["template_path"].empty():
+		if not entry["template_path"].is_empty():
 			if entry["template_path"].get_extension() != "txt":
 				_set_image(entry["template_path"])
 
 # Set the image displayed in the preview using a file path to the image.
 # image_path: The file path of the image to display.
 func _set_image(image_path: String) -> void:
-	var image_file = File.new()
-	if not image_file.file_exists(image_path):
+	var image_file: FileAccess
+	if not FileAccess.file_exists(image_path):
 		push_error("Cannot use image '%s', does not exist!" % image_path)
 		return
 	
 	if imported_texture:
 		_texture.texture = ResourceManager.load_res(image_path)
 	else:
-		var err = image_file.open(image_path, File.READ)
+		image_file = FileAccess.open(image_path, FileAccess.READ)
+		var err = FileAccess.get_open_error()
 		if err == OK:
-			var buffer = image_file.get_buffer(image_file.get_len())
+			var buffer = image_file.get_buffer(image_file.get_length())
 			image_file.close()
 			
 			var image = Image.new()
 			err = image.load_png_from_buffer(buffer)
 			if err == OK:
 				var texture = ImageTexture.new()
-				texture.create_from_image(image)
+				texture = ImageTexture.create_from_image(image)
 				_texture.texture = texture
 			else:
 				push_error("Failed to load PNG data from buffer!")

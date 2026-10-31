@@ -1,42 +1,42 @@
 [gd_scene load_steps=9 format=2]
 
 [ext_resource path="res://Scripts/Game/3D/PaintPlane.gd" type="Script" id=1]
-[ext_resource path="res://Shaders/PaintShader.shader" type="Shader" id=2]
-[ext_resource path="res://Shaders/BicubicShader.shader" type="Shader" id=3]
+[ext_resource path="res://Shaders/PaintShader.gdshader" type="Shader" id=2]
+[ext_resource path="res://Shaders/BicubicShader.gdshader" type="Shader" id=3]
 
-[sub_resource type="World" id=4]
+[sub_resource type="World3D" id=4]
 
 [sub_resource type="ShaderMaterial" id=5]
 shader = ExtResource( 2 )
-shader_param/AspectRatio = 1.0
-shader_param/BrushColor = null
-shader_param/BrushEnabled = false
-shader_param/BrushPosition = Vector2( 0, 0 )
-shader_param/BrushSize = 0.0
-shader_param/InverseQuadCol1 = null
-shader_param/InverseQuadCol2 = null
-shader_param/QuadCorner = null
+shader_parameter/AspectRatio = 1.0
+shader_parameter/BrushColor = null
+shader_parameter/BrushEnabled = false
+shader_parameter/BrushPosition = Vector2( 0, 0 )
+shader_parameter/BrushSize = 0.0
+shader_parameter/InverseQuadCol1 = null
+shader_parameter/InverseQuadCol2 = null
+shader_parameter/QuadCorner = null
 
 [sub_resource type="QuadMesh" id=1]
 
 [sub_resource type="ViewportTexture" id=2]
-viewport_path = NodePath("Viewport")
+viewport_path = NodePath("SubViewport")
 
 [sub_resource type="ShaderMaterial" id=3]
 resource_local_to_scene = true
 render_priority = -1
 shader = ExtResource( 3 )
-shader_param/FilteringEnabled = false
-shader_param/TexturePixelSize = Vector2( 1, 1 )
-shader_param/Texture = SubResource( 2 )
+shader_parameter/FilteringEnabled = false
+shader_parameter/TexturePixelSize = Vector2( 1, 1 )
+shader_parameter/Texture = SubResource( 2 )
 
-[node name="PaintPlane" type="Spatial"]
+[node name="PaintPlane" type="Node3D"]
 script = ExtResource( 1 )
 
-[node name="Viewport" type="Viewport" parent="."]
+[node name="SubViewport" type="SubViewport" parent="."]
 size = Vector2( 512, 512 )
-own_world = true
-world = SubResource( 4 )
+own_world_3d = true
+world_3d = SubResource( 4 )
 transparent_bg = true
 hdr = false
 disable_3d = true
@@ -44,11 +44,11 @@ usage = 0
 render_target_v_flip = true
 gui_disable_input = true
 
-[node name="TextureRect" type="TextureRect" parent="Viewport"]
+[node name="TextureRect" type="TextureRect" parent="SubViewport"]
 material = SubResource( 5 )
 expand = true
 
-[node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 0, 0 )
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 0, 0 )
 mesh = SubResource( 1 )
-material/0 = SubResource( 3 )
+surface_material_override/0 = SubResource( 3 )

@@ -20,22 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends WindowDialog
+extends Window
 
 signal requesting_room_details()
 signal setting_lighting(lamp_color, lamp_intensity, lamp_sunlight)
 signal setting_skybox(skybox_entry)
 signal setting_table(table_entry)
 
-onready var _apply_button = $VBoxContainer/HBoxContainer/ApplyButton
-onready var _lamp_color_picker = $VBoxContainer/TabContainer/Lighting/ColorPickerButton
-onready var _lamp_intensity_slider = $VBoxContainer/TabContainer/Lighting/HBoxContainer/IntensitySlider
-onready var _lamp_intensity_value_label = $VBoxContainer/TabContainer/Lighting/HBoxContainer/IntensityValueLabel
-onready var _lamp_type_button = $VBoxContainer/TabContainer/Lighting/TypeButton
-onready var _skybox_dialog = $SkyboxDialog
-onready var _skybox_preview = $VBoxContainer/TabContainer/Skybox/SkyboxPreview
-onready var _table_dialog = $TableDialog
-onready var _table_preview = $VBoxContainer/TabContainer/Table/TablePreview
+@onready var _apply_button = $VBoxContainer/HBoxContainer/ApplyButton
+@onready var _lamp_color_picker = $VBoxContainer/TabContainer/Lighting/ColorPickerButton
+@onready var _lamp_intensity_slider = $VBoxContainer/TabContainer/Lighting/HBoxContainer/IntensitySlider
+@onready var _lamp_intensity_value_label = $VBoxContainer/TabContainer/Lighting/HBoxContainer/IntensityValueLabel
+@onready var _lamp_type_button = $VBoxContainer/TabContainer/Lighting/TypeButton
+@onready var _skybox_dialog = $SkyboxDialog
+@onready var _skybox_preview = $VBoxContainer/TabContainer/Skybox/SkyboxPreview
+@onready var _table_dialog = $TableDialog
+@onready var _table_preview = $VBoxContainer/TabContainer/Table/TablePreview
 
 # Re-configure the preview filters, forcing them to read the AssetDB again.
 # Use this if you know the AssetDB contents have changed.
@@ -52,7 +52,7 @@ func reconfigure() -> void:
 func set_room_details(table_entry: Dictionary, skybox_entry: Dictionary,
 	lamp_color: Color, lamp_intensity: float, lamp_sunlight: bool) -> void:
 	
-	if table_entry.empty():
+	if table_entry.is_empty():
 		_table_preview.set_entry({
 			"bounce": 0.5,
 			"bounding_box": [Vector3.ZERO, Vector3.ZERO],
@@ -68,7 +68,7 @@ func set_room_details(table_entry: Dictionary, skybox_entry: Dictionary,
 	else:
 		_table_preview.set_entry(table_entry)
 	
-	if skybox_entry.empty():
+	if skybox_entry.is_empty():
 		_skybox_preview.set_entry({
 			"default": false,
 			"desc": "",

@@ -46,15 +46,16 @@ func load_res(path: String) -> Resource:
 	# https://github.com/godotengine/godot/issues/55566
 	OS.delay_msec(1)
 	
-	var res: Resource = load(path)
+	var runtime_path = path + ".runtime.res"
+	var res: Resource = load(runtime_path if FileAccess.file_exists(runtime_path) else path)
 	
 	# On macOS, I came across a bug in GLES3 where a StreamTexture would be
 	# freed (via normal means), but the material holding that texture would not
 	# be updated - so instead of delving into graphics library code I decided
 	# to be a coward and just use a workaround - just keep StreamTextures
 	# hostage in memory :)
-	if OS.get_name() == "OSX":
-		if res is StreamTexture:
+	if OS.get_name() == "macOS":
+		if res is CompressedTexture2D:
 			_stex_refs[res.resource_path] = res
 	
 	_res_mutex.unlock()
@@ -71,12 +72,12 @@ func free_object(object: Object) -> void:
 		# This is a workaround for a crash that sometimes happens when a
 		# MeshInstance tries to disconnect its mesh's _mesh_changed signal.
 		var node_stack = [object]
-		while not node_stack.empty():
+		while not node_stack.is_empty():
 			var node: Node = node_stack.pop_back()
 			for child in node.get_children():
 				node_stack.push_back(child)
 			
-			if node is MeshInstance:
+			if node is MeshInstance3D:
 				node.mesh = null
 		
 		object.queue_free()
@@ -106,6 +107,6 @@ func _notification(what):
 # Free all of the objects in the free queue.
 func _clear_free_queue() -> void:
 	_free_mutex.lock()
-	while not _free_queue.empty():
+	while not _free_queue.is_empty():
 		free_object(_free_queue.pop_back())
 	_free_mutex.unlock()

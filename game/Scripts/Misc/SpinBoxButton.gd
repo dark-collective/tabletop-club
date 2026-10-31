@@ -1,3 +1,4 @@
+@tool
 # tabletop-club
 # Copyright (c) 2020-2026 Benjamin 'drwhut' Beddows.
 # Copyright (c) 2021-2026 Tabletop Club contributors (see game/CREDITS.tres).
@@ -20,16 +21,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-tool
 extends HBoxContainer
 
 class_name SpinBoxButton
 
 signal pressed(value)
 
-export(int) var max_value: int = 100 setget set_max_value, get_max_value
-export(String) var prefix: String = "" setget set_prefix, get_prefix
-export(String) var text: String = "" setget set_text, get_text
+@export var max_value: int = 100: get = get_max_value, set = set_max_value
+@export var prefix: String = "": get = get_prefix, set = set_prefix
+@export var text: String = "": get = get_text, set = set_text
 
 var _button: Button
 var _spin_box: SpinBox
@@ -69,12 +69,12 @@ func set_text(new_text: String) -> void:
 
 func _init():
 	_button = Button.new()
-	_button.connect("pressed", self, "_on_button_pressed")
+	_button.connect("pressed", Callable(self, "_on_button_pressed"))
 	add_child(_button)
 	
 	_spin_box = SpinBox.new()
 	_spin_box.min_value = 1.0
-	_spin_box.rect_min_size.x = 80.0
+	_spin_box.custom_minimum_size.x = 80.0
 	add_child(_spin_box)
 
 func _on_button_pressed():

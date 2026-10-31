@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-extends Spatial
+extends Node3D
 
 signal setting_spawn_point(position)
 signal spawning_piece_at(position)
@@ -30,17 +30,17 @@ signal table_unflipped()
 signal undo_stack_empty()
 signal undo_stack_pushed()
 
-onready var _camera_controller = $CameraController
-onready var _fast_circle = $FastCircle
-onready var _hand_positions = $Table/HandPositions
-onready var _hands = $Hands
-onready var _hidden_areas = $HiddenAreas
-onready var _hidden_area_preview = $HiddenAreaPreview
-onready var _pieces = $Pieces
-onready var _spot_light = $SpotLight
-onready var _sun_light = $SunLight
-onready var _table = $Table
-onready var _world_environment = $WorldEnvironment
+@onready var _camera_controller = $CameraController
+@onready var _fast_circle = $FastCircle
+@onready var _hand_positions = $Table/HandPositions
+@onready var _hands = $Hands
+@onready var _hidden_areas = $HiddenAreas
+@onready var _hidden_area_preview = $HiddenAreaPreview
+@onready var _pieces = $Pieces
+@onready var _spot_light = $SpotLight3D
+@onready var _sun_light = $SunLight
+@onready var _table = $Table
+@onready var _world_environment = $WorldEnvironment
 
 const HIDDEN_AREA_MIN_SIZE = Vector2(0.5, 0.5)
 const LIMBO_DURATION_MS = 3000
@@ -79,17 +79,18 @@ var _srv_undo_state_last_call_ms: Dictionary = {}
 # requests with the same position.
 var _client_hover_pieces: Dictionary = {}
 
-var _table_body: RigidBody = null
-var _paint_plane = preload("res://Scenes/Game/3D/PaintPlane.tscn").instance()
+var _table_body: RigidBody3D = null
+var _paint_plane = preload("res://Scenes/Game/3D/PaintPlane.tscn").instantiate()
 
 # Add a hand to the game for a given player.
 # player: The ID of the player the hand should belong to.
 # transform: The transform of the new hand.
-remotesync func add_hand(player: int, transform: Transform) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func add_hand(player: int, transform: Transform3D) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
-	var hand = preload("res://Scenes/Game/3D/Hand.tscn").instance()
+	var hand = preload("res://Scenes/Game/3D/Hand.tscn").instantiate()
 	hand.name = str(player)
 	hand.transform = transform
 
@@ -100,18 +101,19 @@ remotesync func add_hand(player: int, transform: Transform) -> void:
 # name: The name of the new piece.
 # transform: The initial transform of the new piece.
 # entry_path: The piece's entry path in the AssetDB.
-remotesync func add_piece(name: String, transform: Transform,
+@rpc("any_peer", "call_local", "reliable")
+func add_piece(name: String, transform: Transform3D,
 	entry_path: String) -> void:
 
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var piece_entry = AssetDB.search_path(entry_path)
-	if piece_entry.empty():
+	if piece_entry.is_empty():
 		push_error("Cannot add piece, entry not found: %s" % entry_path)
 		return
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("add_piece")
 	
 	var piece: Piece = null
@@ -131,19 +133,19 @@ remotesync func add_piece(name: String, transform: Transform,
 	piece.name = name
 	piece.transform = transform
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		piece.srv_retrieve_from_hell = _srv_retrieve_pieces_from_hell
 
 	# If it is a stackable piece, make sure we attach the signal it emits when
 	# it wants to create a stack.
 	if piece is StackablePiece:
-		piece.connect("stack_requested", self, "_on_stack_requested")
+		piece.connect("stack_requested", Callable(self, "_on_stack_requested"))
 
 	# If it is a container, make sure we attach the signal it emits when it
 	# wants to absorb or release a piece.
 	if piece is PieceContainer:
-		piece.connect("absorbing_hovered", self, "_on_container_absorbing_hovered")
-		piece.connect("releasing_random_piece", self, "_on_container_releasing_random_piece")
+		piece.connect("absorbing_hovered", Callable(self, "_on_container_absorbing_hovered"))
+		piece.connect("releasing_random_piece", Callable(self, "_on_container_releasing_random_piece"))
 
 	_pieces.add_child(piece)
 
@@ -151,8 +153,9 @@ remotesync func add_piece(name: String, transform: Transform,
 # be "absorbed" by the container.
 # container_name: The name of the container that is absorbing the piece.
 # piece_name: The name of the piece that the container is absorbing.
-remotesync func add_piece_to_container(container_name: String, piece_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func add_piece_to_container(container_name: String, piece_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var container = _pieces.get_node(container_name)
@@ -179,7 +182,7 @@ remotesync func add_piece_to_container(container_name: String, piece_name: Strin
 		var hovering: Array = _client_hover_pieces[player_id]
 		hovering.erase(piece_name)
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("add_piece_to_container")
 
 	piece.stop_hovering()
@@ -205,11 +208,12 @@ remotesync func add_piece_to_container(container_name: String, piece_name: Strin
 # stack_transform: The server's transform of the stack.
 # on: Where to add the piece to in the stack.
 # flip: Should the piece be flipped upon entering the stack?
-remotesync func add_piece_to_stack(piece_name: String, stack_name: String,
-	piece_transform: Transform, stack_transform: Transform,
+@rpc("any_peer", "call_local", "reliable")
+func add_piece_to_stack(piece_name: String, stack_name: String,
+	piece_transform: Transform3D, stack_transform: Transform3D,
 	on: int = Stack.STACK_AUTO, flip: int = Stack.FLIP_AUTO) -> void:
 
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var piece = _pieces.get_node(piece_name)
@@ -251,10 +255,11 @@ remotesync func add_piece_to_stack(piece_name: String, stack_name: String,
 # piece2_name: The name of the second piece to add to the stack.
 # piece1_transform: The server's transform of the first piece.
 # piece2_transform: The server's transform of the second piece.
-remotesync func add_stack(name: String, piece1_name: String, piece2_name: String,
-	piece1_transform: Transform, piece2_transform: Transform) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func add_stack(name: String, piece1_name: String, piece2_name: String,
+	piece1_transform: Transform3D, piece2_transform: Transform3D) -> void:
 
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var piece1 = _pieces.get_node(piece1_name)
@@ -290,33 +295,34 @@ remotesync func add_stack(name: String, piece1_name: String, piece2_name: String
 	stack.angular_velocity = new_angular_velocity
 	stack.linear_velocity = new_linear_velocity
 	
-	add_piece_to_stack(piece1.name, name, piece1_transform, piece2_transform)
-	add_piece_to_stack(piece2.name, name, piece2_transform, piece2_transform)
+	add_piece_to_stack(str(piece1.name), name, piece1_transform, piece2_transform)
+	add_piece_to_stack(str(piece2.name), name, piece2_transform, piece2_transform)
 
 # Called by the server to add an empty stack to the room.
 # name: The name of the new stack.
 # transform: The initial transform of the new stack.
 # sandwich: If true, add a StackSandwich. If false, add a StackLasagne.
-puppet func add_stack_empty(name: String, transform: Transform, sandwich: bool) -> Stack:
+@rpc("authority", "call_remote", "reliable")
+func add_stack_empty(name: String, transform: Transform3D, sandwich: bool) -> Stack:
 
 	# Special case here, where we don't want the RPC to be sent to the server,
 	# but the server needs the stack to be returned.
-	if not (get_tree().is_network_server() or get_tree().get_rpc_sender_id() == 1):
+	if not (multiplayer.is_server() or Global.get_sender_id(self) == 1):
 		return null
 
 	var stack: Stack = null
 	if sandwich:
-		stack = preload("res://Pieces/StackSandwich.tscn").instance()
+		stack = preload("res://Pieces/StackSandwich.tscn").instantiate()
 	else:
-		stack = preload("res://Pieces/StackLasagne.tscn").instance()
+		stack = preload("res://Pieces/StackLasagne.tscn").instantiate()
 
 	stack.name = name
 	stack.transform = transform
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		stack.srv_retrieve_from_hell = _srv_retrieve_pieces_from_hell
 	
-	if stack.effect_player_path.empty():
+	if stack.effect_player_path.is_empty():
 		var effect_player = AudioStreamPlayer3D.new()
 		effect_player.name = "EffectPlayer"
 		effect_player.bus = "Effects"
@@ -327,7 +333,7 @@ puppet func add_stack_empty(name: String, transform: Transform, sandwich: bool) 
 
 	_pieces.add_child(stack)
 
-	stack.connect("stack_requested", self, "_on_stack_requested")
+	stack.connect("stack_requested", Callable(self, "_on_stack_requested"))
 
 	return stack
 
@@ -335,15 +341,16 @@ puppet func add_stack_empty(name: String, transform: Transform, sandwich: bool) 
 # name: The name of the new stack.
 # transform: The initial transform of the new stack.
 # stack_entry_path: The stack's entry path in the AssetDB.
-remotesync func add_stack_filled(name: String, transform: Transform,
+@rpc("any_peer", "call_local", "reliable")
+func add_stack_filled(name: String, transform: Transform3D,
 	stack_entry_path: String) -> void:
 	
 	var stack_entry = AssetDB.search_path(stack_entry_path)
-	if stack_entry.empty():
+	if stack_entry.is_empty():
 		push_error("Cannot add stack, entry not found: %s" % stack_entry_path)
 		return
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("add_stack_filled")
 
 	var sandwich_stack = (stack_entry["scene_path"] == "res://Pieces/Card.tscn")
@@ -357,10 +364,11 @@ remotesync func add_stack_filled(name: String, transform: Transform,
 # stack2_name: The name of the stack to merge contents to.
 # stack1_transform: The server's transform for the first stack.
 # stack2_transform: The server's transform for the second stack.
-remotesync func add_stack_to_stack(stack1_name: String, stack2_name: String,
-	stack1_transform: Transform, stack2_transform: Transform) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func add_stack_to_stack(stack1_name: String, stack2_name: String,
+	stack1_transform: Transform3D, stack2_transform: Transform3D) -> void:
 	
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var stack1 = _pieces.get_node(stack1_name)
@@ -383,7 +391,7 @@ remotesync func add_stack_to_stack(stack1_name: String, stack2_name: String,
 		return
 
 	# If there are no children in the first stack, don't bother doing anything.
-	if stack1.empty():
+	if stack1.is_empty():
 		return
 	
 	stack1.transform = stack1_transform
@@ -441,53 +449,54 @@ func apply_options(config: ConfigFile) -> void:
 		4:
 			radiance = Sky.RADIANCE_SIZE_2048
 
-	_world_environment.environment.background_sky.radiance_size = radiance
+	_world_environment.environment.sky.radiance_size = radiance
 
 	var ssao_enabled = true
-	var ssao_quality = Environment.SSAO_QUALITY_LOW
+	var ssao_quality = RenderingServer.ENV_SSAO_QUALITY_LOW
 	var ssao_index = config.get_value("video", "ssao")
 
 	match ssao_index:
 		0:
 			ssao_enabled = false
 		1:
-			ssao_quality = Environment.SSAO_QUALITY_LOW
+			ssao_quality = RenderingServer.ENV_SSAO_QUALITY_LOW
 		2:
-			ssao_quality = Environment.SSAO_QUALITY_MEDIUM
+			ssao_quality = RenderingServer.ENV_SSAO_QUALITY_MEDIUM
 		3:
-			ssao_quality = Environment.SSAO_QUALITY_HIGH
+			ssao_quality = RenderingServer.ENV_SSAO_QUALITY_HIGH
 
 	_world_environment.environment.ssao_enabled = ssao_enabled
-	_world_environment.environment.ssao_quality = ssao_quality
+	RenderingServer.environment_set_ssao_quality(ssao_quality, true, 0.5, 2, 50.0, 300.0)
 
 	var dof_enabled = true
-	var dof_quality = Environment.DOF_BLUR_QUALITY_LOW
+	var dof_quality = RenderingServer.DOF_BLUR_QUALITY_LOW
 	var dof_index = config.get_value("video", "depth_of_field")
 
 	match dof_index:
 		0:
 			dof_enabled = false
 		1:
-			dof_quality = Environment.DOF_BLUR_QUALITY_LOW
+			dof_quality = RenderingServer.DOF_BLUR_QUALITY_LOW
 		2:
-			dof_quality = Environment.DOF_BLUR_QUALITY_MEDIUM
+			dof_quality = RenderingServer.DOF_BLUR_QUALITY_MEDIUM
 		3:
-			dof_quality = Environment.DOF_BLUR_QUALITY_HIGH
+			dof_quality = RenderingServer.DOF_BLUR_QUALITY_HIGH
 
 	var dof_amount = 0.1 * config.get_value("video", "depth_of_field_amount")
 	var dof_distance = 15 + 85 * config.get_value("video", "depth_of_field_distance")
 
-	_world_environment.environment.dof_blur_far_amount = dof_amount
-	_world_environment.environment.dof_blur_far_distance = dof_distance
-	_world_environment.environment.dof_blur_far_enabled = dof_enabled
-	_world_environment.environment.dof_blur_far_quality = dof_quality
-	_world_environment.environment.dof_blur_far_transition = 10.0
 
-	_world_environment.environment.dof_blur_near_amount = dof_amount
-	_world_environment.environment.dof_blur_near_distance = 5.0
-	_world_environment.environment.dof_blur_near_enabled = dof_enabled
-	_world_environment.environment.dof_blur_near_quality = dof_quality
-	_world_environment.environment.dof_blur_near_transition = 1.0
+
+	var attributes = CameraAttributesPractical.new()
+	attributes.dof_blur_amount = dof_amount
+	attributes.dof_blur_far_distance = dof_distance
+	attributes.dof_blur_far_enabled = dof_enabled and RenderingServer.get_current_rendering_method() != "gl_compatibility"
+	attributes.dof_blur_far_transition = 10.0
+	attributes.dof_blur_near_distance = 5.0
+	attributes.dof_blur_near_enabled = dof_enabled and RenderingServer.get_current_rendering_method() != "gl_compatibility"
+	attributes.dof_blur_near_transition = 1.0
+	_world_environment.camera_attributes = attributes
+	RenderingServer.camera_attributes_set_dof_blur_quality(dof_quality, false)
 
 	var paint_filtering = config.get_value("video", "table_paint_filtering")
 	_paint_plane.set_filtering_enabled(paint_filtering)
@@ -497,22 +506,23 @@ func apply_options(config: ConfigFile) -> void:
 # state, and "size" is the size of the uncompressed data.
 # state: The room state to compress.
 func compress_state(state: Dictionary) -> Dictionary:
-	var bytes = var2bytes(state)
+	var bytes = var_to_bytes(state)
 	return {
-		"data": bytes.compress(File.COMPRESSION_FASTLZ),
+		"data": bytes.compress(FileAccess.COMPRESSION_FASTLZ),
 		"size": bytes.size()
 	}
 
 # Flip the table.
 # camera_basis: The basis matrix of the player flipping the table.
-remotesync func flip_table(camera_basis: Basis) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func flip_table(camera_basis: Basis) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if _table_body == null:
 		return
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("flip_table")
 
 	# Unlock all pieces after we've saved the state so that the table doesn't
@@ -521,7 +531,7 @@ remotesync func flip_table(camera_basis: Basis) -> void:
 		if piece is Piece:
 			piece.unlock()
 
-	_table_body.mode = RigidBody.MODE_RIGID
+	_table_body.freeze = false
 
 	var left = -camera_basis.x
 	var diagonal = -camera_basis.z
@@ -530,7 +540,7 @@ remotesync func flip_table(camera_basis: Basis) -> void:
 	_table_body.apply_central_impulse(_table_body.mass * 100 * diagonal)
 	_table_body.apply_torque_impulse(_table_body.mass * 2000 * left)
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		srv_set_retrieve_pieces_from_hell(false)
 
 	emit_signal("table_flipped")
@@ -542,7 +552,7 @@ func get_camera_hover_position() -> Vector3:
 
 # Get the camera controller's transform.
 # Returns: The camera controller's transform.
-func get_camera_transform() -> Transform:
+func get_camera_transform() -> Transform3D:
 	return _camera_controller.transform
 
 # Get the color of the room lamp.
@@ -588,7 +598,7 @@ func get_skybox() -> Dictionary:
 	if _world_environment.has_meta("skybox_entry"):
 		var skybox_entry = _world_environment.get_meta("skybox_entry")
 		if skybox_entry.has("texture_path"):
-			if not skybox_entry["texture_path"].empty():
+			if not skybox_entry["texture_path"].is_empty():
 				return skybox_entry
 
 	return {}
@@ -624,10 +634,10 @@ func get_state(hands: bool = false, collisions: bool = false) -> Dictionary:
 			"entry_path": table_entry["entry_path"],
 			"is_rigid": false,
 			"paint_image_data": paint_image_data,
-			"transform": Transform.IDENTITY
+			"transform": Transform3D.IDENTITY
 		}
 		if _table_body:
-			out["table"]["is_rigid"] = _table_body.mode == RigidBody.MODE_RIGID
+			out["table"]["is_rigid"] = not _table_body.freeze
 			out["table"]["transform"] = _table_body.transform
 
 	if hands:
@@ -657,7 +667,7 @@ func get_state(hands: bool = false, collisions: bool = false) -> Dictionary:
 				"point2": Vector2(point2_v3.x, point2_v3.z)
 			}
 
-			hidden_area_dict[hidden_area.name] = hidden_area_meta
+			hidden_area_dict[str(hidden_area.name)] = hidden_area_meta
 
 	out["hidden_areas"] = hidden_area_dict
 
@@ -685,13 +695,14 @@ func get_table() -> Dictionary:
 # Called by the server to paste the contents of a clipboard to the room.
 # clipboard: The clipboard contents (from _append_piece_states).
 # first_name: The name of the first piece to be created.
-remotesync func paste_clipboard(clipboard: Dictionary, first_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func paste_clipboard(clipboard: Dictionary, first_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	# _extract_piece_states() will use srv_get_next_piece_name() for all clients
 	# to determine the new piece names.
-	if not first_name.is_valid_integer():
+	if not first_name.is_valid_int():
 		push_error("First name %s is not a valid integer!" % first_name)
 		return
 	_srv_next_piece_name = int(first_name)
@@ -702,20 +713,21 @@ remotesync func paste_clipboard(clipboard: Dictionary, first_name: String) -> vo
 # player_id: The player the hidden area is registered to.
 # point1: One corner of the hidden area.
 # point2: The opposite corner of the hidden area.
-remotesync func place_hidden_area(area_name: String, player_id: int,
+@rpc("any_peer", "call_local", "reliable")
+func place_hidden_area(area_name: String, player_id: int,
 	point1: Vector2, point2: Vector2) -> void:
 
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("place_hidden_area")
 	
 	var size = (point2 - point1).abs()
 	if size.x < HIDDEN_AREA_MIN_SIZE.x or size.y < HIDDEN_AREA_MIN_SIZE.y:
 		return
 
-	var hidden_area: HiddenArea = preload("res://Scenes/Game/3D/HiddenArea.tscn").instance()
+	var hidden_area: HiddenArea = preload("res://Scenes/Game/3D/HiddenArea.tscn").instantiate()
 	hidden_area.name = area_name
 	hidden_area.player_id = player_id
 	_set_hidden_area_transform(hidden_area, point1, point2)
@@ -724,8 +736,11 @@ remotesync func place_hidden_area(area_name: String, player_id: int,
 	hidden_area.update_player_color()
 
 # Takes the last undo state from the stack and sets it for all players.
-master func pop_undo_state() -> void:
-	if _srv_undo_stack.empty():
+@rpc("any_peer", "call_local", "reliable")
+func pop_undo_state() -> void:
+	if not is_multiplayer_authority():
+		return
+	if _srv_undo_stack.is_empty():
 		push_error("Cannot pop undo stack, is empty!")
 		return
 	
@@ -741,7 +756,7 @@ master func pop_undo_state() -> void:
 	_srv_undo_state_creation_enable()
 	
 	# Let all players know if the undo stack is now empty.
-	if _srv_undo_stack.empty():
+	if _srv_undo_stack.is_empty():
 		rpc("_on_undo_stack_empty")
 
 # Pushes an undo state to the top of the undo stack if undo state creation has
@@ -756,14 +771,14 @@ func push_undo_state(func_name: String) -> void:
 	if _table_body == null:
 		return
 	
-	if _table_body.mode != RigidBody.MODE_STATIC:
+	if not _table_body.freeze:
 		return
 	
 	if not UNDO_STATE_EVENT_TIMEOUTS_MS.has(func_name):
 		push_error("Function '%s' has no pre-set timeout!" % func_name)
 		return
 	
-	var current_time_ms = OS.get_ticks_msec()
+	var current_time_ms = Time.get_ticks_msec()
 	if _srv_undo_state_last_call_ms.has(func_name):
 		var last_time_ms: int = _srv_undo_state_last_call_ms[func_name]
 		if current_time_ms - last_time_ms < UNDO_STATE_EVENT_TIMEOUTS_MS[func_name]:
@@ -780,8 +795,9 @@ func push_undo_state(func_name: String) -> void:
 
 # Remove a player's hand from the room.
 # player: The ID of the player whose hand to remove.
-remotesync func remove_hand(player: int) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func remove_hand(player: int) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var node_name = str(player)
@@ -792,7 +808,8 @@ remotesync func remove_hand(player: int) -> void:
 
 # Called by the server to remove a hidden area from the table.
 # area_name: The name of the hidden area to remove.
-remotesync func remove_hidden_area(area_name: String) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func remove_hidden_area(area_name: String) -> void:
 	var hidden_area = _hidden_areas.get_node(area_name)
 
 	if not hidden_area:
@@ -803,7 +820,7 @@ remotesync func remove_hidden_area(area_name: String) -> void:
 		push_error("Node " + area_name + " is not a hidden area!")
 		return
 	
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("remove_hidden_area")
 
 	_hidden_areas.remove_child(hidden_area)
@@ -813,8 +830,9 @@ remotesync func remove_hidden_area(area_name: String) -> void:
 # piece be "released" by the container.
 # container_name: The name of the container that is absorbing the piece.
 # piece_name: The name of the piece that the container is releasing.
-remotesync func remove_piece_from_container(container_name: String, piece_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func remove_piece_from_container(container_name: String, piece_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var container = _pieces.get_node(container_name)
@@ -831,14 +849,14 @@ remotesync func remove_piece_from_container(container_name: String, piece_name: 
 		push_error("Container " + container_name + " does not contain piece " + piece_name)
 		return
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("remove_piece_from_container")
 
 	# If there is a piece with the same name (in limbo), rename it so this piece
 	# can use it's own name.
 	if _pieces.has_node(piece_name):
 		var node = _pieces.get_node(piece_name)
-		var new_name = node.name + "_"
+		var new_name = str(node.name) + "_"
 		while _pieces.has_node(new_name):
 			new_name += "_"
 		node.name = new_name
@@ -848,8 +866,9 @@ remotesync func remove_piece_from_container(container_name: String, piece_name: 
 
 # Called by the server to remove pieces from the room.
 # piece_names: The names of the pieces to remove.
-remotesync func remove_pieces(piece_names: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func remove_pieces(piece_names: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	for piece_name in piece_names:
@@ -871,7 +890,7 @@ remotesync func remove_pieces(piece_names: Array) -> void:
 			var hovering: Array = _client_hover_pieces[player_id]
 			hovering.erase(piece_name)
 		
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			push_undo_state("remove_pieces")
 		
 		if Lobby.get_player_count() <= 1:
@@ -890,23 +909,26 @@ remotesync func remove_pieces(piece_names: Array) -> void:
 			
 			piece.collision_layer = 0
 			piece.collision_mask = 0
-			piece.mode = RigidBody.MODE_STATIC
+			piece.freeze = true
 			piece.visible = false
 			piece.set_process(false)
 			piece.set_physics_process(false)
 			
-			piece.set_meta("entered_limbo", OS.get_ticks_msec())
+			piece.set_meta("entered_limbo", Time.get_ticks_msec())
 			piece.add_to_group("limbo")
 
 # Request the server to add a piece to the game.
 # Returns: The name of the new piece, an empty string if invalid.
 # entry_path: The piece's entry path in the AssetDB.
 # position: The position to spawn the piece at.
-master func request_add_piece(entry_path: String, position: Vector3) -> String:
-	var transform = Transform(Basis.IDENTITY, position)
+@rpc("any_peer", "call_local", "reliable")
+func request_add_piece(entry_path: String, position: Vector3) -> String:
+	if not is_multiplayer_authority():
+		return ""
+	var transform = Transform3D(Basis.IDENTITY, position)
 
 	var piece_entry = AssetDB.search_path(entry_path)
-	if piece_entry.empty():
+	if piece_entry.is_empty():
 		push_error("Invalid add request, entry not found: %s" % entry_path)
 		return ""
 	
@@ -936,10 +958,13 @@ master func request_add_piece(entry_path: String, position: Vector3) -> String:
 # Request the server to add a piece into a container.
 # entry_path: The piece's entry path in the AssetDB.
 # container_name: The name of the container to add the piece to.
-master func request_add_piece_in_container(entry_path: String, container_name: String) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_add_piece_in_container(entry_path: String, container_name: String) -> void:
+	if not is_multiplayer_authority():
+		return
 	# Spawn the piece far away so the players don't see it.
 	var piece_name = request_add_piece(entry_path, Vector3(9999, 9999, 9999))
-	if piece_name.empty():
+	if piece_name.is_empty():
 		return
 
 	rpc("add_piece_to_container", container_name, piece_name)
@@ -947,7 +972,10 @@ master func request_add_piece_in_container(entry_path: String, container_name: S
 # Request the server to add the given pieces to a container's contents.
 # container_name: The name of the container to add the pieces to.
 # piece_names: The names of the pieces to add to the container.
-master func request_add_pieces_to_container(container_name: String, piece_names: Array) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_add_pieces_to_container(container_name: String, piece_names: Array) -> void:
+	if not is_multiplayer_authority():
+		return
 	for piece_name in piece_names:
 		if piece_name is String:
 			if piece_name != container_name:
@@ -957,7 +985,10 @@ master func request_add_pieces_to_container(container_name: String, piece_names:
 # card_names: The names of the cards to add to the hand. Note that the names
 # of stacks are also allowed.
 # hand_id: The player ID of the hand to add the cards to.
-master func request_add_cards_to_hand(card_names: Array, hand_id: int) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_add_cards_to_hand(card_names: Array, hand_id: int) -> void:
+	if not is_multiplayer_authority():
+		return
 	var hand_name = str(hand_id)
 	if hand_id <= 0:
 		push_error("Hand ID " + hand_name + " is invalid!")
@@ -1007,13 +1038,16 @@ master func request_add_cards_to_hand(card_names: Array, hand_id: int) -> void:
 	for card in cards:
 		var success = hand.srv_add_card(card)
 		if not success:
-			push_error("Card " + card.name + " could not be hovered!")
+			push_error("Card " + str(card.name) + " could not be hovered!")
 
 # Request the server to add cards to the nearest hand. The hand is decided
 # based on the card's hover offsets.
 # card_names: The names of the cards to add to the hand. Note that the names
 # of stacks of cards are also allowed.
-master func request_add_cards_to_nearest_hand(card_names: Array) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_add_cards_to_nearest_hand(card_names: Array) -> void:
+	if not is_multiplayer_authority():
+		return
 	var hand_id = 0
 	var min_dist = null
 
@@ -1032,7 +1066,7 @@ master func request_add_cards_to_nearest_hand(card_names: Array) -> void:
 			push_error("Piece " + card_name + " does not have the over_hands property!")
 			continue
 
-		if not piece.over_hands.empty():
+		if not piece.over_hands.is_empty():
 			var piece_dist = piece.hover_offset.length()
 			if (min_dist == null) or (piece_dist < min_dist):
 				hand_id = piece.over_hands[0]
@@ -1048,10 +1082,13 @@ master func request_add_cards_to_nearest_hand(card_names: Array) -> void:
 # Returns: The name of the new stack, an empty string if invalid.
 # stack_transform: The transform the new stack should have.
 # stack_entry_path: The stack's entry path in the AssetDB.
-master func request_add_stack_filled(stack_transform: Transform,
+@rpc("any_peer", "call_local", "reliable")
+func request_add_stack_filled(stack_transform: Transform3D,
 	stack_entry_path: String) -> String:
+	if not is_multiplayer_authority():
+		return ""
 	
-	if AssetDB.search_path(stack_entry_path).empty():
+	if AssetDB.search_path(stack_entry_path).is_empty():
 		push_error("Invalid add stack request, entry not found: %s" % stack_entry_path)
 		return ""
 	
@@ -1063,7 +1100,10 @@ master func request_add_stack_filled(stack_transform: Transform,
 # Request the server to collect a set of pieces and, if possible, put them into
 # stacks.
 # piece_names: The names of the pieces to try and collect.
-master func request_collect_pieces(piece_names: Array) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_collect_pieces(piece_names: Array) -> void:
+	if not is_multiplayer_authority():
+		return
 	var pieces = []
 	for piece_name in piece_names:
 		var piece = _pieces.get_node(piece_name)
@@ -1084,16 +1124,16 @@ master func request_collect_pieces(piece_names: Array) -> void:
 			if add_to.matches(add_from):
 				if add_to is Stack:
 					if add_from is Stack:
-						rpc("add_stack_to_stack", add_from.name, add_to.name,
+						rpc("add_stack_to_stack", str(add_from.name), str(add_to.name),
 								add_from.transform, add_to.transform)
 					else:
-						rpc("add_piece_to_stack", add_from.name, add_to.name,
+						rpc("add_piece_to_stack", str(add_from.name), str(add_to.name),
 								add_from.transform, add_to.transform)
 				else:
 					if add_from is Stack:
 						var single_height = add_to.get_size().y
 						var single_transform = add_to.transform
-						rpc("add_piece_to_stack", add_to.name, add_from.name,
+						rpc("add_piece_to_stack", str(add_to.name), str(add_from.name),
 								add_to.transform, add_from.transform)
 
 						# add_to (Piece) has been added to add_from (Stack), so
@@ -1103,16 +1143,16 @@ master func request_collect_pieces(piece_names: Array) -> void:
 						# Put the stack where the piece just was.
 						var height_adj = 0.5 * single_height * abs(single_transform.basis.y.y)
 						var new_origin = single_transform.origin + height_adj * Vector3.UP
-						var new_quat = single_transform.basis.get_rotation_quat()
+						var new_quat = single_transform.basis.get_rotation_quaternion()
 						add_to.request_set_translation(new_origin)
 						add_to.request_set_rotation_quat(new_quat)
 					else:
 						var new_stack_name = srv_get_next_piece_name()
-						rpc("add_stack", new_stack_name, add_from.name,
-								add_to.name, add_from.transform, add_to.transform)
+						rpc("add_stack", new_stack_name, str(add_from.name),
+								str(add_to.name), add_from.transform, add_to.transform)
 						add_to = _pieces.get_node(new_stack_name)
 
-				pieces.remove(i)
+				pieces.remove_at(i)
 
 		add_to = pieces.pop_front()
 
@@ -1121,7 +1161,10 @@ master func request_collect_pieces(piece_names: Array) -> void:
 # container_name: The name of the container to release pieces from.
 # n: The number of pieces to release from the container.
 # hover: Do we want to start hovering the piece afterwards?
-master func request_container_release_random(container_name: String, n: int, hover: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_container_release_random(container_name: String, n: int, hover: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	if n < 1:
 		return
 
@@ -1152,13 +1195,16 @@ master func request_container_release_random(container_name: String, n: int, hov
 # release_names: The list of names of the pieces to be released from the
 # container.
 # hover: Do we want to start hovering the piece afterwards?
-master func request_container_release_these(container_name: String,
+@rpc("any_peer", "call_local", "reliable")
+func request_container_release_these(container_name: String,
 	release_names: Array, hover: bool) -> void:
-
-	if release_names.empty():
+	if not is_multiplayer_authority():
 		return
 
-	var player_id = get_tree().get_rpc_sender_id()
+	if release_names.is_empty():
+		return
+
+	var player_id = Global.get_sender_id(self)
 	var container = _pieces.get_node(container_name)
 
 	if not container:
@@ -1219,7 +1265,7 @@ master func request_container_release_these(container_name: String,
 
 		hover_offet_arr.append(piece_offset)
 
-	if not hover_name_arr.empty():
+	if not hover_name_arr.is_empty():
 		_camera_controller.rpc_id(player_id, "set_hover_height", max_y_pos)
 
 		_srv_undo_state_creation_disable()
@@ -1232,7 +1278,10 @@ master func request_container_release_these(container_name: String,
 # Request the server to deal cards from a stack to all players.
 # stack_name: The name of the stack of cards.
 # n: The number of cards to deal to each player.
-master func request_deal_cards(stack_name: String, n: int) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_deal_cards(stack_name: String, n: int) -> void:
+	if not is_multiplayer_authority():
+		return
 	if n < 1:
 		return
 
@@ -1255,10 +1304,10 @@ master func request_deal_cards(stack_name: String, n: int) -> void:
 	var last_name = ""
 	for _i in range(n):
 		for hand in _hands.get_children():
-			if not last_name.empty():
+			if not last_name.is_empty():
 				request_add_cards_to_hand([last_name], hand.owner_id())
 				break
-			elif not stack.empty():
+			elif not stack.is_empty():
 				if stack.get_piece_count() == 2:
 					last_name = srv_get_next_piece_name()
 
@@ -1269,7 +1318,10 @@ master func request_deal_cards(stack_name: String, n: int) -> void:
 
 # Request the server to flip the table.
 # camera_basis: The basis matrix of the player flipping the table.
-master func request_flip_table(camera_basis: Basis) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_flip_table(camera_basis: Basis) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("flip_table", camera_basis)
 
 # Request the server to hover a piece.
@@ -1277,8 +1329,11 @@ master func request_flip_table(camera_basis: Basis) -> void:
 # piece_name: The name of the piece to hover.
 # init_pos: The initial hover position.
 # offset_pos: The hover position offset.
-master func request_hover_piece(piece_name: String, init_pos: Vector3,
+@rpc("any_peer", "call_local", "reliable")
+func request_hover_piece(piece_name: String, init_pos: Vector3,
 	offset_pos: Vector3) -> bool:
+	if not is_multiplayer_authority():
+		return false
 
 	var piece = _pieces.get_node(piece_name)
 
@@ -1290,7 +1345,7 @@ master func request_hover_piece(piece_name: String, init_pos: Vector3,
 		push_error("Object " + piece_name + " is not a piece!")
 		return false
 
-	var player_id = get_tree().get_rpc_sender_id()
+	var player_id = Global.get_sender_id(self)
 
 	if piece.srv_start_hovering(player_id, init_pos, offset_pos):
 		push_undo_state("request_hover_piece")
@@ -1305,14 +1360,17 @@ master func request_hover_piece(piece_name: String, init_pos: Vector3,
 # piece_names: The names of the pieces to hover.
 # init_pos: The initial hover position.
 # offset_pos_arr: The hover position offsets for each piece.
-master func request_hover_pieces(piece_names: Array, init_pos: Vector3,
+@rpc("any_peer", "call_local", "reliable")
+func request_hover_pieces(piece_names: Array, init_pos: Vector3,
 	offset_pos_arr: Array) -> void:
+	if not is_multiplayer_authority():
+		return
 	
 	if piece_names.size() != offset_pos_arr.size():
 		push_error("Name and offset arrays differ in size (name = %d, offset = %d)!" % [piece_names.size(), offset_pos_arr.size()])
 		return
 	
-	var player_id = get_tree().get_rpc_sender_id()
+	var player_id = Global.get_sender_id(self)
 	_client_hover_pieces[player_id] = []
 	
 	for i in range(len(piece_names)):
@@ -1327,8 +1385,9 @@ master func request_hover_pieces(piece_names: Array, init_pos: Vector3,
 
 # Called by the server if the request to hover a piece was accepted.
 # piece_name: The name of the piece we are now hovering.
-remotesync func request_hover_piece_accepted(piece_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func request_hover_piece_accepted(piece_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var piece = _pieces.get_node(piece_name)
@@ -1346,25 +1405,34 @@ remotesync func request_hover_piece_accepted(piece_name: String) -> void:
 
 # Request the server to load a compressed table state.
 # compressed_state: The compressed state to load.
-master func request_load_table_state(compressed_state: Dictionary) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_load_table_state(compressed_state: Dictionary) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_state_compressed", compressed_state, srv_get_next_piece_name())
 
 # Request the server to paste the contents of a clipboard to the room.
 # clipboard: The clipboard contents (from _append_piece_states).
 # offset: Offset the positions of the pasted pieces by this value.
-master func request_paste_clipboard(clipboard: Dictionary, offset: Vector3) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_paste_clipboard(clipboard: Dictionary, offset: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
 	_modify_piece_states(clipboard, offset)
 	rpc("paste_clipboard", clipboard, srv_get_next_piece_name())
 
 # Request the server to place a hidden area registered to you.
 # point1: One corner of the new hidden area.
 # point2: The opposite corner of the new hidden area.
-master func request_place_hidden_area(point1: Vector2, point2: Vector2) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_place_hidden_area(point1: Vector2, point2: Vector2) -> void:
+	if not is_multiplayer_authority():
+		return
 	var size = (point2 - point1).abs()
 	if size.x < HIDDEN_AREA_MIN_SIZE.x or size.y < HIDDEN_AREA_MIN_SIZE.y:
 		return
 	
-	var player_id = get_tree().get_rpc_sender_id()
+	var player_id = Global.get_sender_id(self)
 	rpc("place_hidden_area", srv_get_next_piece_name(), player_id, point1, point2)
 
 # Request the server to pop the piece at the top of a stack.
@@ -1375,10 +1443,13 @@ master func request_place_hidden_area(point1: Vector2, point2: Vector2) -> void:
 # split_dist: How far away do we want the piece from the stack when it is poped?
 # last_name: If there is only one piece left in the stack, it is optionally
 # given this name.
-master func request_pop_stack(stack_name: String, n: int, hover: bool,
+@rpc("any_peer", "call_local", "reliable")
+func request_pop_stack(stack_name: String, n: int, hover: bool,
 	split_dist: float, last_name: String = "") -> String:
+	if not is_multiplayer_authority():
+		return ""
 
-	var player_id = get_tree().get_rpc_sender_id()
+	var player_id = Global.get_sender_id(self)
 	var stack = _pieces.get_node(stack_name)
 
 	if not stack:
@@ -1423,11 +1494,11 @@ master func request_pop_stack(stack_name: String, n: int, hover: bool,
 			var piece_entry = piece_meta["piece_entry"]
 			var piece_transform = piece_meta["transform"]
 			new_basis = (stack.transform.basis * piece_transform.basis).orthonormalized()
-			rpc("add_piece", new_name, Transform(new_basis, new_origin),
+			rpc("add_piece", new_name, Transform3D(new_basis, new_origin),
 					piece_entry["entry_path"])
 			new_piece = _pieces.get_node(new_name)
 		else:
-			var new_transform = Transform(new_basis, new_origin)
+			var new_transform = Transform3D(new_basis, new_origin)
 
 			new_piece = add_stack_empty(new_name, new_transform, stack is StackSandwich)
 			rpc("add_stack_empty", new_name, new_transform, stack is StackSandwich)
@@ -1435,17 +1506,17 @@ master func request_pop_stack(stack_name: String, n: int, hover: bool,
 			rpc("transfer_stack_contents", stack_name, new_name, stack.transform, n)
 
 		# Move the stack down to it's new location.
-		var new_stack_translation = stack.translation
+		var new_stack_translation = stack.position
 		var offset = stack.transform.basis.y.normalized()
 		if offset.y > 0:
 			offset = -offset
 		new_stack_translation += offset * (removed_height / 2)
-		stack.rpc("set_translation", new_stack_translation)
+		stack.rpc("sync_position", new_stack_translation)
 
 		# If there is only one piece left in the stack, turn it into a normal
 		# piece.
 		if stack.get_piece_count() == 1:
-			if last_name.empty():
+			if last_name.is_empty():
 				last_name = srv_get_next_piece_name()
 
 			var piece_meta = stack.remove_piece(0)
@@ -1455,7 +1526,7 @@ master func request_pop_stack(stack_name: String, n: int, hover: bool,
 
 			new_basis = (stack.transform.basis * piece_transform.basis).orthonormalized()
 			rpc("add_piece", last_name,
-					Transform(new_basis, new_stack_translation),
+					Transform3D(new_basis, new_stack_translation),
 					piece_entry["entry_path"])
 
 		_srv_undo_state_creation_enable()
@@ -1464,15 +1535,16 @@ master func request_pop_stack(stack_name: String, n: int, hover: bool,
 
 	if new_piece and hover:
 		if new_piece.srv_start_hovering(player_id, new_piece.transform.origin, Vector3()):
-			rpc_id(player_id, "request_pop_stack_accepted", new_piece.name)
+			rpc_id(player_id, "request_pop_stack_accepted", str(new_piece.name))
 
-	return new_piece.name
+	return str(new_piece.name)
 
 # Called by the server if the request to pop a stack was accepted, and we are
 # now hovering the new piece.
 # piece_name: The name of the piece that is now hovering.
-remotesync func request_pop_stack_accepted(piece_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func request_pop_stack_accepted(piece_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	# The server has allowed us to hover the piece that has just poped off the
@@ -1481,7 +1553,10 @@ remotesync func request_pop_stack_accepted(piece_name: String) -> void:
 
 # Request the server to remove a hidden area.
 # area_name: The name of the hidden area to remove.
-master func request_remove_hidden_area(area_name: String) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_remove_hidden_area(area_name: String) -> void:
+	if not is_multiplayer_authority():
+		return
 	var hidden_area = _hidden_areas.get_node(area_name)
 
 	if not hidden_area:
@@ -1496,7 +1571,10 @@ master func request_remove_hidden_area(area_name: String) -> void:
 
 # Request the server to remove a set of pieces from the table.
 # piece_names: The names of the pieces to remove.
-master func request_remove_pieces(piece_names: Array) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_remove_pieces(piece_names: Array) -> void:
+	if not is_multiplayer_authority():
+		return
 	for piece_name in piece_names:
 		if not piece_name is String:
 			push_error("Piece name in array is not a string!")
@@ -1515,37 +1593,55 @@ master func request_remove_pieces(piece_names: Array) -> void:
 
 # Request the server to set the lamp color.
 # color: The color to set the lamp to.
-master func request_set_lamp_color(color: Color) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_lamp_color(color: Color) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_lamp_color", color)
 
 # Request the server to set the lamp intensity.
 # intensity: The intensity to set the lamp to.
-master func request_set_lamp_intensity(intensity: float) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_lamp_intensity(intensity: float) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_lamp_intensity", intensity)
 
 # Request the server to set the lamp type.
 # sunlight: True for sunlight, false for a spotlight.
-master func request_set_lamp_type(sunlight: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_set_lamp_type(sunlight: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("set_lamp_type", sunlight)
 
 # Request the server to set the room skybox.
 # skybox_entry_path: The skybox's entry path in the asset DB.
-master func request_set_skybox(skybox_entry_path: String) -> void:
-	if AssetDB.search_path(skybox_entry_path).empty():
+@rpc("any_peer", "call_local", "reliable")
+func request_set_skybox(skybox_entry_path: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	if AssetDB.search_path(skybox_entry_path).is_empty():
 		push_error("Invalid set skybox request, entry not found: %s" % skybox_entry_path)
 	
 	rpc("set_skybox", skybox_entry_path)
 
 # Request the server to set the room table.
 # table_entry_path: The table's entry path in the asset DB.
-master func request_set_table(table_entry_path: String) -> void:
-	if AssetDB.search_path(table_entry_path).empty():
+@rpc("any_peer", "call_local", "reliable")
+func request_set_table(table_entry_path: String) -> void:
+	if not is_multiplayer_authority():
+		return
+	if AssetDB.search_path(table_entry_path).is_empty():
 		push_error("Invalid set table request, entry not found: %s" % table_entry_path)
 	
 	rpc("set_table", table_entry_path)
 
 # Request the server to spawn the fast circle.
-master func request_spawn_fast_circle() -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_spawn_fast_circle() -> void:
+	if not is_multiplayer_authority():
+		return
 	rpc("spawn_fast_circle")
 
 # Request the server to get a stack to collect all of the pieces that it can
@@ -1553,7 +1649,10 @@ master func request_spawn_fast_circle() -> void:
 # stack_name: The name of the collecting stack.
 # collect_stacks: Do we want to collect other stacks? If false, it only collects
 # individual pieces.
-master func request_stack_collect_all(stack_name: String, collect_stacks: bool) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func request_stack_collect_all(stack_name: String, collect_stacks: bool) -> void:
+	if not is_multiplayer_authority():
+		return
 	var stack = _pieces.get_node(stack_name)
 
 	if not stack:
@@ -1567,21 +1666,22 @@ master func request_stack_collect_all(stack_name: String, collect_stacks: bool) 
 	push_undo_state("request_stack_collect_all")
 
 	for piece in get_pieces():
-		if piece is StackablePiece and piece.name != stack_name:
+		if piece is StackablePiece and str(piece.name) != stack_name:
 			if stack.matches(piece):
 				if piece is Stack:
 					if collect_stacks:
-						rpc("add_stack_to_stack", piece.name, stack_name,
+						rpc("add_stack_to_stack", str(piece.name), stack_name,
 								piece.transform, stack.transform)
 					else:
 						continue
 				else:
-					rpc("add_piece_to_stack", piece.name, stack_name,
+					rpc("add_piece_to_stack", str(piece.name), stack_name,
 							piece.transform, stack.transform, Stack.STACK_TOP)
 
 # Called by the server to set a client's hovering pieces.
-remote func set_client_hover_pieces(player_id: int, piece_names: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_remote", "reliable")
+func set_client_hover_pieces(player_id: int, piece_names: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	_client_hover_pieces[player_id] = piece_names
@@ -1589,17 +1689,21 @@ remote func set_client_hover_pieces(player_id: int, piece_names: Array) -> void:
 # Request the server to set the hover position of multiple pieces - note that
 # the pieces that are updated are defined when calling request_hover_pieces.
 # hover_position: The new hover position.
-master func set_hover_position_multiple(hover_position: Vector3) -> void:
-	rpc_unreliable("set_hover_position_multiple_client",
-		get_tree().get_rpc_sender_id(), hover_position)
+@rpc("any_peer", "call_local", "unreliable")
+func set_hover_position_multiple(hover_position: Vector3) -> void:
+	if not is_multiplayer_authority():
+		return
+	rpc("set_hover_position_multiple_client",
+		Global.get_sender_id(self), hover_position)
 
 # Called by the server to set the hover position of multiple pieces.
 # player_id: The ID of the player updating the hover positions.
 # hover_position: The new hover position.
-remotesync func set_hover_position_multiple_client(player_id: int,
+@rpc("any_peer", "call_local", "unreliable")
+func set_hover_position_multiple_client(player_id: int,
 	hover_position: Vector3) -> void:
 	
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	var piece_names = _client_hover_pieces[player_id]
@@ -1619,20 +1723,21 @@ remotesync func set_hover_position_multiple_client(player_id: int,
 		# on the server side for single-piece hovering - so for multi-piece
 		# hovering, we'll need to fire the signal ourselves, since the room
 		# directly calls Piece.set_hover_position.
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			piece.emit_signal("client_set_hover_position", piece)
 		
 		piece.set_hover_position(hover_position)
 
 # Set the color of the room lamp.
 # color: The color of the lamp.
-remotesync func set_lamp_color(color: Color) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_lamp_color(color: Color) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	# NOTE: This is usually called alongside set_table(), so push an undo state
 	# under that name so we don't create multiple states.
-	if get_tree().has_network_peer() and get_tree().is_network_server():
+	if Global.has_network_peer() and multiplayer.is_server():
 		push_undo_state("set_table")
 
 	_spot_light.light_color = color
@@ -1640,13 +1745,14 @@ remotesync func set_lamp_color(color: Color) -> void:
 
 # Set the intensity of the room lamp.
 # intensity: The new intensity of the lamp.
-remotesync func set_lamp_intensity(intensity: float) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_lamp_intensity(intensity: float) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	# NOTE: This is usually called alongside set_table(), so push an undo state
 	# under that name so we don't create multiple states.
-	if get_tree().has_network_peer() and get_tree().is_network_server():
+	if Global.has_network_peer() and multiplayer.is_server():
 		push_undo_state("set_table")
 
 	_spot_light.light_energy = intensity
@@ -1654,13 +1760,14 @@ remotesync func set_lamp_intensity(intensity: float) -> void:
 
 # Set the type of light the room lamp is emitting.
 # sunlight: True for sunlight, false for a spotlight.
-remotesync func set_lamp_type(sunlight: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_lamp_type(sunlight: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	# NOTE: This is usually called alongside set_table(), so push an undo state
 	# under that name so we don't create multiple states.
-	if get_tree().has_network_peer() and get_tree().is_network_server():
+	if Global.has_network_peer() and multiplayer.is_server():
 		push_undo_state("set_table")
 
 	_spot_light.visible = not sunlight
@@ -1669,13 +1776,14 @@ remotesync func set_lamp_type(sunlight: bool) -> void:
 # Set the room's skybox.
 # skybox_entry_path: The skybox's entry path in the asset DB. If either the
 # texture path or the entry are empty, the default skybox is used.
-remotesync func set_skybox(skybox_entry_path: String) -> void:
-	if get_tree().has_network_peer():
-		if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_skybox(skybox_entry_path: String) -> void:
+	if Global.has_network_peer():
+		if Global.get_sender_id(self) != 1:
 			return
 	
 	var skybox_entry = AssetDB.search_path(skybox_entry_path)
-	if skybox_entry.empty():
+	if skybox_entry.is_empty():
 		push_error("Cannot set skybox, entry not found: %s" % skybox_entry_path)
 		return
 
@@ -1688,31 +1796,33 @@ remotesync func set_skybox(skybox_entry_path: String) -> void:
 
 	# NOTE: This is usually called alongside set_table(), so push an undo state
 	# under that name so we don't create multiple states.
-	if get_tree().has_network_peer() and get_tree().is_network_server():
+	if Global.has_network_peer() and multiplayer.is_server():
 		push_undo_state("set_table")
 
 	# Free the current skybox before we create a new one, just so we don't use
 	# as much memory as we need to.
-	var radiance = _world_environment.environment.background_sky.radiance_size
-	_world_environment.environment.background_sky = null
+	var radiance = _world_environment.environment.sky.radiance_size
+	_world_environment.environment.sky = null
 
 	var skybox: Sky = null
-	if not skybox_entry.empty():
+	if not skybox_entry.is_empty():
 		if skybox_entry.has("texture_path"):
 			var texture_path = skybox_entry["texture_path"]
-			if not texture_path.empty():
-				var texture: Texture = ResourceManager.load_res(texture_path)
-				skybox = PanoramaSky.new()
-				skybox.panorama = texture
+			if not texture_path.is_empty():
+				var texture: Texture2D = ResourceManager.load_res(texture_path)
+				skybox = Sky.new()
+				var material = PanoramaSkyMaterial.new()
+				material.panorama = texture
+				skybox.sky_material = material
 	
 	if skybox == null:
-		skybox = ProceduralSky.new()
+		skybox = Sky.new()
 
 	skybox.radiance_size = radiance
-	_world_environment.environment.background_sky = skybox
+	_world_environment.environment.sky = skybox
 
-	_world_environment.environment.background_sky_rotation_degrees = skybox_entry["rotation"]
-	_world_environment.environment.background_energy = skybox_entry["strength"]
+	_world_environment.environment.sky_rotation = skybox_entry["rotation"] * PI / 180.0
+	_world_environment.environment.background_energy_multiplier = skybox_entry["strength"]
 
 	_world_environment.set_meta("skybox_entry", skybox_entry)
 
@@ -1721,18 +1831,18 @@ remotesync func set_skybox(skybox_entry_path: String) -> void:
 # first_name: The new name for the first piece in the state. If empty, the
 # saved name is used instead.
 func set_state(state: Dictionary, first_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 
-	if not first_name.empty():
+	if not first_name.is_empty():
 		# _extract_piece_states() will use srv_get_next_piece_name() for all
 		# clients to determine the new piece names.
-		if not first_name.is_valid_integer():
+		if not first_name.is_valid_int():
 			push_error("First name %s is not a valid integer!" % first_name)
 			return
 		_srv_next_piece_name = int(first_name)
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		push_undo_state("set_state")
 		_srv_undo_state_creation_disable()
 
@@ -1752,9 +1862,9 @@ func set_state(state: Dictionary, first_name: String) -> void:
 
 		if _table_body:
 			if table_meta["is_rigid"]:
-				_table_body.mode = RigidBody.MODE_RIGID
+				_table_body.freeze = false
 			else:
-				_table_body.mode = RigidBody.MODE_STATIC
+				_table_body.freeze = true
 
 			_table_body.transform = table_meta["transform"]
 
@@ -1762,7 +1872,7 @@ func set_state(state: Dictionary, first_name: String) -> void:
 			emit_signal("table_flipped")
 		else:
 			emit_signal("table_unflipped")
-		if get_tree().is_network_server():
+		if multiplayer.is_server():
 			srv_set_retrieve_pieces_from_hell(not table_meta["is_rigid"])
 
 		var paint_image_data = table_meta["paint_image_data"]
@@ -1771,7 +1881,7 @@ func set_state(state: Dictionary, first_name: String) -> void:
 		else:
 			var paint_image = Image.new()
 			var paint_image_size = _paint_plane.get_paint_size()
-			paint_image.create_from_data(paint_image_size.x, paint_image_size.y,
+			paint_image = Image.create_from_data(paint_image_size.x, paint_image_size.y,
 				false, _paint_plane.PAINT_FORMAT, paint_image_data)
 			_paint_plane.set_paint(paint_image)
 
@@ -1788,7 +1898,7 @@ func set_state(state: Dictionary, first_name: String) -> void:
 				push_error("Hand " + hand_name + " in new state has no transform!")
 				return
 
-			if not hand_meta["transform"] is Transform:
+			if not hand_meta["transform"] is Transform3D:
 				push_error("Hand " + hand_name + " transform is not a transform!")
 				return
 
@@ -1802,7 +1912,7 @@ func set_state(state: Dictionary, first_name: String) -> void:
 		for hidden_area_name in state["hidden_areas"]:
 			# Make sure the server doesn't duplicate names! We need to do this
 			# because hidden areas use the same naming system as pieces do.
-			if get_tree().is_network_server():
+			if multiplayer.is_server():
 				var name_int = int(hidden_area_name)
 				if name_int >= _srv_next_piece_name:
 					_srv_next_piece_name = name_int + 1
@@ -1840,7 +1950,7 @@ func set_state(state: Dictionary, first_name: String) -> void:
 			if Lobby.player_exists(player_id):
 				place_hidden_area(hidden_area_name, player_id, point1, point2)
 
-	if first_name.empty():
+	if first_name.is_empty():
 		# If we are using the original names, we need to forcefully remove all
 		# existing pieces, since they may use the same name.
 		for child in _pieces.get_children():
@@ -1852,14 +1962,14 @@ func set_state(state: Dictionary, first_name: String) -> void:
 		# limbo, since the new names should not clash.
 		var old_piece_name_arr = []
 		for child in _pieces.get_children():
-			old_piece_name_arr.append(child.name)
+			old_piece_name_arr.append(str(child.name))
 		remove_pieces(old_piece_name_arr)
 
-	_extract_piece_states(state, _pieces, not first_name.empty())
+	_extract_piece_states(state, _pieces, not first_name.is_empty())
 
 	# Wait a few physics frames for the hands to detect the cards, then add the
 	# cards to the hands.
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		_srv_allow_card_stacking = false
 		_srv_hand_setup_frames = 5
 		
@@ -1869,15 +1979,16 @@ func set_state(state: Dictionary, first_name: String) -> void:
 # compressed_state: The compressed state from get_state_compressed().
 # first_name: The new name for the first piece in the state. If empty, the
 # saved name is used instead.
-remotesync func set_state_compressed(compressed_state: Dictionary, first_name: String) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_state_compressed(compressed_state: Dictionary, first_name: String) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if not compressed_state.has("data"):
 		push_error("Compressed state does not contain data!")
 		return
 	
-	if not compressed_state["data"] is PoolByteArray:
+	if not compressed_state["data"] is PackedByteArray:
 		push_error("Compressed state data is not a byte array!")
 		return
 	
@@ -1892,8 +2003,8 @@ remotesync func set_state_compressed(compressed_state: Dictionary, first_name: S
 	var data = compressed_state["data"]
 	var size = compressed_state["size"]
 	
-	var bytes = data.decompress(size, File.COMPRESSION_FASTLZ)
-	var state = bytes2var(bytes)
+	var bytes = data.decompress(size, FileAccess.COMPRESSION_FASTLZ)
+	var state = bytes_to_var(bytes)
 	if state is Dictionary:
 		set_state(state, first_name)
 	else:
@@ -1901,13 +2012,14 @@ remotesync func set_state_compressed(compressed_state: Dictionary, first_name: S
 
 # Set the room table.
 # table_entry_path: The table's entry path in the asset DB.
-remotesync func set_table(table_entry_path: String) -> void:
-	if get_tree().has_network_peer():
-		if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_table(table_entry_path: String) -> void:
+	if Global.has_network_peer():
+		if Global.get_sender_id(self) != 1:
 			return
 	
 	var table_entry = AssetDB.search_path(table_entry_path)
-	if table_entry.empty():
+	if table_entry.is_empty():
 		push_error("Cannot set table, entry not found: %s" % table_entry_path)
 		return
 
@@ -1920,10 +2032,10 @@ remotesync func set_table(table_entry_path: String) -> void:
 			if current_entry.hash() == table_entry.hash():
 				return
 
-		if get_tree().has_network_peer() and get_tree().is_network_server():
+		if Global.has_network_peer() and multiplayer.is_server():
 			push_undo_state("set_table")
 
-		if _table_body.is_a_parent_of(_paint_plane):
+		if _table_body.is_ancestor_of(_paint_plane):
 			_table_body.remove_child(_paint_plane)
 		_table.remove_child(_table_body)
 		ResourceManager.queue_free_object(_table_body)
@@ -1933,7 +2045,7 @@ remotesync func set_table(table_entry_path: String) -> void:
 		_hand_positions.remove_child(hand_pos)
 		hand_pos.queue_free()
 
-	if not table_entry.empty():
+	if not table_entry.is_empty():
 		if table_entry.has("bounding_box"):
 			var bounding_box: Array = table_entry["bounding_box"]
 			var size: Vector3 = bounding_box[1] - bounding_box[0]
@@ -1941,7 +2053,7 @@ remotesync func set_table(table_entry_path: String) -> void:
 			_fast_circle.scale = Vector3(side_length, 1.0, side_length)
 		
 		if table_entry.has("scene_path"):
-			if not table_entry["scene_path"].empty():
+			if not table_entry["scene_path"].is_empty():
 				if PieceCache.should_cache(table_entry):
 					var table_cache = PieceCache.new(table_entry_path, false)
 					var maybe_table = table_cache.get_scene()
@@ -1960,16 +2072,16 @@ remotesync func set_table(table_entry_path: String) -> void:
 
 				for hand_meta in table_entry["hands"]:
 					var pos: Vector3 = hand_meta["pos"]
-					var dir: float = deg2rad(hand_meta["dir"])
+					var dir: float = deg_to_rad(hand_meta["dir"])
 
-					var hand = Spatial.new()
+					var hand = Node3D.new()
 					hand.transform = hand.transform.rotated(Vector3.UP, dir)
 					hand.transform.origin = pos
 
 					_hand_positions.add_child(hand)
 
-	if get_tree().has_network_peer():
-		if get_tree().is_network_server():
+	if Global.has_network_peer():
+		if multiplayer.is_server():
 			srv_update_hand_transforms()
 
 	if _table_body != null:
@@ -1981,8 +2093,9 @@ remotesync func set_table(table_entry_path: String) -> void:
 	_paint_plane.clear_paint()
 
 # Spawn the fast circle.
-remotesync func spawn_fast_circle() -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func spawn_fast_circle() -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	if not _fast_circle.is_processing():
@@ -1991,7 +2104,7 @@ remotesync func spawn_fast_circle() -> void:
 # Get the next hand transform. Note that there may not be a next transform, in
 # which case the function returns the identity transform.
 # Returns: The next hand transform.
-func srv_get_next_hand_transform() -> Transform:
+func srv_get_next_hand_transform() -> Transform3D:
 	var potential = []
 
 	for position in _hand_positions.get_children():
@@ -2001,8 +2114,8 @@ func srv_get_next_hand_transform() -> Transform:
 		if potential.has(hand.transform):
 			potential.erase(hand.transform)
 
-	if potential.empty():
-		return Transform.IDENTITY
+	if potential.is_empty():
+		return Transform3D.IDENTITY
 	else:
 		return potential[0]
 
@@ -2033,7 +2146,7 @@ func srv_stop_player_hovering(player: int) -> void:
 func srv_update_hand_transforms() -> void:
 	var hand_index = 0
 	for hand in _hands.get_children():
-		var hand_player = int(hand.name)
+		var hand_player = int(str(hand.name))
 		if hand_index < _hand_positions.get_child_count():
 			var hand_transform = _hand_positions.get_child(hand_index).transform
 			hand.rpc("update_transform", hand_transform)
@@ -2044,7 +2157,7 @@ func srv_update_hand_transforms() -> void:
 
 	var player_ids = Lobby.get_player_list()
 	var next_transform = srv_get_next_hand_transform()
-	while (not player_ids.empty()) and next_transform != Transform.IDENTITY:
+	while (not player_ids.is_empty()) and next_transform != Transform3D.IDENTITY:
 		var player_id = player_ids.pop_front()
 		if not _hands.has_node(str(player_id)):
 			rpc("add_hand", player_id, next_transform)
@@ -2060,10 +2173,11 @@ func start_sending_cursor_position() -> void:
 # stack2_name: The name of the stack to transfer contents to.
 # stack1_transform: The server's transform for the first stack.
 # n: The number of contents to transfer.
-remotesync func transfer_stack_contents(stack1_name: String, stack2_name: String,
-	stack1_transform: Transform, n: int) -> void:
+@rpc("any_peer", "call_local", "reliable")
+func transfer_stack_contents(stack1_name: String, stack2_name: String,
+	stack1_transform: Transform3D, n: int) -> void:
 
-	if get_tree().get_rpc_sender_id() != 1:
+	if Global.get_sender_id(self) != 1:
 		return
 
 	var stack1 = _pieces.get_node(stack1_name)
@@ -2099,7 +2213,7 @@ remotesync func transfer_stack_contents(stack1_name: String, stack2_name: String
 	var stack_facing_up = stack1.transform.basis.y.y > 0.0
 	var add_to = Stack.STACK_TOP if stack_facing_up else Stack.STACK_BOTTOM
 
-	while not contents.empty():
+	while not contents.is_empty():
 		var piece_meta = contents.pop_back()
 		var piece_entry = piece_meta["piece_entry"]
 		var piece_transform = piece_meta["transform"]
@@ -2109,15 +2223,15 @@ remotesync func transfer_stack_contents(stack1_name: String, stack2_name: String
 func _ready():
 	_srv_undo_state_creation_disable()
 
-	Lobby.connect("player_added", self, "_on_Lobby_player_added")
+	Lobby.connect("player_added", Callable(self, "_on_Lobby_player_added"))
 	
 	var skybox = AssetDB.random_asset("TabletopClub", "skyboxes", true)
-	if not skybox.empty():
+	if not skybox.is_empty():
 		# TODO: Consider setting this directly?
 		set_skybox(skybox["entry_path"])
 
 	var table = AssetDB.random_asset("TabletopClub", "tables", true)
-	if not table.empty():
+	if not table.is_empty():
 		set_table(table["entry_path"])
 	
 	_fast_circle.set_process(false)
@@ -2125,10 +2239,10 @@ func _ready():
 	_srv_undo_state_creation_enable()
 
 func _physics_process(_delta):
-	if not get_tree().has_network_peer():
+	if not Global.has_network_peer():
 		return
 
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		# TODO: This does not need to be done every frame, find a way to run
 		# this just whenever the number of active pieces changes.
 		_srv_update_bandwidth_throttle()
@@ -2146,7 +2260,7 @@ func _physics_process(_delta):
 								var ok = hand.srv_add_card(piece)
 								if not ok:
 									push_error("Failed to add card %s to the hand of player %s!" %
-										[piece.name, hand_name])
+										[str(piece.name), hand_name])
 
 				_srv_allow_card_stacking = true
 
@@ -2184,7 +2298,7 @@ func _append_piece_states(state: Dictionary, pieces: Array, collisions: bool) ->
 				_append_piece_states(child_pieces, children, collisions)
 
 			piece_meta["pieces"] = child_pieces
-			state["containers"][piece.name] = piece_meta
+			state["containers"][str(piece.name)] = piece_meta
 
 		elif piece is Stack:
 			# If the piece is a stack, we don't need to store the stack's piece
@@ -2202,7 +2316,7 @@ func _append_piece_states(state: Dictionary, pieces: Array, collisions: bool) ->
 				child_pieces.push_back(child_piece_meta)
 
 			piece_meta["pieces"] = child_pieces
-			state["stacks"][piece.name] = piece_meta
+			state["stacks"][str(piece.name)] = piece_meta
 
 		elif piece is SpeakerPiece or piece is TimerPiece:
 			piece_meta["is_music_track"] = piece.is_music_track()
@@ -2218,16 +2332,16 @@ func _append_piece_states(state: Dictionary, pieces: Array, collisions: bool) ->
 				piece_meta["mode"] = piece.get_mode()
 				piece_meta["time"] = piece.get_time()
 
-				state["timers"][piece.name] = piece_meta
+				state["timers"][str(piece.name)] = piece_meta
 			else:
-				state["speakers"][piece.name] = piece_meta
+				state["speakers"][str(piece.name)] = piece_meta
 
 		else:
 			if collisions:
 				if piece is Card:
 					piece_meta["is_collisions_on"] = piece.is_collisions_on()
 
-			state["pieces"][piece.name] = piece_meta
+			state["pieces"][str(piece.name)] = piece_meta
 
 # Extract the pieces from a room state, and add them to the scene tree.
 # state: The state to extract the pieces from.
@@ -2255,7 +2369,7 @@ func _extract_piece_states_type(state: Dictionary, parent: Node, new_names: bool
 		var piece_meta = state[type_key][old_piece_name]
 
 		# Make sure the server doesn't duplicate piece names!
-		if not new_names and get_tree().is_network_server():
+		if not new_names and multiplayer.is_server():
 			var name_int = int(old_piece_name)
 			if name_int >= _srv_next_piece_name:
 				_srv_next_piece_name = name_int + 1
@@ -2272,7 +2386,7 @@ func _extract_piece_states_type(state: Dictionary, parent: Node, new_names: bool
 			push_error("Piece " + type_key + "/" + old_piece_name + " in new state has no transform!")
 			return
 
-		if not piece_meta["transform"] is Transform:
+		if not piece_meta["transform"] is Transform3D:
 			push_error("Piece " + type_key + "/" + old_piece_name + " transform is not a transform!")
 			return
 
@@ -2296,14 +2410,14 @@ func _extract_piece_states_type(state: Dictionary, parent: Node, new_names: bool
 		# This should never be the case, but just in case!
 		if parent.has_node(new_piece_name):
 			push_warning("Piece %s already exists in parent %s, yeeting." %
-					[new_piece_name, parent.name])
+					[new_piece_name, str(parent.name)])
 			var sus_imposter = parent.get_node(new_piece_name)
 			parent.remove_child(sus_imposter)
 			ResourceManager.queue_free_object(sus_imposter)
 
 		if type_key == "stacks":
 			var pieces: Array = piece_meta["pieces"]
-			if pieces.empty():
+			if pieces.is_empty():
 				push_error("Piece " + type_key + "/" + old_piece_name + " has an empty 'pieces' array!")
 				return
 			var element_meta: Dictionary = pieces[0]
@@ -2312,7 +2426,7 @@ func _extract_piece_states_type(state: Dictionary, parent: Node, new_names: bool
 				return
 			var entry_path: String = element_meta["entry_path"]
 			var piece_entry = AssetDB.search_path(entry_path)
-			if not piece_entry.empty():
+			if not piece_entry.is_empty():
 				var sandwich_stack = (piece_entry["scene_path"] == "res://Pieces/Card.tscn")
 				add_stack_empty(new_piece_name, piece_meta["transform"], sandwich_stack)
 			else:
@@ -2389,14 +2503,14 @@ func _extract_piece_states_type(state: Dictionary, parent: Node, new_names: bool
 
 				var stack_piece_entry_path = stack_piece_meta["entry_path"]
 				var stack_piece_entry = AssetDB.search_path(stack_piece_entry_path)
-				if not stack_piece_entry.empty():
+				if not stack_piece_entry.is_empty():
 					# Add it to the stack at the top (since we're going through the
 					# list in order from bottom to top).
 					var flip = Stack.FLIP_NO
 					if stack_piece_meta["flip_y"]:
 						flip = Stack.FLIP_YES
 
-					piece.add_piece(stack_piece_entry, Transform.IDENTITY,
+					piece.add_piece(stack_piece_entry, Transform3D.IDENTITY,
 						Stack.STACK_TOP, flip)
 				else:
 					push_error("Cannot add piece to stack, entry not found: %s" % stack_piece_entry_path)
@@ -2515,7 +2629,7 @@ func _limbo_clean_pieces(force: bool) -> void:
 		var entered_limbo: int = 0
 		if piece.has_meta("entered_limbo"):
 			entered_limbo = piece.get_meta("entered_limbo")
-		var duration_in_limbo = OS.get_ticks_msec() - entered_limbo
+		var duration_in_limbo = Time.get_ticks_msec() - entered_limbo
 		if force or duration_in_limbo > LIMBO_DURATION_MS:
 			_pieces.remove_child(piece)
 			ResourceManager.queue_free_object(piece)
@@ -2543,7 +2657,7 @@ func _modify_piece_states(state: Dictionary, offset: Vector3) -> void:
 				# Offset the position.
 				if piece_meta.has("transform"):
 					var piece_transform = piece_meta["transform"]
-					if piece_transform is Transform:
+					if piece_transform is Transform3D:
 						piece_transform.origin += offset
 						piece_meta["transform"] = piece_transform
 
@@ -2591,7 +2705,7 @@ func _srv_update_bandwidth_throttle() -> void:
 		print("State update rate set to %.2fHz." % (60 / physics_frames_per_update))
 
 func _on_container_absorbing_hovered(container: PieceContainer, player_id: int) -> void:
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		var names = []
 		var main: Piece = null
 
@@ -2599,7 +2713,7 @@ func _on_container_absorbing_hovered(container: PieceContainer, player_id: int) 
 		for piece in _pieces.get_children():
 			if piece is Piece:
 				if piece.hover_player == player_id:
-					names.append(piece.name)
+					names.append(str(piece.name))
 					if piece.hover_offset == Vector3.ZERO:
 						main = piece
 
@@ -2616,14 +2730,14 @@ func _on_container_absorbing_hovered(container: PieceContainer, player_id: int) 
 			if space > 15.0:
 				return
 
-		request_add_pieces_to_container(container.name, names)
+		request_add_pieces_to_container(str(container.name), names)
 
 func _on_container_releasing_random_piece(container: PieceContainer) -> void:
-	if get_tree().is_network_server():
-		rpc_id(1, "request_container_release_random", container.name, 1, false)
+	if multiplayer.is_server():
+		rpc_id(1, "request_container_release_random", str(container.name), 1, false)
 
 func _on_stack_requested(piece1: StackablePiece, piece2: StackablePiece) -> void:
-	if not get_tree().is_network_server():
+	if not multiplayer.is_server():
 		return
 	
 	if not _srv_allow_card_stacking and (piece1 is Card or piece2 is Card):
@@ -2633,31 +2747,33 @@ func _on_stack_requested(piece1: StackablePiece, piece2: StackablePiece) -> void
 		return
 	
 	if piece1 is Stack and piece2 is Stack:
-		rpc("add_stack_to_stack", piece1.name, piece2.name, piece1.transform,
+		rpc("add_stack_to_stack", str(piece1.name), str(piece2.name), piece1.transform,
 				piece2.transform)
 	elif piece1 is Stack:
-		rpc("add_piece_to_stack", piece2.name, piece1.name, piece2.transform,
+		rpc("add_piece_to_stack", str(piece2.name), str(piece1.name), piece2.transform,
 				piece1.transform)
 	elif piece2 is Stack:
-		rpc("add_piece_to_stack", piece1.name, piece2.name, piece1.transform,
+		rpc("add_piece_to_stack", str(piece1.name), str(piece2.name), piece1.transform,
 				piece2.transform)
 	else:
-		rpc("add_stack", srv_get_next_piece_name(), piece1.name, piece2.name,
+		rpc("add_stack", srv_get_next_piece_name(), str(piece1.name), str(piece2.name),
 				piece1.transform, piece2.transform)
 
 # Called by the server when the undo stack is empty.
-remotesync func _on_undo_stack_empty():
+@rpc("any_peer", "call_local", "reliable")
+func _on_undo_stack_empty():
 	emit_signal("undo_stack_empty")
 
 # Called by the server when the undo stack is pushed to.
-remotesync func _on_undo_stack_pushed():
+@rpc("any_peer", "call_local", "reliable")
+func _on_undo_stack_pushed():
 	emit_signal("undo_stack_pushed")
 
 func _on_CameraController_adding_cards_to_hand(cards: Array, id: int):
 	var names = []
 	for card in cards:
 		if card.get("over_hands") != null:
-			names.append(card.name)
+			names.append(str(card.name))
 
 	if id > 0:
 		rpc_id(1, "request_add_cards_to_hand", names, id)
@@ -2668,14 +2784,14 @@ func _on_CameraController_adding_pieces_to_container(container: PieceContainer, 
 	var piece_names = []
 	for piece in pieces:
 		if piece != container:
-			piece_names.append(piece.name)
-	rpc_id(1, "request_add_pieces_to_container", container.name, piece_names)
+			piece_names.append(str(piece.name))
+	rpc_id(1, "request_add_pieces_to_container", str(container.name), piece_names)
 
 func _on_CameraController_clipboard_paste(position: Vector3):
 	# If we are the server, then duplicate the clipboard contents, as the
 	# request will modify the contents by reference otherwise.
 	var clipboard = _camera_controller.clipboard_contents
-	if get_tree().is_network_server():
+	if multiplayer.is_server():
 		clipboard = clipboard.duplicate(true)
 
 	var offset = position - _camera_controller.clipboard_yank_position
@@ -2689,11 +2805,11 @@ func _on_CameraController_collect_pieces_requested(pieces: Array):
 	var names = []
 	for piece in pieces:
 		if piece is StackablePiece:
-			names.append(piece.name)
+			names.append(str(piece.name))
 	rpc_id(1, "request_collect_pieces", names)
 
 func _on_CameraController_container_release_random_requested(container: PieceContainer, n: int):
-	rpc_id(1, "request_container_release_random", container.name, n, true)
+	rpc_id(1, "request_container_release_random", str(container.name), n, true)
 
 func _on_CameraController_container_release_these_requested(container: PieceContainer, names: Array):
 	var good_names = []
@@ -2701,24 +2817,24 @@ func _on_CameraController_container_release_these_requested(container: PieceCont
 		if check_name is String:
 			if container.has_piece(check_name):
 				good_names.append(check_name)
-	rpc_id(1, "request_container_release_these", container.name, good_names, true)
+	rpc_id(1, "request_container_release_these", str(container.name), good_names, true)
 
 func _on_CameraController_dealing_cards(stack: Stack, n: int):
-	rpc_id(1, "request_deal_cards", stack.name, n)
+	rpc_id(1, "request_deal_cards", str(stack.name), n)
 
 func _on_CameraController_erasing(pos1: Vector3, pos2: Vector3, size: float):
-	_paint_plane.rpc_unreliable_id(1, "request_push_paint_queue", pos1, pos2,
-		Color.transparent, size)
+	_paint_plane.rpc_id(1, "request_push_paint_queue", pos1, pos2,
+		Color.TRANSPARENT, size)
 
 func _on_CameraController_hover_piece_requested(piece: Piece, offset: Vector3):
-	rpc_id(1, "request_hover_piece", piece.name,
+	rpc_id(1, "request_hover_piece", str(piece.name),
 		_camera_controller.get_hover_position(), offset)
 
 func _on_CameraController_hover_pieces_requested(pieces: Array, offsets: Array):
 	var names = []
 	for piece in pieces:
 		if piece is Piece:
-			names.append(piece.name)
+			names.append(str(piece.name))
 	
 	if names.size() != offsets.size():
 		push_error("Name and offset arrays differ in size (name = %d, offset = %d)!" % [names.size(), offsets.size()])
@@ -2728,7 +2844,7 @@ func _on_CameraController_hover_pieces_requested(pieces: Array, offsets: Array):
 		_camera_controller.get_hover_position(), offsets)
 
 func _on_CameraController_painting(pos1: Vector3, pos2: Vector3, color: Color, size: float):
-	_paint_plane.rpc_unreliable_id(1, "request_push_paint_queue", pos1, pos2,
+	_paint_plane.rpc_id(1, "request_push_paint_queue", pos1, pos2,
 		color, size)
 
 func _on_CameraController_placing_hidden_area(point1: Vector2, point2: Vector2):
@@ -2739,17 +2855,17 @@ func _on_CameraController_placing_hidden_area(point1: Vector2, point2: Vector2):
 	rpc_id(1, "request_place_hidden_area", point1, point2)
 
 func _on_CameraController_pop_stack_requested(stack: Stack, n: int):
-	rpc_id(1, "request_pop_stack", stack.name, n, true, 1.0)
+	rpc_id(1, "request_pop_stack", str(stack.name), n, true, 1.0)
 
 func _on_CameraController_removing_hidden_area(hidden_area: HiddenArea):
-	if _hidden_areas.is_a_parent_of(hidden_area):
-		rpc_id(1, "request_remove_hidden_area", hidden_area.name)
+	if _hidden_areas.is_ancestor_of(hidden_area):
+		rpc_id(1, "request_remove_hidden_area", str(hidden_area.name))
 
 func _on_CameraController_removing_pieces(pieces: Array):
 	var piece_names = []
 	for piece in pieces:
 		if piece is Piece:
-			piece_names.append(piece.name)
+			piece_names.append(str(piece.name))
 	rpc_id(1, "request_remove_pieces", piece_names)
 
 func _on_CameraController_selecting_all_pieces():
@@ -2764,7 +2880,7 @@ func _on_CameraController_setting_hidden_area_preview_visible(is_visible: bool):
 	_hidden_area_preview.collision_layer = 1 if is_visible else 2
 
 func _on_CameraController_setting_hover_position_multiple(position: Vector3):
-	rpc_unreliable_id(1, "set_hover_position_multiple", position)
+	rpc_id(1, "set_hover_position_multiple", position)
 
 func _on_CameraController_setting_spawn_point(position: Vector3):
 	emit_signal("setting_spawn_point", position)
@@ -2780,7 +2896,7 @@ func _on_CameraController_spawning_piece_in_container(container_name: String):
 	emit_signal("spawning_piece_in_container", container_name)
 
 func _on_CameraController_stack_collect_all_requested(stack: Stack, collect_stacks: bool):
-	rpc_id(1, "request_stack_collect_all", stack.name, collect_stacks)
+	rpc_id(1, "request_stack_collect_all", str(stack.name), collect_stacks)
 
 func _on_GameUI_clear_paint():
 	if not _paint_plane.is_inside_tree():
@@ -2792,12 +2908,12 @@ func _on_GameUI_clear_pieces():
 	var piece_names = []
 	for piece in _pieces.get_children():
 		if piece is Piece:
-			piece_names.append(piece.name)
+			piece_names.append(str(piece.name))
 	rpc_id(1, "request_remove_pieces", piece_names)
 	
 	for hidden_area in _hidden_areas.get_children():
 		if hidden_area is HiddenArea:
-			rpc_id(1, "request_remove_hidden_area", hidden_area.name)
+			rpc_id(1, "request_remove_hidden_area", str(hidden_area.name))
 
 func _on_GameUI_rotation_amount_updated(rotation_amount: float):
 	_camera_controller.set_piece_rotation_amount(rotation_amount)
@@ -2809,7 +2925,7 @@ func _on_LimboCleanTimer_timeout():
 	call_deferred("_limbo_clean_pieces", false)
 
 func _on_Lobby_player_added(incoming_id: int):
-	if get_tree().is_network_server() and incoming_id != 1:
+	if multiplayer.is_server() and incoming_id != 1:
 		# Players joining the game will need to be aware of any hovering pieces.
 		for piece in _pieces.get_children():
 			if piece is Piece:

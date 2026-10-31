@@ -35,7 +35,7 @@ func get_seconds() -> float:
 
 func _init():
 	hour = SpinBox.new()
-	hour.align = LineEdit.ALIGN_CENTER
+	hour.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hour.max_value = 99
 	hour.min_value = 0
 	hour.step = 1
@@ -46,7 +46,7 @@ func _init():
 	add_child(colon_label1)
 	
 	minute = SpinBox.new()
-	minute.align = LineEdit.ALIGN_CENTER
+	minute.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	minute.max_value = 59
 	minute.min_value = 0
 	minute.step = 1
@@ -57,7 +57,7 @@ func _init():
 	add_child(colon_label2)
 	
 	second = SpinBox.new()
-	second.align = LineEdit.ALIGN_CENTER
+	second.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	second.max_value = 59
 	second.min_value = 0
 	second.step = 1

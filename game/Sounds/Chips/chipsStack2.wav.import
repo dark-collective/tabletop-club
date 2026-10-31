@@ -1,13 +1,14 @@
 [remap]
 
 importer="wav"
-type="AudioStreamSample"
-path="res://.import/chipsStack2.wav-71656669a244d46ce59f73d941c6c3c5.sample"
+type="AudioStreamWAV"
+uid="uid://sxk6lsrvjl7v"
+path="res://.godot/imported/chipsStack2.wav-71656669a244d46ce59f73d941c6c3c5.sample"
 
 [deps]
 
 source_file="res://Sounds/Chips/chipsStack2.wav"
-dest_files=[ "res://.import/chipsStack2.wav-71656669a244d46ce59f73d941c6c3c5.sample" ]
+dest_files=["res://.godot/imported/chipsStack2.wav-71656669a244d46ce59f73d941c6c3c5.sample"]
 
 [params]
 
@@ -17,5 +18,7 @@ force/max_rate=false
 force/max_rate_hz=44100
 edit/trim=false
 edit/normalize=false
-edit/loop=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
 compress/mode=0

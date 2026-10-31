@@ -25,10 +25,10 @@ extends Control
 class_name OptionsTab
 
 # The section name in the options.cfg file.
-export(String) var section_name: String = ""
+@export var section_name: String = ""
 
 # For translation purposes.
-export(String) var text: String = ""
+@export var text: String = ""
 
 func _ready():
 	name = text

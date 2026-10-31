@@ -22,22 +22,22 @@
 
 extends Control
 
-onready var _credits_dialog = $CreditsDialog
-onready var _credits_label = $CreditsDialog/CreditsLabel
-onready var _enter_code_dialog = $EnterCodeDialog
-onready var _error_dialog = $ErrorDialog
-onready var _import_error_button = $MainView/MainList/HBoxContainer/ImportErrorButton
-onready var _import_error_dialog = $ImportErrorDialog
-onready var _import_error_tree = $ImportErrorDialog/ErrorTree
-onready var _info_dialog = $InfoDialog
-onready var _license_label = $InfoDialog/ScrollContainer/VBoxContainer/LicenseLabel
-onready var _multiplayer_dialog = $MultiplayerDialog
-onready var _options_button = $MainView/MainList/OptionsButton
-onready var _options_menu = $OptionsMenu
-onready var _random_music_player = $RandomMusicPlayer
-onready var _room_code_edit = $EnterCodeDialog/VBoxContainer/RoomCodeContainer/RoomCodeEdit
-onready var _singleplayer_button = $MainView/MainList/SingleplayerButton
-onready var _version_label = $InfoDialog/ScrollContainer/VBoxContainer/VersionLabel
+@onready var _credits_dialog = $CreditsDialog
+@onready var _credits_label = $CreditsDialog/CreditsLabel
+@onready var _enter_code_dialog = $EnterCodeDialog
+@onready var _error_dialog = $ErrorDialog
+@onready var _import_error_button = $MainView/MainList/HBoxContainer/ImportErrorButton
+@onready var _import_error_dialog = $ImportErrorDialog
+@onready var _import_error_tree = $ImportErrorDialog/ErrorTree
+@onready var _info_dialog = $InfoDialog
+@onready var _license_label = $InfoDialog/ScrollContainer/VBoxContainer/LicenseLabel
+@onready var _multiplayer_dialog = $MultiplayerDialog
+@onready var _options_button = $MainView/MainList/OptionsButton
+@onready var _options_menu = $OptionsMenu
+@onready var _random_music_player = $RandomMusicPlayer
+@onready var _room_code_edit = $EnterCodeDialog/VBoxContainer/RoomCodeContainer/RoomCodeEdit
+@onready var _singleplayer_button = $MainView/MainList/SingleplayerButton
+@onready var _version_label = $InfoDialog/ScrollContainer/VBoxContainer/VersionLabel
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -80,9 +80,9 @@ func _ready():
 			err_node.set_text(0, err)
 			
 			if err.begins_with("E"):
-				err_node.set_custom_color(0, Color.red)
+				err_node.set_custom_color(0, Color.RED)
 			elif err.begins_with("W"):
-				err_node.set_custom_color(0, Color.yellow)
+				err_node.set_custom_color(0, Color.YELLOW)
 	
 	_import_error_button.text = str(error_count)
 	_import_error_button.visible = (error_count > 0)
@@ -126,55 +126,55 @@ func _update_credits_text() -> void:
 		var line = credits_lines[i]
 		if line.begins_with("-"):
 			credits_lines[i - 1] = "[i]" + credits_lines[i - 1] + "[/i]"
-			credits_lines.remove(i)
+			credits_lines.remove_at(i)
 		elif line.begins_with("="):
 			credits_lines[i - 1] = "[u]" + credits_lines[i - 1] + "[/u]"
-			credits_lines.remove(i)
+			credits_lines.remove_at(i)
 	
-	_credits_label.bbcode_text = "[center]"
+	_credits_label.text = "[center]"
 	for line in credits_lines:
-		_credits_label.bbcode_text += line + "\n"
-	_credits_label.bbcode_text += "[/center]"
+		_credits_label.text += line + "\n"
+	_credits_label.text += "[/center]"
 
 # Update the license dialog text.
 func _update_license_text() -> void:
 	# The label will already contain the copyright and license for the project
 	# itself.
-	_license_label.bbcode_text = _license_label.text
+	_license_label.text = _license_label.text
 	_license_label.bbcode_enabled = true
-	if not _license_label.bbcode_text.ends_with("\n"):
-		_license_label.bbcode_text += "\n"
+	if not _license_label.text.ends_with("\n"):
+		_license_label.text += "\n"
 	
 	# Include copyright and license information about the resources that this
 	# project uses.
-	_license_label.bbcode_text += "\n[center][u]Resources[/u][/center]\n\n\n"
-	_license_label.bbcode_text += preload("res://LICENSES.tres").text
-	if not _license_label.bbcode_text.ends_with("\n"):
-		_license_label.bbcode_text += "\n"
+	_license_label.text += "\n[center][u]Resources[/u][/center]\n\n\n"
+	_license_label.text += preload("res://LICENSES.tres").text
+	if not _license_label.text.ends_with("\n"):
+		_license_label.text += "\n"
 	
 	# Include copyright and license information about Godot, and the third-party
 	# libraries it uses.
-	_license_label.bbcode_text += "\n[center][u]Godot Engine & Libraries[/u][/center]"
+	_license_label.text += "\n[center][u]Godot Engine & Libraries[/u][/center]"
 	var copyright_info = Engine.get_copyright_info()
 	
 	for component in copyright_info:
 		var component_name: String = component["name"]
-		_license_label.bbcode_text += "\n\n\n- %s" % component_name
+		_license_label.text += "\n\n\n- %s" % component_name
 		
 		for subcomponent in component["parts"]:
 			var files: Array = subcomponent["files"]
 			var copyright: Array = subcomponent["copyright"]
 			var license: String = subcomponent["license"]
 			
-			_license_label.bbcode_text += "\n\n\tFiles:\n"
+			_license_label.text += "\n\n\tFiles:\n"
 			for file in files:
-				_license_label.bbcode_text += "\t\t" + file + "\n"
+				_license_label.text += "\t\t" + file + "\n"
 			for copyright_line in copyright:
-				_license_label.bbcode_text += "\t(c) " + copyright_line + "\n"
-			_license_label.bbcode_text += "\tLicense: " + license
+				_license_label.text += "\t(c) " + copyright_line + "\n"
+			_license_label.text += "\tLicense: " + license
 	
 	# Include all of the license information at the end.
-	_license_label.bbcode_text += "\n\n[center][u]Licenses[/u][/center]"
+	_license_label.text += "\n\n[center][u]Licenses[/u][/center]"
 	var license_info = Engine.get_license_info()
 	
 	# Include any licenses that are not used by the engine.
@@ -189,9 +189,9 @@ func _update_license_text() -> void:
 		var license_data: String = license_info[license_name]
 		
 		if not _license_label.text.ends_with("\n"):
-			_license_label.bbcode_text += "\n"
+			_license_label.text += "\n"
 		
-		_license_label.bbcode_text += "\n\n- %s\n\n[indent]%s[/indent]" % [
+		_license_label.text += "\n\n- %s\n\n[indent]%s[/indent]" % [
 				display_name, license_data]
 
 func _on_SingleplayerButton_pressed():
@@ -208,9 +208,9 @@ func _on_EnterCodeButton_pressed():
 	_multiplayer_dialog.visible = false
 
 func _on_RoomCodeEdit_text_changed(new_text: String):
-	var caret_position = _room_code_edit.caret_position
+	var caret_column = _room_code_edit.caret_column
 	_room_code_edit.text = new_text.to_upper()
-	_room_code_edit.caret_position = caret_position
+	_room_code_edit.caret_column = caret_column
 
 func _on_RoomCodeEdit_text_entered(_new_text):
 	_on_JoinGameButton_pressed()

@@ -2,27 +2,27 @@
 
 [ext_resource path="res://Scripts/Game/3D/HiddenArea.gd" type="Script" id=1]
 
-[sub_resource type="BoxShape" id=1]
+[sub_resource type="BoxShape3D" id=1]
 
-[sub_resource type="CubeMesh" id=2]
+[sub_resource type="BoxMesh" id=2]
 
-[sub_resource type="SpatialMaterial" id=3]
-flags_transparent = true
+[sub_resource type="StandardMaterial3D" id=3]
+transparency = 1
 albedo_color = Color( 1, 1, 1, 0.196078 )
 
-[node name="HiddenArea" type="Area"]
-transform = Transform( 5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 5, 0 )
+[node name="HiddenArea" type="Area3D"]
+transform = Transform3D( 5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 5, 0 )
 script = ExtResource( 1 )
 __meta__ = {
 "_editor_description_": "A hidden area is an area created by a player that, when objects enter the area, it hides the object from all of the players except for the player who placed the hidden area."
 }
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource( 1 )
 
-[node name="MeshInstance" type="MeshInstance" parent="CollisionShape"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
 mesh = SubResource( 2 )
-material/0 = SubResource( 3 )
+surface_material_override/0 = SubResource( 3 )
 
 [connection signal="body_entered" from="." to="." method="_on_HiddenArea_body_entered"]
 [connection signal="body_exited" from="." to="." method="_on_HiddenArea_body_exited"]

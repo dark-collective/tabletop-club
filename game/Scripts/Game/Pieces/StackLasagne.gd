@@ -24,7 +24,7 @@ extends Stack
 
 class_name StackLasagne
 
-export(NodePath) var pieces_path: String
+@export var pieces_path: NodePath
 
 # Get the number of pieces in the stack.
 # Returns: The number of pieces in the stack.
@@ -46,12 +46,13 @@ func get_pieces() -> Array:
 # Called by the server to orient all of the pieces in the stack in a particular
 # direction.
 # up: Should all of the pieces be facing up?
-remotesync func orient_pieces(up: bool) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func orient_pieces(up: bool) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Play sound effects.
-	.orient_pieces(up)
+	super.orient_pieces(up)
 	
 	for piece in _get_pieces_node().get_children():
 		var current_basis = piece.transform.basis
@@ -64,12 +65,13 @@ remotesync func orient_pieces(up: bool) -> void:
 
 # Called by the server to set the order of pieces in the stack.
 # order: The piece indicies in their new order.
-remotesync func set_piece_order(order: Array) -> void:
-	if get_tree().get_rpc_sender_id() != 1:
+@rpc("any_peer", "call_local", "reliable")
+func set_piece_order(order: Array) -> void:
+	if Global.get_sender_id(self) != 1:
 		return
 	
 	# Play sound effects.
-	.set_piece_order(order)
+	super.set_piece_order(order)
 	
 	var pieces_node = _get_pieces_node()
 	
@@ -124,7 +126,7 @@ func _add_piece_at_pos(piece_entry: Dictionary, pos: int, flip_y: bool) -> void:
 		basis = basis.rotated(Vector3.BACK, PI)
 	
 	var piece_scale = mesh_instance.scale
-	mesh_instance.transform = Transform(basis, Vector3.ZERO)
+	mesh_instance.transform = Transform3D(basis, Vector3.ZERO)
 	mesh_instance.scale = piece_scale
 	
 	_set_piece_heights()
@@ -148,7 +150,7 @@ func _remove_piece_at_pos(pos: int) -> Dictionary:
 	
 	_set_piece_heights()
 	
-	var piece_transform = Transform.IDENTITY
+	var piece_transform = Transform3D.IDENTITY
 	if piece.transform.basis.y.y < 0.0: # Was the piece flipped?
 		piece_transform = piece_transform.rotated(Vector3.BACK, PI)
 	

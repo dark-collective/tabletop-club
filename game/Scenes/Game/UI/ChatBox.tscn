@@ -1,32 +1,32 @@
 [gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://Scripts/Game/UI/ChatBox.gd" type="Script" id=1]
-[ext_resource path="res://Fonts/Cabin/Cabin-Bold.tres" type="DynamicFont" id=2]
-[ext_resource path="res://Fonts/Cabin/Cabin-Italic.tres" type="DynamicFont" id=3]
-[ext_resource path="res://Fonts/Cabin/Cabin-Regular.tres" type="DynamicFont" id=4]
+[ext_resource path="res://Fonts/Cabin/Cabin-Bold.tres" type="Font" id=2]
+[ext_resource path="res://Fonts/Cabin/Cabin-Italic.tres" type="Font" id=3]
+[ext_resource path="res://Fonts/Cabin/Cabin-Regular.tres" type="Font" id=4]
 
 [node name="ChatBox" type="HBoxContainer"]
-margin_right = 300.0
-margin_bottom = 160.0
-rect_min_size = Vector2( 300, 160 )
+offset_right = 300.0
+offset_bottom = 160.0
+custom_minimum_size = Vector2( 300, 160 )
 script = ExtResource( 1 )
 __meta__ = {
 "_editor_description_": "The chat box is used in multiplayer games so players can communicate to each other via text."
 }
 
 [node name="ToggleButton" type="Button" parent="."]
-margin_right = 12.0
-margin_bottom = 160.0
+offset_right = 12.0
+offset_bottom = 160.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-margin_left = 16.0
-margin_right = 300.0
-margin_bottom = 160.0
+offset_left = 16.0
+offset_right = 300.0
+offset_bottom = 160.0
 size_flags_horizontal = 3
 
 [node name="ChatBackground" type="ColorRect" parent="VBoxContainer"]
-margin_right = 284.0
-margin_bottom = 126.0
+offset_right = 284.0
+offset_bottom = 126.0
 size_flags_vertical = 3
 color = Color( 0, 0, 0, 0.392157 )
 
@@ -34,31 +34,34 @@ color = Color( 0, 0, 0, 0.392157 )
 anchor_right = 1.0
 anchor_bottom = 1.0
 focus_mode = 2
-custom_fonts/italics_font = ExtResource( 3 )
-custom_fonts/bold_font = ExtResource( 2 )
-custom_fonts/normal_font = ExtResource( 4 )
+theme_override_fonts/italics_font = ExtResource( 3 )
+theme_override_font_sizes/italics_font_size = 16
+theme_override_fonts/bold_font = ExtResource( 2 )
+theme_override_font_sizes/bold_font_size = 16
+theme_override_fonts/normal_font = ExtResource( 4 )
+theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
 scroll_following = true
 selection_enabled = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-margin_top = 130.0
-margin_right = 284.0
-margin_bottom = 160.0
+offset_top = 130.0
+offset_right = 284.0
+offset_bottom = 160.0
 
 [node name="MessageEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer"]
-margin_right = 233.0
-margin_bottom = 30.0
+offset_right = 233.0
+offset_bottom = 30.0
 size_flags_horizontal = 3
 max_length = 1000
 placeholder_text = "Type a message here..."
 
 [node name="SendButton" type="Button" parent="VBoxContainer/HBoxContainer"]
-margin_left = 237.0
-margin_right = 284.0
-margin_bottom = 30.0
+offset_left = 237.0
+offset_right = 284.0
+offset_bottom = 30.0
 text = "Send"
 
 [connection signal="pressed" from="ToggleButton" to="." method="_on_ToggleButton_pressed"]
-[connection signal="text_entered" from="VBoxContainer/HBoxContainer/MessageEdit" to="." method="_on_MessageEdit_text_entered"]
+[connection signal="text_submitted" from="VBoxContainer/HBoxContainer/MessageEdit" to="." method="_on_MessageEdit_text_entered"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/SendButton" to="." method="_on_SendButton_pressed"]

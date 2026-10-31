@@ -4,7 +4,7 @@
 [ext_resource path="res://Sounds/Chips/ChipTableSlowSounds.tres" type="Resource" id=2]
 [ext_resource path="res://Sounds/Chips/ChipTableFastSounds.tres" type="Resource" id=3]
 
-[sub_resource type="CylinderShape" id=1]
+[sub_resource type="CylinderShape3D" id=1]
 radius = 0.5
 height = 1.0
 
@@ -13,8 +13,8 @@ top_radius = 0.5
 bottom_radius = 0.5
 height = 1.0
 
-[node name="Cylinder" type="RigidBody"]
-contacts_reported = 1
+[node name="Cylinder" type="RigidBody3D"]
+max_contacts_reported = 1
 contact_monitor = true
 script = ExtResource( 1 )
 __meta__ = {
@@ -22,14 +22,14 @@ __meta__ = {
 
 The shape is based on the unit cylinder, i.e. the diameter and the height of the cylinder are 1."
 }
-mesh_instance_path = NodePath("CollisionShape/MeshInstance")
+mesh_instance_path = NodePath("CollisionShape3D/MeshInstance3D")
 table_collide_fast_sounds = ExtResource( 3 )
 table_collide_slow_sounds = ExtResource( 2 )
 stack_ignore_y_rotation = true
 
-[node name="CollisionShape" type="CollisionShape" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource( 1 )
 
-[node name="MeshInstance" type="MeshInstance" parent="CollisionShape"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
 mesh = SubResource( 2 )
-material/0 = null
+surface_material_override/0 = null
