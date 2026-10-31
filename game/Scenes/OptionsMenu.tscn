@@ -1207,7 +1207,7 @@ Anti-aliasing is a technique used to remove jagged edges on the screen.
 The more samples that are used, the better the result, but at the expense of performance."
 size_flags_horizontal = 3
 text = "None"
-item_count = 5
+item_count = 4
 popup/item_0/text = "None"
 popup/item_0/id = 0
 popup/item_1/text = "2X"
@@ -1216,8 +1216,6 @@ popup/item_2/text = "4X"
 popup/item_2/id = 2
 popup/item_3/text = "8X"
 popup/item_3/id = 3
-popup/item_4/text = "16X"
-popup/item_4/id = 4
 selected = 0
 
 [node name="SSAO" type="Label" parent="MarginContainer/VBoxContainer/TabContainer/Video/GridContainer"]

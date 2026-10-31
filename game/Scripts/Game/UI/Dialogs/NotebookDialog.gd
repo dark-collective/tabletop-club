@@ -204,7 +204,7 @@ func send_page_array_to_server() -> void:
 		if page["public"]:
 			# There is a limit to how much data we can send over the network,
 			# so if we are about to hit that limit, stop sending any more pages.
-			var page_as_str = String(page)
+			var page_as_str = str(page)
 			size_of_data += page_as_str.length()
 			if size_of_data > MAX_PAGE_ARRAY_NETWORK_SIZE:
 				break
@@ -346,7 +346,7 @@ func _display_page_contents(index: int) -> void:
 				
 				if is_multiline:
 					textbox_edit = TextEdit.new()
-					textbox_edit.wrap_enabled = true
+					textbox_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 					textbox_edit.connect("text_changed", Callable(self, "_on_TextEdit_text_changed"))
 				else:
 					textbox_edit = LineEdit.new()
@@ -367,7 +367,7 @@ func _display_page_contents(index: int) -> void:
 			var text: String = page["text"][textbox_id]
 			if textbox_edit is TextEdit:
 				textbox_edit.text = text
-				textbox_edit.readonly = _is_read_only()
+				textbox_edit.editable = not _is_read_only()
 			elif textbox_edit is LineEdit:
 				textbox_edit.text = text
 				textbox_edit.editable = not _is_read_only()
@@ -460,14 +460,14 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 				new_text[id] = default_val
 			
 			var test_json_conv = JSON.new()
-			test_json_conv.parse(page_text)
+			var json_error = test_json_conv.parse(page_text)
 			var json = test_json_conv.get_data()
-			if json.error == OK and json.result is Dictionary:
+			if json_error == OK and json is Dictionary:
 				for id in textbox_dict:
-					if not json.result.has(id):
+					if not json.has(id):
 						continue
 					
-					var value = json.result[id]
+					var value = json[id]
 					if not value is String:
 						continue
 					
@@ -526,7 +526,7 @@ func _is_page_entry_valid(page_entry: Dictionary) -> bool:
 # Check if the window is in read-only mode.
 # Returns: If the window is in read-only mode.
 func _is_read_only() -> bool:
-	return _text_edit.readonly
+	return not _text_edit.editable
 
 # Load the contents of the notebook.cfg file into a page array.
 # Returns: The page array from the file.
@@ -694,7 +694,7 @@ func _set_modifier_buttons_enabled(index: int) -> void:
 func _set_read_only(read_only: bool) -> void:
 	_title_edit.editable = not read_only
 	_public_check_box.disabled = read_only
-	_text_edit.readonly = read_only
+	_text_edit.editable = not read_only
 	
 	_move_up_button.disabled = read_only
 	_move_down_button.disabled = read_only
@@ -704,7 +704,7 @@ func _set_read_only(read_only: bool) -> void:
 		if text_edit is LineEdit:
 			text_edit.editable = not read_only
 		elif text_edit is TextEdit:
-			text_edit.readonly = read_only
+			text_edit.editable = not read_only
 
 # Set the window title based on the client's name.
 # client_id: The ID of the client whose name will be in the title.

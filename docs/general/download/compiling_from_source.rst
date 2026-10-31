@@ -86,8 +86,8 @@ After installing Godot and WebRTC:
 The runner uses temporary user/cache directories, imports the full bundled
 asset pack, compiles all game scripts, and runs local WebRTC lobby/piece RPC
 checks. Gameplay checks cover spawning, locking, color, impulses, drawing from
-stacks, the four bundled Godot 3 saves, a Godot 4 save round trip, and the object
-browser. Script errors, engine errors, missing completion markers, and timeouts
+stacks, the four bundled Godot 3 saves, a Godot 4 save round trip, the object
+browser, and text/image notebook templates. Script errors, engine errors, missing completion markers, and timeouts
 fail the run. Logs and a rendered screenshot are saved to ``.artifacts/tests``.
 A second integration test runs two actual game processes through a temporary
 copy of the upstream signaling server (pinned commit, verified checksum). It

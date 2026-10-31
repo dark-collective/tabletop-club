@@ -402,23 +402,24 @@ func _save_override_file(config: ConfigFile) -> void:
 	
 	match shadow_detail_id:
 		0:
-			shadow_filter = 1 # PCF5.
+			shadow_filter = 1 # Soft Very Low.
 			shadow_size = 2048
 		1:
-			shadow_filter = 1 # PCF5.
+			shadow_filter = 1 # Soft Very Low.
 			shadow_size = 4096
 		2:
-			shadow_filter = 2 # PCF13.
+			shadow_filter = 3 # Soft Medium.
 			shadow_size = 8192
 		3:
-			shadow_filter = 2 # PCF13.
+			shadow_filter = 3 # Soft Medium.
 			shadow_size = 16384
 	
 	# The game needs to be restarted for these changes to take effect.
 	var override_file = ConfigFile.new()
-	override_file.set_value("rendering", "quality/directional_shadow/size", shadow_size)
-	override_file.set_value("rendering", "quality/shadow_atlas/size", shadow_size)
-	override_file.set_value("rendering", "quality/shadows/filter_mode", shadow_filter)
+	override_file.set_value("rendering", "lights_and_shadows/directional_shadow/size", shadow_size)
+	override_file.set_value("rendering", "lights_and_shadows/positional_shadow/atlas_size", shadow_size)
+	override_file.set_value("rendering", "lights_and_shadows/directional_shadow/soft_shadow_filter_quality", shadow_filter)
+	override_file.set_value("rendering", "lights_and_shadows/positional_shadow/soft_shadow_filter_quality", shadow_filter)
 	override_file.save("user://override.cfg")
 
 # Set the current values with the given config file.
@@ -474,7 +475,7 @@ func _set_current_with_config(config: ConfigFile) -> void:
 							if index >= 0:
 								value.selected = index
 						else:
-							value.selected = key_value
+							value.selected = clampi(key_value, 0, value.item_count - 1)
 					elif value is Slider:
 						value.value = key_value
 					elif value is SpinBox:

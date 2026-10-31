@@ -105,4 +105,15 @@ func exercise_game():
 	ui.popup_objects_dialog()
 	for frame in range(10): await process_frame
 	ui.get_node("CanvasLayer/ObjectsDialog").hide()
-	print("SMOKE: gameplay and save checks passed")
+	var notebook = ui.get_node("CanvasLayer/NotebookDialog")
+	notebook.popup_edit_mode()
+	for frame in range(3): await process_frame
+	for template in database.get_db()["TabletopClub"]["templates"]:
+		notebook._on_TemplateDialog_entry_requested("TabletopClub", "templates", template)
+		for frame in range(3): await process_frame
+		notebook._set_zoom(1.5)
+		assert(not notebook._is_read_only(), "Notebook unexpectedly read-only")
+	assert(notebook.current_page_array.size() == 2, "Notebook templates failed")
+	notebook._attempt_save_page_array_to_file()
+	notebook.hide()
+	print("SMOKE: gameplay, save, browser, and notebook checks passed")
