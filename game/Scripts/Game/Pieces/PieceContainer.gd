@@ -158,6 +158,7 @@ func unlock() -> void:
 		super.unlock()
 
 func _physics_process(_delta):
+	super._physics_process(_delta)
 	if multiplayer.is_server():
 		var shakable: bool = piece_entry["shakable"]
 		if shakable:

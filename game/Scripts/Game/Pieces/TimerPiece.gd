@@ -202,6 +202,7 @@ func stop_timer() -> void:
 	set_mode(MODE_SYSTEM_TIME)
 
 func _process(delta):
+	super._process(delta)
 	if not _paused:
 		if _mode == MODE_COUNTDOWN:
 			_time -= delta

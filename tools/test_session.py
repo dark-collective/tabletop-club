@@ -88,7 +88,7 @@ def main():
                 code = process.wait(timeout=180)
                 output = (logs / f"session-{role}.log").read_text()
                 if code != 0 or f"SESSION: {role} passed" not in output or "SCRIPT ERROR:" in output or "\nERROR:" in output:
-                    raise SystemExit(f"Session {role} failed; see {logs / f'session-{role}.log'}")
+                    raise SystemExit(f"Session {role} failed (exit {code}); see {logs / f'session-{role}.log'}")
             print("SESSION: TLS signaling, host/client sync, missing asset transfer/import, and gameplay passed")
         finally:
             for process in children:

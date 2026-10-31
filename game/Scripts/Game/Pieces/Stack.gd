@@ -445,9 +445,11 @@ func setup_outline_material():
 	get_outline_mesh_instance().set_surface_override_material(0, _outline_material)
 
 func _ready():
+	super._ready()
 	_expose_albedo_color = false
 
 func _physics_process(_delta):
+	super._physics_process(_delta)
 	# If the stack is being shaken, then get the server to send a list of
 	# shuffled names to each client (including itself).
 	if multiplayer.is_server() and is_being_shaked():

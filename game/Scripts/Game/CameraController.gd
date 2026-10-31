@@ -2044,7 +2044,7 @@ func _on_ApplyTransformButton_pressed():
 	var new_scale = Vector3(_transform_piece_sca_x.value,
 			_transform_piece_sca_y.value, _transform_piece_sca_z.value)
 	
-	var new_basis = Basis(angles) * Basis.IDENTITY.scaled(new_scale)
+	var new_basis = Basis.from_euler(angles) * Basis.IDENTITY.scaled(new_scale)
 	var new_transform = Transform3D(new_basis, origin)
 	
 	for piece in _selected_pieces:
@@ -2061,7 +2061,7 @@ func _on_ColorMenu_popup_hide():
 
 func _on_ColorPicker_color_changed(color: Color):
 	for piece in _selected_pieces:
-		piece.rpc_id(1, "request_set_albedo_color", color, true)
+		piece.rpc_id(1, "request_set_albedo_color_unreliable", color)
 
 func _on_ContainerContentDialog_take_all_from(container: PieceContainer):
 	_container_content_dialog.visible = false

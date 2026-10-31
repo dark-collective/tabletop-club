@@ -114,6 +114,7 @@ func set_piece_display(piece: Piece) -> void:
 	_piece_to_add = piece
 
 func _ready():
+	super._ready()
 	# We connect the signal here because we don't want the editor to connect
 	# the signal when this is inside an ObjectPreviewGrid (which is an editor
 	# script).

@@ -47,6 +47,7 @@ func set_collisions_on(on: bool) -> void:
 	collision_mask = mask
 
 func _ready():
+	super._ready()
 	connect("tree_exiting", Callable(self, "_on_tree_exiting"))
 
 func _on_tree_exiting():

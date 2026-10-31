@@ -56,10 +56,6 @@ window/stretch/aspect="expand"
 run/main_run_args="-- --base-asset-dir .."
 script_templates_search_path="res://Scripts/Templates"
 
-[gui]
-
-theme/custom_font="res://Fonts/Cabin/Cabin-Medium.tres"
-
 [input]
 
 game_left={

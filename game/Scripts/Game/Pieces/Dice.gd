@@ -42,7 +42,7 @@ func get_face_value() -> String:
 	for value in face_values:
 		var normals: Array = face_values[value]
 		for normal in normals:
-			var dot = transform.basis * (normal).dot(Vector3.UP)
+			var dot = (transform.basis * normal).dot(Vector3.UP)
 			if dot > max_dot:
 				max_dot = dot
 				closest_value = value
@@ -50,13 +50,15 @@ func get_face_value() -> String:
 	return closest_value
 
 func _ready():
+	super._ready()
 	_rng.randomize()
 
 func _physics_process(_delta):
+	super._physics_process(_delta)
 	if is_being_shaked():
 		if multiplayer.is_server():
 			var new_angles = 2 * PI * Vector3(_rng.randf(), _rng.randf(), _rng.randf())
-			srv_set_hover_rotation(Quaternion(new_angles))
+			srv_set_hover_rotation(Quaternion.from_euler(new_angles))
 		
 		if shake_sounds != null:
 			play_effect(shake_sounds.random_stream())

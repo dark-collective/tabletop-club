@@ -273,6 +273,7 @@ func stop_track() -> void:
 	emit_signal("stopped_playing")
 
 func _ready():
+	super._ready()
 	connect("scale_changed", Callable(self, "_on_scale_changed"))
 	_audio_player.connect("finished", Callable(self, "_on_audio_player_finished"))
 

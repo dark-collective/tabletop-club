@@ -200,6 +200,8 @@ func start_main_menu_with_error(error: String) -> void:
 	})
 
 func _ready():
+	# Apply the game font after imports, rather than during editor bootstrap.
+	ThemeDB.get_default_theme().default_font = load("res://Fonts/Cabin/Cabin-Medium.tres")
 	var root = get_tree().get_root()
 	_current_scene = root.get_child(root.get_child_count() - 1)
 	

@@ -336,7 +336,7 @@ func request_rotate_y(rot: float) -> void:
 	var target_y_euler = current_euler
 	target_y_euler.y = wrapf(target_y_scale * abs(rot), -PI, PI)
 	
-	request_set_hover_rotation(Quaternion(target_y_euler))
+	request_set_hover_rotation(Quaternion.from_euler(target_y_euler))
 
 # If you are not hovering the piece, request the server to
 # rotate it around the y-axis by the given rotation.
@@ -352,7 +352,7 @@ func request_rotate_y_on_ground(rot: float) -> void:
 # Request the server to set the material's albedo color.
 # color: The new albedo color.
 # unreliable: Should the server send the RPC unreliably?
-@rpc("any_peer", "call_local", "unreliable")
+@rpc("any_peer", "call_local", "reliable")
 func request_set_albedo_color(color: Color, unreliable: bool = false) -> void:
 	if not is_multiplayer_authority():
 		return
@@ -361,9 +361,19 @@ func request_set_albedo_color(color: Color, unreliable: bool = false) -> void:
 		return
 	
 	if unreliable:
-		rpc("set_albedo_color", color)
+		rpc("set_albedo_color_unreliable", color)
 	else:
 		rpc("set_albedo_color", color)
+
+# Godot 4 selects reliability at the receiver, so live color previews use
+# separate RPCs while the final picker value remains reliable.
+@rpc("any_peer", "call_local", "unreliable")
+func request_set_albedo_color_unreliable(color: Color) -> void:
+	request_set_albedo_color(color, true)
+
+@rpc("any_peer", "call_local", "unreliable")
+func set_albedo_color_unreliable(color: Color) -> void:
+	set_albedo_color(color)
 
 # Request the server to set the hover rotation if you are the client hovering
 # the piece.
@@ -438,7 +448,7 @@ func request_unlock() -> void:
 
 # Called by the server to set the material's albedo color.
 # color: The new albedo color.
-@rpc("any_peer", "call_local", "unreliable")
+@rpc("any_peer", "call_local", "reliable")
 func set_albedo_color(color: Color) -> void:
 	if Global.get_sender_id(self) != 1:
 		return
