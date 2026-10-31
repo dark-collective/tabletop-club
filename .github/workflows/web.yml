@@ -32,7 +32,7 @@ jobs:
       - name: Build browser game and bundled assets
         run: python3 tools/build_web.py --godot /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 --template /tmp/godot/templates/web_nothreads_release.zip
       - run: npm run test:widget
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps --only-shell chromium
       - name: Test real WASM rendering and two Matrix widgets
         run: npm run test:web
       - uses: actions/upload-artifact@v4

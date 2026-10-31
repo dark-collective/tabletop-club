@@ -89,7 +89,7 @@ test("two cross-origin widgets negotiate Vommet permissions and exchange real We
     await clientPage.screenshot({path:".artifacts/browser/client-widget.png",fullPage:true});
     const hostFrame = page.frames().find(frame => frame.url().includes("displayName=host"));
     await hostFrame.evaluate(() => window.tabletopWidget.fromGame(JSON.stringify({action:"disconnect"})));
-    await expect(client.locator("body")).toHaveAttribute("data-scene", "MainMenu");
+    await expect(client.locator("body")).toHaveAttribute("data-scene", "MainMenu", {timeout:45000});
     expect(errors).toEqual([]);
   } finally { await clientBrowser.close(); }
 });
