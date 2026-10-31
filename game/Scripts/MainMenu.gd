@@ -48,6 +48,9 @@ func display_error(error: String) -> void:
 	_error_dialog.popup_centered()
 
 func _ready():
+	if OS.has_feature("web"):
+		$MainView/MainList/QuitButton.hide()
+		$MainView/MainList/MultiplayerButton.disabled = not WebRuntime.is_widget()
 	_update_credits_text()
 	_update_license_text()
 	

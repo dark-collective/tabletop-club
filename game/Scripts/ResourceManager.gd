@@ -44,7 +44,8 @@ func load_res(path: String) -> Resource:
 	
 	# Workaround for this issue:
 	# https://github.com/godotengine/godot/issues/55566
-	OS.delay_msec(1)
+	if not OS.has_feature("web"):
+		OS.delay_msec(1)
 	
 	var runtime_path = path + ".runtime.res"
 	var res: Resource = load(runtime_path if FileAccess.file_exists(runtime_path) else path)

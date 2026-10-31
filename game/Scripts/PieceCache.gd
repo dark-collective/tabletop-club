@@ -58,7 +58,7 @@ func cache() -> void:
 	
 	var packed_scene = PackedScene.new()
 	packed_scene.pack(piece)
-	ResourceSaver.save(packed_scene, _cache_path() + "." + _scene_ext())
+	ResourceSaver.save(packed_scene, _cache_path() + "." + _scene_ext(), ResourceSaver.FLAG_COMPRESS)
 	
 	ResourceManager.free_object(piece)
 	

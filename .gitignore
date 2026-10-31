@@ -3,6 +3,7 @@
 .import/
 export.cfg
 export_presets.cfg
+!game/export_presets.cfg
 
 # Mono-specific ignores
 .mono/
@@ -31,3 +32,9 @@ env/
 .artifacts/
 
 __pycache__/
+
+node_modules/
+game/web_assets.zip
+game/web_assets.sha256
+playwright-report/
+test-results/
